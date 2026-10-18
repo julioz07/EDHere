@@ -1,0 +1,13 @@
+name: card_db
+description: Base de cartas offline, pesquisa, decks e validação por formato do EDHere.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  sqlite3: ^2.4.0
+
+dev_dependencies:
+  test: ^1.25.0

@@ -1,0 +1,10 @@
+name: mesa_core
+description: Núcleo de jogo do EDHere - estado da mesa e eventos, sem Flutter nem I/O.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.4
+
+dev_dependencies:
+  test: ^1.25.0
