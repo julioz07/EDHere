@@ -23,6 +23,12 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
   List<ParsedLine>? _unresolved;
   int _found = 0;
 
+  /// Cartas com versão indicada na lista ("(FDC) 86") e se é para a usar.
+  int _withPrint = 0;
+  bool _usePrints = true;
+  bool _busy = false;
+  String? _progress;
+
   @override
   void dispose() {
     _name.dispose();
@@ -65,10 +71,11 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     setState(() {
       _unresolved = r.unresolved;
       _found = r.entries.fold(0, (n, e) => n + e.qty);
+      _withPrint = r.printings.length;
     });
   }
 
-  void _import() {
+  Future<void> _import() async {
     final r = _resolve();
     if (r.entries.isEmpty) {
       setState(() {
@@ -88,15 +95,47 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
         : commanders.isNotEmpty
             ? commanders.join(' + ')
             : 'Deck importado';
+    var entries = r.entries;
+    String? warning;
+    // As versões da lista (coleção e número): as que já se conhecem saem
+    // logo; as outras pede-se ao Scryfall.
+    if (_usePrints && r.printings.isNotEmpty) {
+      setState(() {
+        _busy = true;
+        _progress = 'A buscar as versões das cartas…';
+      });
+      final cards = repo.getMany(r.printings.keys);
+      final res = await ref.read(printsProvider).listPrints(r.printings, cards, onProgress: (done, total) {
+        if (mounted) setState(() => _progress = 'A buscar as versões das cartas… $done/$total');
+      });
+      if (!mounted) return;
+      entries = [
+        for (final e in entries)
+          res.prints[e.oracleId] != null ? e.copyWith(printId: res.prints[e.oracleId]) : e,
+      ];
+      if (res.offline) {
+        warning = 'Sem internet: ${res.missing} cartas ficaram com a versão base. '
+            'Podes trocar a versão de cada carta no deck.';
+      } else if (res.missing > 0) {
+        warning = '${res.missing} versões não foram encontradas no Scryfall; ficaram as versões base.';
+      }
+      setState(() {
+        _busy = false;
+        _progress = null;
+      });
+    }
     final deck = ref.read(decksProvider).save(Deck(
           name: name,
           format: _format,
-          entries: r.entries,
+          entries: entries,
           notes: r.unresolved.isEmpty
               ? ''
               : 'Não encontradas na importação:\n${r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')}',
         ));
-    Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+    if (warning != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(warning)));
+    }
+    await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
       builder: (_) => DeckEditorScreen(deckId: deck.id!),
     ));
   }
@@ -156,6 +195,15 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           if (_unresolved != null) ...[
             const SizedBox(height: 12),
             Text('$_found cartas reconhecidas.', style: theme.textTheme.titleSmall),
+            if (_withPrint > 0)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _usePrints,
+                onChanged: (v) => setState(() => _usePrints = v!),
+                title: const Text('Usar as versões da lista'),
+                subtitle: Text('$_withPrint cartas trazem coleção e número: ficam com essa arte '
+                    '(as que não estão no telemóvel vêm do Scryfall).'),
+              ),
             if (_unresolved!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text('Não encontradas (${_unresolved!.length}):',
@@ -165,10 +213,16 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
             ],
           ],
           const SizedBox(height: 16),
+          if (_progress != null) ...[
+            const LinearProgressIndicator(),
+            const SizedBox(height: 6),
+            Text(_progress!, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 12),
+          ],
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: _check, child: const Text('Verificar'))),
+            Expanded(child: OutlinedButton(onPressed: _busy ? null : _check, child: const Text('Verificar'))),
             const SizedBox(width: 12),
-            Expanded(child: FilledButton(onPressed: _import, child: const Text('Importar'))),
+            Expanded(child: FilledButton(onPressed: _busy ? null : _import, child: const Text('Importar'))),
           ]),
         ],
       )),

@@ -310,8 +310,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           ListTile(
             leading: const Icon(Icons.copy),
             title: const Text('Copiar lista (Moxfield / Archidekt)'),
-            subtitle: const Text('Com secções Commander, Deck, Sideboard'),
-            onTap: () => _copy(ctx, exportDeckText(_deck, cards)),
+            subtitle: const Text('Com secções Commander, Deck, Sideboard e as versões escolhidas'),
+            onTap: () => _copy(ctx, exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info)),
           ),
           ListTile(
             leading: const Icon(Icons.qr_code_2),
@@ -359,7 +359,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             subtitle: const Text('WhatsApp, email, notas…'),
             onTap: () {
               Navigator.pop(ctx);
-              shareText(exportDeckText(_deck, cards), subject: _deck.name);
+              shareText(exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info),
+                  subject: _deck.name);
             },
           ),
           if (ref.read(collectionProvider).owned.isNotEmpty)

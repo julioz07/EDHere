@@ -131,12 +131,11 @@ class PrintService extends ChangeNotifier {
     if (p != null) await use(base, p);
   }
 
-  /// Usa como preferidas as versões que tenho (coleção + número, como vêm
-  /// do ManaBox). Pede ao Scryfall em lotes de 75. Devolve quantas ficaram.
-  Future<int> preferOwnedPrints(Map<String, ({String set, String number})> owned, Map<String, Card> cards,
+  /// Pede ao Scryfall as impressões com estas coleções e números, em lotes
+  /// de 75 (o máximo da API). Lança se não houver rede.
+  Future<List<PrintInfo>> _bySetNumber(List<({String set, String number})> ids,
       {void Function(int done, int total)? onProgress}) async {
-    final ids = owned.entries.where((e) => cards[e.key] != null).toList();
-    var applied = 0;
+    final out = <PrintInfo>[];
     final client = newHttpClient();
     try {
       for (var i = 0; i < ids.length; i += 75) {
@@ -149,29 +148,90 @@ class PrintService extends ChangeNotifier {
         req.headers.contentType = ContentType.json;
         req.write(jsonEncode({
           'identifiers': [
-            for (final e in batch) {'set': e.value.set, 'collector_number': e.value.number},
+            for (final e in batch) {'set': e.set, 'collector_number': e.number},
           ],
         }));
         final res = await req.close().timeout(const Duration(seconds: 30));
         final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
         if (res.statusCode != 200) throw StateError('Scryfall ${res.statusCode}');
-        final found = [
-          for (final c in (body['data'] as List).cast<Map<String, dynamic>>()) PrintInfo.fromScryfall(c)
-        ];
-        remember(found);
-        for (final p in found) {
-          if (cards[p.oracleId] == null) continue;
-          store.setPreferredPrint(p.oracleId, p.printId);
-          applied++;
-        }
+        out.addAll([
+          for (final c in (body['data'] as List).cast<Map<String, dynamic>>()) PrintInfo.fromScryfall(c),
+        ]);
         onProgress?.call((i + batch.length).clamp(0, ids.length), ids.length);
       }
     } finally {
       client.close(force: true);
+    }
+    remember(out);
+    return out;
+  }
+
+  /// Usa como preferidas as versões que tenho (coleção + número, como vêm
+  /// do ManaBox). Pede ao Scryfall em lotes de 75. Devolve quantas ficaram.
+  Future<int> preferOwnedPrints(Map<String, ({String set, String number})> owned, Map<String, Card> cards,
+      {void Function(int done, int total)? onProgress}) async {
+    final ids = owned.entries.where((e) => cards[e.key] != null).toList();
+    var applied = 0;
+    try {
+      final found = await _bySetNumber([for (final e in ids) e.value], onProgress: onProgress);
+      for (final p in found) {
+        if (cards[p.oracleId] == null) continue;
+        store.setPreferredPrint(p.oracleId, p.printId);
+        applied++;
+      }
+    } finally {
       _preferred = store.preferredPrints();
       notifyListeners();
     }
     return applied;
+  }
+
+  /// As versões indicadas numa lista importada ("1 Sol Ring (CMR) 472"):
+  /// Oracle ID -> impressão a guardar no deck (null = é a versão por defeito).
+  /// Primeiro procura nas versões já conhecidas; o resto pede ao Scryfall.
+  /// Sem rede, [offline] fica a true e as que faltam ficam na por defeito.
+  Future<({Map<String, String?> prints, int missing, bool offline})> listPrints(
+      Map<String, ({String set, String number})> wanted, Map<String, Card> cards,
+      {void Function(int done, int total)? onProgress}) async {
+    bool same(String a, String b) => a.toLowerCase() == b.toLowerCase();
+    final out = <String, String?>{};
+    final ask = <String, ({String set, String number})>{};
+    for (final MapEntry(key: oracle, value: w) in wanted.entries) {
+      final base = cards[oracle];
+      if (base == null) continue;
+      if (same(base.setCode, w.set) && same(base.collectorNumber, w.number)) {
+        out[oracle] = null;
+        continue;
+      }
+      final known =
+          store.printsOf(oracle).where((p) => same(p.setCode, w.set) && same(p.collectorNumber, w.number));
+      if (known.isNotEmpty) {
+        out[oracle] = known.first.printId;
+      } else {
+        ask[oracle] = w;
+      }
+    }
+    var offline = false;
+    if (ask.isNotEmpty) {
+      try {
+        final found = await _bySetNumber(ask.values.toList(), onProgress: onProgress);
+        for (final MapEntry(key: oracle, value: w) in ask.entries) {
+          final p = found.where(
+              (p) => p.oracleId == oracle && same(p.setCode, w.set) && same(p.collectorNumber, w.number));
+          if (p.isNotEmpty) out[oracle] = p.first.printId;
+        }
+      } catch (_) {
+        offline = true;
+      }
+    }
+    // Imagens pequenas das versões escolhidas (em silêncio, se houver rede).
+    final refs = [
+      for (final MapEntry(key: oracle, value: id) in out.entries)
+        if (id != null && cards[oracle] != null && info(id) != null)
+          ...ImageRef.allOf(cards[oracle]!.withPrint(info(id)!)),
+    ];
+    if (!offline && refs.isNotEmpty) unawaited(images.ensureRefs(refs, sizes: const ['small']));
+    return (prints: out, missing: wanted.length - out.length, offline: offline);
   }
 
   void cancelPack() => _cancelPack = true;

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'card.dart';
 import 'deck.dart';
+import 'prints.dart';
 
 /// Uma linha de uma lista colada, antes de se saber que carta é.
 class ParsedLine {
@@ -20,11 +21,15 @@ class ParsedLine {
 }
 
 class ImportResult {
-  const ImportResult(this.entries, this.unresolved);
+  const ImportResult(this.entries, this.unresolved, [this.printings = const {}]);
   final List<DeckEntry> entries;
 
   /// Linhas cujo nome não existe na base local.
   final List<ParsedLine> unresolved;
+
+  /// Versões indicadas na lista ("(FDC) 86"), por Oracle ID: a primeira que
+  /// aparece para cada carta.
+  final Map<String, ({String set, String number})> printings;
 }
 
 final _header = RegExp(
@@ -36,7 +41,7 @@ final _header = RegExp(
 // "1 Sol Ring", "1x Sol Ring (CMR) 472 *F* [Ramp]", "Sol Ring"
 final _cardLine = RegExp(
     r'^(?:(\d+)\s*[xX]?\s+)?(.+?)'
-    r'(?:\s+\(([A-Za-z0-9]+)\)(?:\s+[A-Za-z0-9★\-]+)?)?'
+    r'(?:\s+\(([A-Za-z0-9]+)\)(?:\s+([A-Za-z0-9★\-]+))?)?'
     r'(?:\s+\*[A-Za-z]+\*)*'
     r'(?:\s+\[([^\]]*)\])?'
     r'(?:\s+\^[^\^]*\^)?'
@@ -86,13 +91,15 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
     if (m == null) continue;
     final name = m.group(2)!.trim();
     if (name.isEmpty) continue;
-    final category = m.group(4)?.split(',').first.trim();
+    final category = m.group(5)?.split(',').first.trim();
     blocks.last.add(ParsedLine(
       int.tryParse(m.group(1) ?? '') ?? 1,
       name,
       lineBoard,
       category: category == null || category.isEmpty ? null : category,
       line: i + 1,
+      setCode: m.group(3)?.toLowerCase(),
+      collectorNumber: m.group(4),
     ));
   }
 
@@ -105,7 +112,8 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
   return [
     for (final b in nonEmpty.sublist(0, nonEmpty.length - 1)) ...b,
     for (final p in last)
-      ParsedLine(p.qty, p.name, lastBoard, category: p.category, line: p.line),
+      ParsedLine(p.qty, p.name, lastBoard,
+          category: p.category, line: p.line, setCode: p.setCode, collectorNumber: p.collectorNumber),
   ];
 }
 
@@ -113,6 +121,7 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
 ImportResult resolveDeckText(List<ParsedLine> lines, Card? Function(String name) find) {
   var deck = const Deck(name: '', format: 'free');
   final unresolved = <ParsedLine>[];
+  final printings = <String, ({String set, String number})>{};
   for (final l in lines) {
     final card = find(l.name) ??
         // "Fire // Ice" escrito só com uma barra, ou com o nome da frente.
@@ -121,9 +130,12 @@ ImportResult resolveDeckText(List<ParsedLine> lines, Card? Function(String name)
       unresolved.add(l);
     } else {
       deck = deck.add(card.oracleId, qty: l.qty, board: l.board, category: l.category);
+      if (l.setCode != null && l.collectorNumber != null) {
+        printings.putIfAbsent(card.oracleId, () => (set: l.setCode!, number: l.collectorNumber!));
+      }
     }
   }
-  return ImportResult(deck.entries, unresolved);
+  return ImportResult(deck.entries, unresolved, printings);
 }
 
 enum ExportStyle {
@@ -134,9 +146,17 @@ enum ExportStyle {
   mtgo,
 }
 
+/// [printOf] acrescenta a versão escolhida ("(FDC) 86") às cartas que a
+/// têm; sem ele, só nomes (mais curto, para o QR).
 String exportDeckText(Deck deck, Map<String, Card> cards,
-    {ExportStyle style = ExportStyle.sections}) {
-  String line(DeckEntry e) => '${e.qty} ${cards[e.oracleId]?.name ?? e.oracleId}';
+    {ExportStyle style = ExportStyle.sections, PrintInfo? Function(String printId)? printOf}) {
+  String line(DeckEntry e) {
+    final base = '${e.qty} ${cards[e.oracleId]?.name ?? e.oracleId}';
+    final p = e.printId == null || printOf == null ? null : printOf(e.printId!);
+    return p == null || p.setCode.isEmpty || p.collectorNumber.isEmpty
+        ? base
+        : '$base (${p.setCode.toUpperCase()}) ${p.collectorNumber}';
+  }
   List<DeckEntry> sorted(Board b) => deck.inBoard(b).toList()
     ..sort((a, b) => (cards[a.oracleId]?.name ?? '').compareTo(cards[b.oracleId]?.name ?? ''));
 

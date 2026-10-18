@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.0.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.0.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -20,7 +20,7 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 **Cartas e decks**
 - Base de cartas offline (~36 mil cartas, ~25 MB a descarregar) com pesquisa instantânea e sintaxe parecida com a do Scryfall (`t:dragon id:rg mv<=3`, `f:commander`, `is:commander`…).
 - Deck builder com validação por formato (tamanho, singleton, banidas, identidade de cor, parceiros e backgrounds), vista em lista ou grelha, estatísticas, simulador de mão inicial.
-- Importar e exportar listas (Moxfield, Archidekt, MTGO, Arena) e partilhar decks por QR code.
+- Importar e exportar listas (Moxfield, Archidekt, MTGO, Arena), com as versões das cartas quando a lista as traz, e partilhar decks por QR code.
 - Versões alternativas das cartas: escolher a arte por entrada de deck ou como preferida em todo o lado; só se descarrega a imagem escolhida.
 - As minhas cartas: coleção indicativa (importação do ManaBox, Moxfield, Deckbox, Dragon Shield ou texto), filtro "só as que tenho" ao construir decks e, em cada carta, em que decks está.
 - Pacotes de imagens à escolha (Commander, Modern, tokens…), em resolução pequena ou normal.
@@ -83,6 +83,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.0.1 | Importar listas mantém as versões das cartas ("(SET) número" do Moxfield/Archidekt); exportar também as inclui |
 | 1.0.0 | Primeira versão estável: tudo o que está acima |
 | 0.13 | Segunda ronda de QA: decks por montar, imagens por set, melhorias no sealed, draft e JumpStart |
 | 0.12 | Backup em ficheiro; gravar jogo solo |
