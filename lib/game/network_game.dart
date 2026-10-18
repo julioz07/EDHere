@@ -13,6 +13,7 @@ import '../net/host_server.dart';
 import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
+import 'draft.dart';
 import 'game_controller.dart';
 import 'resume_store.dart';
 
@@ -27,6 +28,9 @@ abstract final class LobbyEv {
 
   /// Anfitrião: volta todos ao lobby para outra partida.
   static const newGame = 'new_game';
+
+  /// Anfitrião: começa um draft com estas regras (os packs vão em privado).
+  static const draftStart = 'draft_start';
 }
 
 /// Eventos da camada de sala que não são da mesa.
@@ -40,6 +44,7 @@ const _roomOnly = {
   LobbyEv.deckSelected,
   LobbyEv.ready,
   LobbyEv.newGame,
+  LobbyEv.draftStart,
 };
 
 class LobbyPlayer {
@@ -140,6 +145,15 @@ class NetworkGame extends ChangeNotifier {
 
   /// Criado quando o jogo começa.
   GameController? game;
+
+  /// Draft em curso (ou acabado): as regras, o meu lado e, no anfitrião,
+  /// quem o corre.
+  DraftConfig? draft;
+  DraftClient? draftClient;
+  DraftHost? draftHost;
+
+  /// Estou sentado neste draft?
+  bool get inDraft => draft?.seats.any((s) => s.seat == mySeat) ?? false;
   bool get started => game != null;
 
   RoomLink get link => session.link;
@@ -190,6 +204,12 @@ class NetworkGame extends ChangeNotifier {
         ]);
       case LobbyEv.ready:
         players[seat()]?.ready = p['value'] == true;
+      case LobbyEv.draftStart:
+        draft = DraftConfig.fromJson(p);
+        draftClient?.dispose();
+        // O lobby mostra o estado do draft (terminado ou não).
+        draftClient =
+            inDraft ? (DraftClient(link: link, config: draft!)..addListener(notifyListeners)) : null;
       case LobbyEv.newGame:
         game?.dispose();
         game = null;
@@ -415,6 +435,22 @@ class NetworkGame extends ChangeNotifier {
     }
   }
 
+  /// Anfitrião: começa um draft. Os packs são gerados aqui e só cada
+  /// jogador vê o seu.
+  void startDraft(DraftConfig config, List<List<List<DraftCard>>> packs) {
+    if (!isHost) return;
+    draftHost?.dispose();
+    draftHost = DraftHost(
+      link: link,
+      config: config,
+      packs: packs,
+      colorsOf: (o) => repo.get(o)?.colorMask ?? 0,
+    )..start();
+    // Os decks de draft jogam-se em Limited (40 cartas, vida 20).
+    configure(format: 'limited', life: 20);
+    link.submit(LobbyEv.draftStart, config.toJson());
+  }
+
   /// Anfitrião: volta todos ao lobby para outra partida.
   void newGame() {
     if (isHost) link.submit(LobbyEv.newGame, {});
@@ -447,6 +483,8 @@ class NetworkGame extends ChangeNotifier {
     _statusSub.cancel();
     _directSub.cancel();
     game?.dispose();
+    draftClient?.dispose();
+    draftHost?.dispose();
     super.dispose();
   }
 }

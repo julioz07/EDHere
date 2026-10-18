@@ -120,8 +120,7 @@ void main() {
     // O convidado joga uma carta; ambos a veem.
     final pc = guest.game!.zones(1).hand.first;
     guest.game!.playFromHand(pc);
-    await _until(
-        () => host.game!.state.cards.values.any((c) => c.owner == 1 && c.zone == Zone.battlefield),
+    await _until(() => host.game!.state.cards.values.any((c) => c.owner == 1 && c.zone == Zone.battlefield),
         'carta jogada');
     await _until(() => _public(host) == _public(guest), 'sincronia depois de jogar');
     expect(guest.game!.zones(1).hand.length, 6);

@@ -56,7 +56,8 @@ void main() {
     var foils = 0;
     for (var n = 0; n < 400; n++) {
       final pack = set.open(random);
-      expect(pack.length, inInclusiveRange(4, 5));
+      // Sempre cheio: uma carta repetida noutra folha é trocada por outra.
+      expect(pack.length, 5);
       final normal = pack.where((c) => !c.foil).map((c) => c.print.scryfallId).toList();
       expect(normal.toSet().length, normal.length, reason: 'sem cartas repetidas no mesmo booster');
       expect(pack.first.print.rarity, 'R', reason: 'a rara vem primeiro');

@@ -6,11 +6,13 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../app/theme.dart';
 import '../data/bracket.dart';
 import '../data/providers.dart';
+import '../game/draft.dart';
 import '../game/network_game.dart';
 import '../game/resume_store.dart';
 import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
+import 'limited/draft_screen.dart';
 import 'room_screen.dart';
 import 'table/table_screen.dart';
 import 'widgets/responsive.dart';
@@ -60,6 +62,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           .addPostFrameCallback((_) => _game.configure(format: widget.format!, life: widget.life ?? 40));
     }
     _game.addListener(_maybeShowTable);
+    _game.addListener(_maybeShowDraft);
     // A voltar a um jogo: a mesa já existe (o registo foi repetido) e abre logo.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTable());
   }
@@ -114,6 +117,21 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   }
 
   static const _lobbyRoute = 'lobby';
+  DraftClient? _draftShown;
+
+  /// Quando o anfitrião começa um draft, abre o ecrã do draft a quem joga.
+  void _maybeShowDraft() {
+    final client = _game.draftClient;
+    if (client == null || identical(client, _draftShown) || !mounted) return;
+    _draftShown = client;
+    _openDraft();
+  }
+
+  void _openDraft() {
+    final client = _game.draftClient;
+    if (client == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DraftScreen(client: client)));
+  }
 
   String get _closedReason {
     final l = _game.link;
@@ -137,6 +155,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   @override
   void dispose() {
     _game.removeListener(_maybeShowTable);
+    _game.removeListener(_maybeShowDraft);
     _game.dispose();
     WakelockPlus.disable();
     if (!_closing) widget.session.close();
@@ -354,7 +373,21 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   child: Text(me.ready ? 'Já não estou pronto' : 'Estou pronto'),
                 ),
               ],
+              if (g.draftClient != null) ...[
+                const SizedBox(height: 10),
+                FilledButton.tonalIcon(
+                  onPressed: _openDraft,
+                  icon: const Icon(Icons.style),
+                  label: Text(g.draftClient!.finished ? 'Ver o draft (terminado)' : 'Voltar ao draft'),
+                ),
+              ],
               if (g.isHost) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => showDraftSetup(context, ref, g),
+                  icon: const Icon(Icons.card_giftcard),
+                  label: Text(g.draft == null ? 'Fazer um draft' : 'Novo draft'),
+                ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
                   onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,

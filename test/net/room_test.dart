@@ -44,7 +44,9 @@ void main() {
     await host.start();
     final hostRec = Recorder(host);
 
-    final clients = [for (final n in ['Ana', 'Bruno', 'Carla']) await join(n)];
+    final clients = [
+      for (final n in ['Ana', 'Bruno', 'Carla']) await join(n)
+    ];
     final recs = [for (final c in clients) Recorder(c)];
     expect(clients.map((c) => c.mySeat), [1, 2, 3]);
 

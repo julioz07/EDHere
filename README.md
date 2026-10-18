@@ -23,7 +23,8 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - As minhas cartas: coleção indicativa (importação do ManaBox, Moxfield, Deckbox, Dragon Shield ou texto), filtro "só as que tenho" ao construir decks e, em cada carta, em que decks está.
 - Pacotes de imagens à escolha (Commander, Modern, tokens…), em resolução pequena ou normal.
 
-**Boosters (sealed e JumpStart)**
+**Boosters (sealed, draft e JumpStart)**
+- Draft na rede local: o anfitrião escolhe o set (ou um cubo), quantos boosters, tirar 1 ou 2 cartas de cada vez (Pick-Two), tempo por escolha e quantos lugares; os lugares vazios ficam com bots. Os packs passam à esquerda, à direita e à esquerda, e cada jogador só vê o seu. No fim cada um monta o deck de 40 e joga na mesma sala.
 - Sealed: abrir boosters de qualquer um dos ~170 sets com boosters (de 1993 até hoje), com a composição real de cada set, ou packs de um cubo próprio; montar um deck de 40 com a pool (o resto fica no sideboard).
 - JumpStart: escolher 2 de 570 pacotes temáticos vendo só o tema e a carta de destaque; os dois juntos fazem o deck de 40.
 - Os dados vêm dentro da app (funcionam sem internet); só as imagens se descarregam.

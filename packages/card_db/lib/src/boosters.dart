@@ -150,15 +150,17 @@ class SetBoosters {
       final sheet = _sheets[name];
       if (sheet == null) continue;
       final used = <int>{};
-      for (var i = 0; i < n; i++) {
+      var got = 0;
+      while (got < n) {
         final idx = _pick(sheet, used, random);
         if (idx == null) break;
         used.add(idx);
         final card = sheet.cards[idx];
-        // A mesma carta não sai duas vezes no booster (salvo foil/terreno).
+        // A mesma carta não sai duas vezes no booster (salvo foil): tira outra.
         if (!sheet.foil && taken.contains(card)) continue;
         taken.add(card);
         out.add(PackCard(prints[card], foil: sheet.foil));
+        got++;
       }
     }
     // Raras primeiro, comuns no fim, como quando se abre um booster.

@@ -109,7 +109,8 @@ class NoDataMessage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final data = ref.watch(cardDataProvider);
-    final busy = data.busy;
+    // A verificação diária de novidades não conta: só a descarga a sério.
+    final busy = data.phase == DataPhase.downloading || data.phase == DataPhase.importing;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),

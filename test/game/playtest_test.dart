@@ -17,8 +17,13 @@ void main() {
     await imp.importLines(Stream.fromIterable([
       for (var i = 0; i < 10; i++)
         jsonEncode({
-          'id': 'p$i', 'oracle_id': 'o$i', 'name': 'C$i', 'layout': 'normal', 'type_line': 'Creature',
-          'legalities': {'commander': 'legal'}, 'games': ['paper'],
+          'id': 'p$i',
+          'oracle_id': 'o$i',
+          'name': 'C$i',
+          'layout': 'normal',
+          'type_line': 'Creature',
+          'legalities': {'commander': 'legal'},
+          'games': ['paper'],
         }),
     ]));
     imp.finish({});

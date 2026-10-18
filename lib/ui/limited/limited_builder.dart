@@ -14,10 +14,13 @@ const _basics = {'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G
 /// carta para a pôr ou tirar do deck; terrenos básicos à vontade. O que fica
 /// de fora vai para o sideboard do deck guardado.
 class LimitedBuilderScreen extends ConsumerStatefulWidget {
-  const LimitedBuilderScreen({super.key, required this.pool, required this.title});
+  const LimitedBuilderScreen({super.key, required this.pool, required this.title, this.onSaved});
 
   final List<PoolCard> pool;
   final String title;
+
+  /// Depois de guardar (no draft em rede volta à sala). Sem isto, abre o deck.
+  final void Function(BuildContext context, db.Deck deck)? onSaved;
 
   @override
   ConsumerState<LimitedBuilderScreen> createState() => _LimitedBuilderScreenState();
@@ -103,6 +106,12 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           notes: 'O sideboard tem o resto da pool.',
         ));
     if (!mounted) return;
+    final done = widget.onSaved;
+    if (done != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${deck.name}" guardado.')));
+      done(context, deck);
+      return;
+    }
     await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
       builder: (_) => DeckEditorScreen(deckId: deck.id!),
     ));
