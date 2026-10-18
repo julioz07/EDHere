@@ -668,7 +668,13 @@ class _PlayersStrip extends StatelessWidget {
                                 style: theme.textTheme.labelMedium
                                     ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
                           ]),
-                          Text('✋${p.handCount}  📚${p.libraryCount}', style: theme.textTheme.labelSmall),
+                          // Cartas na mão e no grimório.
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.back_hand_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                            Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
+                            Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                            Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
+                          ]),
                         ],
                       ),
                       const SizedBox(width: 10),
