@@ -2,7 +2,10 @@ import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/booster_service.dart';
+import '../../data/image_service.dart';
 import '../../data/providers.dart';
+import '../cards/card_detail_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/responsive.dart';
 
@@ -58,6 +61,7 @@ Color rarityColor(String r) => switch (r) {
     };
 
 /// Carta de um booster numa grelha: arte, contorno da raridade e foil.
+/// Toque longo abre a carta em grande.
 class PoolCardView extends StatelessWidget {
   const PoolCardView({super.key, required this.card, this.onTap, this.dimmed = false, this.qty = 1});
 
@@ -71,6 +75,9 @@ class PoolCardView extends StatelessWidget {
     final border = rarityColor(card.print.rarity);
     return GestureDetector(
       onTap: onTap,
+      onLongPress: () => Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => CardDetailScreen(card: card.shown),
+      )),
       child: Opacity(
         opacity: dimmed ? 0.35 : 1,
         child: Container(
@@ -150,3 +157,92 @@ class PoolGrid extends StatelessWidget {
 }
 
 String shortDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+
+/// Ordem para mostrar um booster aberto: comuns primeiro, a rara no fim
+/// (como quando se abre um booster a sério).
+int revealRank(db.PackCard c) => switch (c.print.rarity) {
+      'M' => 4,
+      'R' => 3,
+      'S' => 3,
+      'U' => 1,
+      _ => c.foil ? 2 : 0,
+    };
+
+/// Descarregar antes as imagens de um set (para abrir boosters sem rede).
+class SetImagesTile extends ConsumerStatefulWidget {
+  const SetImagesTile({super.key, required this.set});
+  final db.BoosterSetInfo set;
+
+  @override
+  ConsumerState<SetImagesTile> createState() => _SetImagesTileState();
+}
+
+class _SetImagesTileState extends ConsumerState<SetImagesTile> {
+  List<db.ImageRef>? _refs;
+  String? _loadedFor;
+
+  Future<void> _load() async {
+    final code = widget.set.code;
+    _loadedFor = code;
+    final boosters = await ref.read(boosterServiceProvider).set(widget.set);
+    final repo = ref.read(cardRepoProvider);
+    if (repo == null || !mounted || _loadedFor != code) return;
+    final seen = <String>{};
+    final refs = <db.ImageRef>[];
+    for (final p in boosters.prints) {
+      final base = repo.get(p.oracleId);
+      if (base == null) continue;
+      final shown =
+          p.scryfallId.isEmpty || p.scryfallId == base.printId ? base : base.withPrint(p.printInfo(base));
+      for (final r in db.ImageRef.allOf(shown)) {
+        if (seen.add(r.key)) refs.add(r);
+      }
+    }
+    setState(() => _refs = refs);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loadedFor != widget.set.code) {
+      _refs = null;
+      _load();
+    }
+    final images = ref.watch(imagesProvider);
+    final refs = _refs;
+    final job = images.job;
+    final running = job != null && job.pack.id == 'set_${widget.set.code}';
+    final missing = refs?.where((r) => !images.has('small', r.key)).length;
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(top: 8),
+      child: ListTile(
+        leading: const Icon(Icons.download_for_offline_outlined),
+        title: Text(refs == null
+            ? 'Imagens do set…'
+            : missing == 0
+                ? 'Imagens do set já estão offline'
+                : 'Imagens offline: ${refs.length - missing!} de ${refs.length}'),
+        subtitle: running
+            ? LinearProgressIndicator(value: job.total == 0 ? null : job.done / job.total)
+            : Text(
+                missing == null || missing == 0
+                    ? 'Os boosters abrem com arte mesmo sem rede.'
+                    : 'Descarrega agora (cerca de ${(missing * avgImageBytes['small']! / 1048576).ceil()} MB) '
+                        'para abrir os boosters sem rede.',
+                style: theme.textTheme.bodySmall),
+        trailing: refs == null || missing == 0 || running
+            ? null
+            : IconButton(
+                tooltip: 'Descarregar',
+                icon: const Icon(Icons.download),
+                onPressed: job != null
+                    ? null
+                    : () => images.download(
+                        ImagePack('set_${widget.set.code}', widget.set.name, 'Imagens do set', null),
+                        'small',
+                        refs),
+              ),
+      ),
+    );
+  }
+}

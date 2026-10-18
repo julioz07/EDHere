@@ -8,6 +8,7 @@ import '../game/solo_save.dart';
 import 'app_paths.dart';
 import 'card_data_service.dart';
 import 'image_service.dart';
+import 'limited_builds.dart';
 import 'print_service.dart';
 
 /// Substituídos em `main()` depois de inicializados.
@@ -65,3 +66,7 @@ final resumeProvider = ChangeNotifierProvider<ResumeStore>((ref) => ResumeStore(
 /// Jogo solo gravado para continuar depois.
 final soloSaveProvider = ChangeNotifierProvider<SoloSaveStore>(
     (ref) => SoloSaveStore('${ref.watch(pathsProvider).root}/solo_game.json'));
+
+/// Decks de sealed e draft por montar.
+final limitedBuildsProvider = ChangeNotifierProvider<LimitedBuildStore>(
+    (ref) => LimitedBuildStore('${ref.watch(pathsProvider).root}/limited_builds.json'));

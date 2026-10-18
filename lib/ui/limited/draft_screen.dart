@@ -10,6 +10,7 @@ import '../../data/providers.dart';
 import '../../game/draft.dart';
 import '../../game/network_game.dart';
 import '../cards/card_detail_screen.dart';
+import '../widgets/responsive.dart';
 import '../widgets/set_symbol.dart';
 import 'limited_builder.dart';
 import 'limited_common.dart';
@@ -115,6 +116,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                 items: [for (final d in cubes) DropdownMenuItem(value: d.id, child: Text(d.name))],
                 onChanged: (v) => set_(() => cubeId = v),
               ),
+            if (!cube && set != null) SetImagesTile(set: set!),
             const SizedBox(height: 8),
             SegmentedButton<int>(
               segments: const [
@@ -222,8 +224,11 @@ Future<void> _start(WidgetRef ref, NetworkGame game,
 
 /// O ecrã do draft: o pack à frente, as escolhas e quem está à espera.
 class DraftScreen extends ConsumerStatefulWidget {
-  const DraftScreen({super.key, required this.client});
+  const DraftScreen({super.key, required this.client, this.onDeck});
   final DraftClient client;
+
+  /// Deck montado no fim do draft (a sala escolhe-o logo).
+  final void Function(db.Deck deck)? onDeck;
 
   @override
   ConsumerState<DraftScreen> createState() => _DraftScreenState();
@@ -312,8 +317,11 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
         pool: pool,
         title: 'Draft · ${c.config.title}',
         commander: c.config.commander,
-        // Depois de guardar, volta à sala para escolher o deck e jogar.
-        onSaved: (ctx, _) => Navigator.of(ctx).pop(),
+        // Depois de guardar, volta à sala com o deck já escolhido.
+        onSaved: (ctx, deck) {
+          Navigator.of(ctx).pop();
+          widget.onDeck?.call(deck);
+        },
       ),
     ));
   }
@@ -364,13 +372,31 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                 child: Chip(
                   visualDensity: VisualDensity.compact,
                   avatar: Icon(cfg.seats[i].seat == null ? Icons.smart_toy_outlined : Icons.person, size: 16),
-                  label: Text('${cfg.seats[i].name}'
-                      '${i < c.seats.length && c.seats[i].waiting > 0 ? ' · ${c.seats[i].waiting}' : ''}'),
+                  label: Tooltip(
+                    message: i < c.seats.length
+                        ? '${c.seats[i].waiting} ${c.seats[i].waiting == 1 ? 'pack à espera' : 'packs à espera'}'
+                        : '',
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(cfg.seats[i].name),
+                      if (i < c.seats.length && c.seats[i].waiting > 0) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.inventory_2_outlined, size: 14),
+                        Text(' ${c.seats[i].waiting}'),
+                      ],
+                    ]),
+                  ),
                   backgroundColor: i < c.seats.length && c.seats[i].waiting > 1
                       ? theme.colorScheme.tertiaryContainer
                       : null,
                 ),
               ),
+            Center(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.inventory_2_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                Text(' = packs à espera',
+                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ]),
+            ),
           ]),
         ),
         Expanded(
@@ -412,7 +438,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                               style: theme.textTheme.titleSmall),
                         ]),
                       ),
-                      PoolGrid(target: 110, children: [
+                      PoolGrid(target: isWide(context) ? 170 : 110, children: [
                         for (var i = 0; i < _packCards.length && i < c.pack!.length; i++)
                           GestureDetector(
                             onLongPress: () => Navigator.of(context).push(MaterialPageRoute<void>(

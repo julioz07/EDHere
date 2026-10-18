@@ -130,7 +130,15 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   void _openDraft() {
     final client = _game.draftClient;
     if (client == null) return;
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DraftScreen(client: client)));
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => DraftScreen(
+        client: client,
+        // O deck montado no fim do draft fica logo escolhido.
+        onDeck: (deck) {
+          if (mounted && !(_game.me?.ready ?? false)) _useDeck(deck);
+        },
+      ),
+    ));
   }
 
   String get _closedReason {
@@ -164,7 +172,6 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   Future<void> _pickDeck() async {
     final decks = ref.read(decksProvider).decks;
-    final repo = ref.read(cardRepoProvider)!;
     final format = GameFormat.byId(_game.format);
     final chosen = await showModalBottomSheet<Deck>(
       context: context,
@@ -185,6 +192,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       ),
     );
     if (chosen == null) return;
+    _useDeck(chosen);
+  }
+
+  /// Escolhe este deck para a partida (avisa se não cumpre o formato).
+  void _useDeck(Deck chosen) {
+    final repo = ref.read(cardRepoProvider)!;
+    final format = GameFormat.byId(_game.format);
     final cards = repo.getMany(chosen.entries.map((e) => e.oracleId));
     final issues = validateDeck(chosen, format, cards, repo.legalityIn(format.legalityKey ?? '', cards.keys));
     final legal = issues.where((i) => i.level == IssueLevel.error).isEmpty;

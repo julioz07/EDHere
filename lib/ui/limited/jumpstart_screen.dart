@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../decks/deck_editor_screen.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
+import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import '../widgets/set_symbol.dart';
 import 'limited_common.dart';
@@ -44,7 +45,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
   String? _set; // null = todos
   final List<db.JumpstartPacket> _chosen = [];
   List<db.JumpstartPacket> _offer = const [];
-  List<PoolCard>? _revealed;
+  List<List<PoolCard>>? _revealed;
 
   @override
   void initState() {
@@ -76,6 +77,17 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
         if (repo.get(p.featured.oracleId) case final base?) base.withPrint(p.featured.printInfo(base)),
     ];
     ref.read(imagesProvider).ensure(featured);
+  }
+
+  /// Cores do pacote (pelas cartas que não são terrenos), em WUBRG.
+  List<String> _colorsOf(db.JumpstartPacket p) {
+    final repo = ref.read(cardRepoProvider);
+    var mask = 0;
+    for (final (print, _) in p.cards) {
+      final c = repo?.get(print.oracleId);
+      if (c != null && !c.isLand) mask |= c.colorMask;
+    }
+    return db.ManaColors.lettersOf(mask);
   }
 
   void _pick(db.JumpstartPacket p) {
@@ -144,33 +156,52 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
               child: ListView(padding: const EdgeInsets.all(16), children: [
                 Text(
                   _chosen.isEmpty
-                      ? 'Escolhe o primeiro pacote. Só vês o tema e a carta de destaque; as outras 19 '
-                          'cartas aparecem no fim.'
+                      ? 'Escolhe o primeiro pacote. Só vês o tema, as cores e a carta de destaque; as outras '
+                          '19 cartas aparecem no fim.'
                       : 'Primeiro: ${_chosen.first.theme}. Agora escolhe o segundo pacote.',
                   style: theme.textTheme.bodyMedium,
                 ),
-                const SizedBox(height: 12),
-                if (_chosen.isEmpty)
-                  Wrap(spacing: 6, runSpacing: 6, children: [
-                    ChoiceChip(
-                      label: Text('Todos (${_all.length})'),
-                      selected: _set == null,
-                      onSelected: (_) {
-                        setState(() => _set = null);
+                if (_chosen.isNotEmpty)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+                      onPressed: () {
+                        setState(_chosen.clear);
                         _deal();
                       },
+                      icon: const Icon(Icons.undo, size: 18),
+                      label: const Text('Trocar o primeiro'),
                     ),
-                    for (final s in sets)
+                  ),
+                const SizedBox(height: 12),
+                if (_chosen.isEmpty)
+                  SizedBox(
+                    height: 44,
+                    child: ListView(scrollDirection: Axis.horizontal, children: [
                       ChoiceChip(
-                        avatar: SetSymbol(s, size: 16),
-                        label: Text(_jumpstartNames[s] ?? s),
-                        selected: _set == s,
+                        label: Text('Todos (${_all.length})'),
+                        selected: _set == null,
                         onSelected: (_) {
-                          setState(() => _set = s);
+                          setState(() => _set = null);
                           _deal();
                         },
                       ),
-                  ]),
+                      for (final s in sets)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: ChoiceChip(
+                            avatar: SetSymbol(s, size: 16),
+                            label: Text(_jumpstartNames[s] ?? s),
+                            selected: _set == s,
+                            onSelected: (_) {
+                              setState(() => _set = s);
+                              _deal();
+                            },
+                          ),
+                        ),
+                    ]),
+                  ),
                 const SizedBox(height: 16),
                 LayoutBuilder(
                   builder: (context, box) => Wrap(
@@ -181,7 +212,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                       for (final p in _offer)
                         SizedBox(
                           width: ((box.maxWidth - 24) / 3).clamp(100.0, 260.0),
-                          child: _PacketCard(packet: p, onTap: () => _pick(p)),
+                          child: _PacketCard(packet: p, colors: _colorsOf(p), onTap: () => _pick(p)),
                         ),
                     ],
                   ),
@@ -202,30 +233,44 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
 
   Widget _reveal(BuildContext context) {
     final theme = Theme.of(context);
-    final cards = _revealed ??= resolvePool(ref, [for (final p in _chosen) ..._packetCards(p)]);
-    cards.sort((a, b) {
+    final packets = _revealed ??= [for (final p in _chosen) resolvePool(ref, _packetCards(p))];
+    final cards = [for (final p in packets) ...p];
+    int order(PoolCard a, PoolCard b) {
       final la = a.base.isLand ? 1 : 0, lb = b.base.isLand ? 1 : 0;
       if (la != lb) return la.compareTo(lb);
       return a.base.mv.compareTo(b.base.mv);
-    });
-    // Junta as cópias iguais numa só (com ×N).
-    final grouped = <String, (PoolCard, int)>{};
-    for (final c in cards) {
-      final k = '${c.base.oracleId}|${c.printId}';
-      grouped[k] = (grouped[k]?.$1 ?? c, (grouped[k]?.$2 ?? 0) + 1);
     }
+
+    // Cada pacote com as suas cartas; cópias iguais numa só (com ×N).
+    List<(PoolCard, int)> grouped(List<PoolCard> list) {
+      final g = <String, (PoolCard, int)>{};
+      for (final c in [...list]..sort(order)) {
+        final k = '${c.base.oracleId}|${c.printId}';
+        g[k] = (g[k]?.$1 ?? c, (g[k]?.$2 ?? 0) + 1);
+      }
+      return g.values.toList();
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text('${_chosen.map((p) => p.theme).join(' + ')} · ${cards.length} cartas')),
       body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
-        for (final p in _chosen)
+        for (var i = 0; i < _chosen.length; i++) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text('${p.name} · ${_jumpstartNames[p.set] ?? p.set}', style: theme.textTheme.titleSmall),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(children: [
+              SetSymbol(_chosen[i].set, rarity: 'R', size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('${_chosen[i].name} · ${_jumpstartNames[_chosen[i].set] ?? _chosen[i].set}',
+                    style: theme.textTheme.titleMedium),
+              ),
+              for (final c in _colorsOf(_chosen[i])) ManaSymbol(c, size: 18),
+            ]),
           ),
-        const SizedBox(height: 8),
-        PoolGrid(target: 110, children: [
-          for (final (c, n) in grouped.values) PoolCardView(card: c, qty: n),
-        ]),
+          PoolGrid(target: 110, children: [
+            for (final (c, n) in grouped(packets[i])) PoolCardView(card: c, qty: n),
+          ]),
+        ],
       ]),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -261,8 +306,9 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
 
 /// Um pacote fechado: tema, produto e a carta de destaque.
 class _PacketCard extends ConsumerWidget {
-  const _PacketCard({required this.packet, required this.onTap});
+  const _PacketCard({required this.packet, required this.colors, required this.onTap});
   final db.JumpstartPacket packet;
+  final List<String> colors;
   final VoidCallback onTap;
 
   @override
@@ -289,10 +335,22 @@ class _PacketCard extends ConsumerWidget {
                     style: theme.textTheme.bodySmall, overflow: TextOverflow.ellipsis),
               ),
             ]),
+            if (colors.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                for (final c in colors)
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 1), child: ManaSymbol(c, size: 18)),
+              ]),
+            ],
             const SizedBox(height: 8),
             if (shown != null) CardImage(shown, radius: 8) else const CardBack(),
             const SizedBox(height: 8),
-            FilledButton.tonal(onPressed: onTap, child: const Text('Escolher')),
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 8)),
+              onPressed: onTap,
+              child: const FittedBox(child: Text('Escolher')),
+            ),
           ]),
         ),
       ),

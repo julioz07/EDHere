@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/booster_service.dart';
+import '../../data/limited_builds.dart';
 import '../../data/providers.dart';
 import '../widgets/responsive.dart';
 import '../widgets/set_symbol.dart';
@@ -168,7 +169,9 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
                         if (s != null) setState(() => _set = s);
                       },
               ),
-            )
+            ),
+          if (!_cube && _set != null)
+            SetImagesTile(set: _set!)
           else if (cubes.isEmpty)
             const Card(
               child: ListTile(
@@ -270,7 +273,11 @@ class PackOpeningScreen extends ConsumerStatefulWidget {
 }
 
 class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
-  late final List<List<PoolCard>> _packs = [for (final p in widget.packs) resolvePool(ref, p)];
+  // Comuns primeiro e a rara no fim, como num booster a sério.
+  late final List<List<PoolCard>> _packs = [
+    for (final p in widget.packs)
+      resolvePool(ref, [...p]..sort((a, b) => revealRank(a).compareTo(revealRank(b)))),
+  ];
   late final int _missing =
       widget.packs.fold(0, (n, p) => n + p.length) - _packs.fold(0, (n, p) => n + p.length);
   int _opened = 1;
@@ -281,63 +288,94 @@ class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
         builder: (_) => LimitedBuilderScreen(pool: _pool, title: 'Sealed · ${widget.title}'),
       ));
 
+  /// Sair antes de montar: a pool pode ficar guardada para depois.
+  Future<void> _leave() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair dos boosters?'),
+        content: const Text('Podes guardar a pool e montar o deck depois (Jogar → Decks por montar).'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: const Text('Ficar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: const Text('Deitar fora')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: const Text('Guardar a pool')),
+        ],
+      ),
+    );
+    if (!mounted || choice == null || choice == 'stay') return;
+    if (choice == 'keep') {
+      ref.read(limitedBuildsProvider).put(LimitedBuild(
+            id: LimitedBuildStore.newId(),
+            title: 'Sealed · ${widget.title}',
+            pool: [for (final c in _pool) c.pack],
+          ));
+    }
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final all = _opened >= _packs.length;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
-        if (_missing > 0)
-          Card(
-            margin: const EdgeInsets.all(12),
-            color: theme.colorScheme.errorContainer,
-            child: ListTile(
-              leading: const Icon(Icons.update),
-              title: Text('$_missing cartas destes boosters não estão na tua base de cartas'),
-              subtitle: const Text('O set é mais recente do que a base. Atualiza-a em Definições → Dados.'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.title)),
+        body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
+          if (_missing > 0)
+            Card(
+              margin: const EdgeInsets.all(12),
+              color: theme.colorScheme.errorContainer,
+              child: ListTile(
+                leading: const Icon(Icons.update),
+                title: Text('$_missing cartas destes boosters não estão na tua base de cartas'),
+                subtitle: const Text('O set é mais recente do que a base. Atualiza-a em Definições → Dados.'),
+              ),
             ),
-          ),
-        for (var i = _opened - 1; i >= 0; i--) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          for (var i = _opened - 1; i >= 0; i--) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(children: [
+                if (widget.setCode != null) ...[
+                  SetSymbol(widget.setCode!, rarity: 'R', size: 22),
+                  const SizedBox(width: 8),
+                ],
+                Text('Booster ${i + 1}', style: theme.textTheme.titleMedium),
+              ]),
+            ),
+            PoolGrid(children: [for (final c in _packs[i]) PoolCardView(card: c)]),
+          ],
+        ]),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
             child: Row(children: [
-              if (widget.setCode != null) ...[
-                SetSymbol(widget.setCode!, rarity: 'R', size: 22),
+              Expanded(
+                child: Text(all ? '${_pool.length} cartas na pool' : 'Booster $_opened de ${_packs.length}',
+                    style: theme.textTheme.titleSmall),
+              ),
+              if (!all) ...[
+                TextButton(
+                    style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                    onPressed: () => setState(() => _opened = _packs.length),
+                    child: const Text('Abrir todos')),
                 const SizedBox(width: 8),
-              ],
-              Text('Booster ${i + 1}', style: theme.textTheme.titleMedium),
+                FilledButton(
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                    onPressed: () => setState(() => _opened++),
+                    child: const Text('Abrir o próximo')),
+              ] else
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                  onPressed: _build,
+                  icon: const Icon(Icons.construction),
+                  label: const Text('Montar o deck'),
+                ),
             ]),
           ),
-          PoolGrid(children: [for (final c in _packs[i]) PoolCardView(card: c)]),
-        ],
-      ]),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(children: [
-            Expanded(
-              child: Text(all ? '${_pool.length} cartas na pool' : 'Booster $_opened de ${_packs.length}',
-                  style: theme.textTheme.titleSmall),
-            ),
-            if (!all) ...[
-              TextButton(
-                  style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
-                  onPressed: () => setState(() => _opened = _packs.length),
-                  child: const Text('Abrir todos')),
-              const SizedBox(width: 8),
-              FilledButton(
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-                  onPressed: () => setState(() => _opened++),
-                  child: const Text('Abrir o próximo')),
-            ] else
-              FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
-                onPressed: _build,
-                icon: const Icon(Icons.construction),
-                label: const Text('Montar o deck'),
-              ),
-          ]),
         ),
       ),
     );

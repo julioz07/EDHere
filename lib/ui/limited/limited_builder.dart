@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/limited_builds.dart';
 import '../../data/providers.dart';
 import '../decks/deck_editor_screen.dart';
 import '../widgets/mana.dart';
@@ -10,19 +13,34 @@ import 'limited_common.dart';
 
 const _basics = {'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest'};
 
+/// Ordem da pool.
+enum _Sort { color, cost, type }
+
 /// Montar um deck de 40 a partir de uma pool (sealed ou draft): toca numa
 /// carta para a pôr ou tirar do deck; terrenos básicos à vontade. O que fica
 /// de fora vai para o sideboard do deck guardado.
 ///
 /// Em [commander] (commander draft) o deck é de 60 com o comandante, que se
 /// escolhe entre as lendas da pool (ou The Prismatic Piper / Faceless One).
+///
+/// O que se vai montando fica guardado (Jogar → Decks por montar), para
+/// continuar depois ou se a app fechar.
 class LimitedBuilderScreen extends ConsumerStatefulWidget {
-  const LimitedBuilderScreen(
-      {super.key, required this.pool, required this.title, this.onSaved, this.commander = false});
+  const LimitedBuilderScreen({
+    super.key,
+    required this.pool,
+    required this.title,
+    this.onSaved,
+    this.commander = false,
+    this.restore,
+  });
 
   final List<PoolCard> pool;
   final String title;
   final bool commander;
+
+  /// Continuar um deck que ficou por montar.
+  final LimitedBuild? restore;
 
   /// Depois de guardar (no draft em rede volta à sala). Sem isto, abre o deck.
   final void Function(BuildContext context, db.Deck deck)? onSaved;
@@ -35,16 +53,72 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
   final Set<int> _deck = {};
   final Map<String, int> _lands = {for (final c in _basics.keys) c: 0};
   final Set<String> _colors = {};
+  _Sort _sort = _Sort.color;
+  late final String _id = widget.restore?.id ?? LimitedBuildStore.newId();
+  late final LimitedBuildStore _builds = ref.read(limitedBuildsProvider);
+  Timer? _persist;
 
   /// Comandantes: da pool (índice) ou os que o formato dá sempre.
   final List<int> _cmdPool = [];
   final List<PoolCard> _cmdExtra = [];
 
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.restore;
+    // Só repõe as escolhas se a pool for a mesma (a base de cartas pode ter mudado).
+    if (r != null && r.pool.length == widget.pool.length) {
+      _deck.addAll(r.deck.where((i) => i < widget.pool.length));
+      _lands.addAll(r.lands);
+      _cmdPool.addAll(r.cmdPool.where((i) => i < widget.pool.length));
+      final repo = ref.read(cardRepoProvider);
+      for (final id in r.cmdExtra) {
+        if (repo?.get(id) case final c?) _cmdExtra.add(_extraCard(c));
+      }
+    }
+    // Fica logo guardado: a pool não se perde se a app fechar.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _write());
+  }
+
+  @override
+  void dispose() {
+    _persist?.cancel();
+    super.dispose();
+  }
+
+  PoolCard _extraCard(db.Card c) => PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c);
+
+  /// setState e guarda (um pouco depois, para não escrever a cada toque).
+  void _set(VoidCallback fn) {
+    setState(fn);
+    _persist?.cancel();
+    _persist = Timer(const Duration(milliseconds: 600), _write);
+  }
+
+  void _write() {
+    if (!mounted) return;
+    _builds.put(LimitedBuild(
+      id: _id,
+      title: widget.title,
+      commander: widget.commander,
+      pool: [for (final c in widget.pool) c.pack],
+      deck: {..._deck},
+      lands: {..._lands},
+      cmdPool: [..._cmdPool],
+      cmdExtra: [for (final c in _cmdExtra) c.base.oracleId],
+    ));
+  }
+
   List<PoolCard> get _commanders => [for (final i in _cmdPool) widget.pool[i], ..._cmdExtra];
   int get _target => widget.commander ? 60 : 40;
-  int get _spells => _deck.length;
-  int get _landCount => _lands.values.fold(0, (a, b) => a + b);
-  int get _total => _spells + _landCount + _commanders.length;
+
+  /// Terrenos recomendados: 17 em 40, 24 em 60.
+  int get _recommendedLands => widget.commander ? 24 : 17;
+  int get _basicCount => _lands.values.fold(0, (a, b) => a + b);
+  int get _poolLands => _deck.where((i) => widget.pool[i].base.isLand).length;
+  int get _nonLands => _deck.length - _poolLands;
+  int get _landTotal => _poolLands + _basicCount;
+  int get _total => _deck.length + _basicCount + _commanders.length;
 
   /// Identidade de cor dos comandantes; null = sem restrição (sem comandante,
   /// ou The Prismatic Piper / Faceless One, que ficam de uma cor à escolha).
@@ -60,12 +134,35 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     return id == null || c.identityMask & ~id == 0;
   }
 
-  List<int> _sorted(Iterable<int> idx) {
+  /// Grupo de cor: W, U, B, R, G, multicor, incolor, terrenos.
+  int _colorRank(db.Card c) {
+    if (c.isLand) return 7;
+    final letters = db.ManaColors.lettersOf(c.colorMask);
+    if (letters.isEmpty) return 6;
+    if (letters.length > 1) return 5;
+    return 'WUBRG'.indexOf(letters.first);
+  }
+
+  int _typeRank(db.Card c) {
+    final t = c.frontType;
+    if (c.isLand) return 4;
+    if (t.contains('Creature')) return 0;
+    if (t.contains('Instant') || t.contains('Sorcery')) return 1;
+    if (t.contains('Artifact') || t.contains('Enchantment')) return 2;
+    return 3;
+  }
+
+  List<int> _sorted(Iterable<int> idx, {_Sort? by}) {
+    final mode = by ?? _sort;
     final list = idx.toList();
     list.sort((a, b) {
       final ca = widget.pool[a].base, cb = widget.pool[b].base;
-      final la = ca.isLand ? 1 : 0, lb = cb.isLand ? 1 : 0;
-      if (la != lb) return la.compareTo(lb);
+      final group = switch (mode) {
+        _Sort.color => _colorRank(ca).compareTo(_colorRank(cb)),
+        _Sort.type => _typeRank(ca).compareTo(_typeRank(cb)),
+        _Sort.cost => (ca.isLand ? 1 : 0).compareTo(cb.isLand ? 1 : 0),
+      };
+      if (group != 0) return group;
       final mv = ca.mv.compareTo(cb.mv);
       return mv != 0 ? mv : ca.name.compareTo(cb.name);
     });
@@ -79,7 +176,8 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     return letters.every(_colors.contains);
   }
 
-  /// 17 terrenos repartidos pelos símbolos de mana das cartas do deck.
+  /// Completa o deck com terrenos básicos, repartidos pelos símbolos de mana
+  /// das cartas do deck.
   void _suggestLands() {
     final pips = <String, int>{for (final c in _basics.keys) c: 0};
     for (final i in _deck) {
@@ -87,15 +185,27 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
         pips[m.group(1)!] = pips[m.group(1)!]! + 1;
       }
     }
+    // Sem símbolos de cor no deck (só artefactos, por exemplo): reparte pelas
+    // cores das cartas e, se nem isso houver, pelas cores da pool toda.
+    void byColors(Iterable<int> idx) {
+      for (final i in idx) {
+        for (final l in db.ManaColors.lettersOf(widget.pool[i].base.colorMask)) {
+          pips[l] = pips[l]! + 1;
+        }
+      }
+    }
+
+    if (pips.values.every((n) => n == 0)) byColors(_deck);
+    if (pips.values.every((n) => n == 0)) byColors(Iterable<int>.generate(widget.pool.length));
     final total = pips.values.fold(0, (a, b) => a + b);
-    final target = (_target - _spells - _commanders.length).clamp(0, _target);
-    setState(() {
+    final target = (_target - _deck.length - _commanders.length).clamp(0, _target);
+    _set(() {
       for (final c in _basics.keys) {
         _lands[c] = total == 0 ? 0 : (target * pips[c]! / total).floor();
       }
       // O que sobra do arredondamento vai para a cor com mais símbolos.
       final best = pips.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-      if (total > 0) _lands[best] = _lands[best]! + target - _landCount;
+      if (total > 0) _lands[best] = _lands[best]! + target - _basicCount;
     });
   }
 
@@ -134,6 +244,8 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           entries: entries,
           notes: 'O sideboard tem o resto da pool.',
         ));
+    _persist?.cancel();
+    _builds.remove(_id);
     if (!mounted) return;
     final done = widget.onSaved;
     if (done != null) {
@@ -144,6 +256,44 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
       builder: (_) => DeckEditorScreen(deckId: deck.id!),
     ));
+  }
+
+  /// Sair sem guardar o deck: fica por montar (ou deita-se fora).
+  Future<void> _leave() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair sem guardar o deck?'),
+        content: const Text('A pool e o que já escolheste ficam em Jogar → Decks por montar, para acabares '
+            'depois.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: const Text('Ficar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: const Text('Deitar fora')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: const Text('Sair')),
+        ],
+      ),
+    );
+    if (!mounted || choice == null || choice == 'stay') return;
+    _persist?.cancel();
+    if (choice == 'drop') {
+      final sure = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Deitar fora a pool?'),
+          content: Text('As ${widget.pool.length} cartas desta pool perdem-se.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Deitar fora')),
+          ],
+        ),
+      );
+      if (sure != true || !mounted) return;
+      _builds.remove(_id);
+    } else {
+      _write();
+      _builds.refresh();
+    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   /// Escolher um ou dois comandantes. Dois se forem parceiros (Partner,
@@ -159,10 +309,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     for (final name in db.draftWildCommanders) {
       final c = repo.findByName(name);
       if (c == null || seen.contains(c.oracleId)) continue;
-      candidates.add((
-        index: null,
-        card: PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c),
-      ));
+      candidates.add((index: null, card: _extraCard(c)));
     }
     final picked = <int>{
       for (var k = 0; k < candidates.length; k++)
@@ -254,7 +401,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       }),
     );
     if (ok != true || !mounted) return;
-    setState(() {
+    _set(() {
       _cmdPool.clear();
       _cmdExtra.clear();
       for (final k in picked) {
@@ -274,11 +421,13 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final deck = _sorted(_deck);
+    final deck = _sorted(_deck, by: _Sort.cost);
+    // Os básicos que saem nos boosters não aparecem: estão nos contadores.
     final pool = _sorted([
       for (var i = 0; i < widget.pool.length; i++)
         if (!_deck.contains(i) &&
             !_cmdPool.contains(i) &&
+            !widget.pool[i].base.isBasicLand &&
             _matchesColors(widget.pool[i].base) &&
             _inIdentity(widget.pool[i].base))
           i,
@@ -287,10 +436,20 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
         widget.pool.indexed.where((e) => !_cmdPool.contains(e.$1) && !_inIdentity(e.$2.base)).length;
     final commanders = _commanders;
     final curve = List.filled(7, 0);
+    var creatures = 0;
     for (final i in _deck) {
       final c = widget.pool[i].base;
       if (!c.isLand) curve[c.mv.round().clamp(0, 6)]++;
+      if (c.frontType.contains('Creature')) creatures++;
     }
+    final lands = _landTotal;
+    final landNote = lands == 0
+        ? null
+        : lands > _recommendedLands + 2
+            ? 'Tens $lands terrenos; o normal é cerca de $_recommendedLands. Põe mais cartas da pool.'
+            : lands < _recommendedLands - 3 && _total >= _target
+                ? 'Só $lands terrenos; o normal é cerca de $_recommendedLands.'
+                : null;
 
     final deckSection = [
       if (widget.commander)
@@ -321,9 +480,9 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       if (commanders.isNotEmpty)
         PoolGrid(target: 96, children: [for (final c in commanders) PoolCardView(card: c)]),
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Row(children: [
-          Text('Deck ($_spells)', style: theme.textTheme.titleMedium),
+          Text('Deck (${_deck.length})', style: theme.textTheme.titleMedium),
           const Spacer(),
           for (var i = 1; i < 7; i++)
             Padding(
@@ -332,21 +491,25 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
             ),
         ]),
       ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+        child: Text(
+            '$creatures criaturas · ${_nonLands - creatures} outras · $_poolLands terrenos da pool',
+            style: theme.textTheme.bodySmall),
+      ),
       if (deck.isEmpty)
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('Toca nas cartas da pool para as pôr no deck.'),
+          child: Text('Toca nas cartas da pool para as pôr no deck. Toque longo para ver a carta.'),
         )
       else
         PoolGrid(target: 96, children: [
-          for (final i in deck)
-            PoolCardView(card: widget.pool[i], onTap: () => setState(() => _deck.remove(i))),
+          for (final i in deck) PoolCardView(card: widget.pool[i], onTap: () => _set(() => _deck.remove(i))),
         ]),
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Row(children: [
-          Text('Terrenos básicos ($_landCount)', style: theme.textTheme.titleMedium),
-          const Spacer(),
+          Expanded(child: Text('Terrenos básicos ($_basicCount)', style: theme.textTheme.titleMedium)),
           TextButton.icon(
             style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
             onPressed: _deck.isEmpty ? null : _suggestLands,
@@ -355,19 +518,26 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           ),
         ]),
       ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+        child: Text(
+          landNote ?? 'Terrenos no deck: $lands (recomendado: cerca de $_recommendedLands).',
+          style: theme.textTheme.bodySmall?.copyWith(color: landNote != null ? theme.colorScheme.error : null),
+        ),
+      ),
       Wrap(alignment: WrapAlignment.center, spacing: 4, children: [
         for (final c in _basics.keys)
           Row(mainAxisSize: MainAxisSize.min, children: [
             IconButton(
               visualDensity: VisualDensity.compact,
-              onPressed: _lands[c]! > 0 ? () => setState(() => _lands[c] = _lands[c]! - 1) : null,
+              onPressed: _lands[c]! > 0 ? () => _set(() => _lands[c] = _lands[c]! - 1) : null,
               icon: const Icon(Icons.remove, size: 18),
             ),
             ManaSymbol(c, size: 22),
             SizedBox(width: 26, child: Text('${_lands[c]}', textAlign: TextAlign.center)),
             IconButton(
               visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _lands[c] = _lands[c]! + 1),
+              onPressed: () => _set(() => _lands[c] = _lands[c]! + 1),
               icon: const Icon(Icons.add, size: 18),
             ),
           ]),
@@ -382,7 +552,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Wrap(spacing: 6, children: [
+        child: Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
           for (final c in ['W', 'U', 'B', 'R', 'G', 'C'])
             FilterChip(
               label: ManaSymbol(c, size: 18),
@@ -390,42 +560,60 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
               showCheckmark: false,
               onSelected: (v) => setState(() => v ? _colors.add(c) : _colors.remove(c)),
             ),
+          const SizedBox(width: 4),
+          SegmentedButton<_Sort>(
+            showSelectedIcon: false,
+            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            segments: const [
+              ButtonSegment(value: _Sort.color, label: Text('Cor')),
+              ButtonSegment(value: _Sort.cost, label: Text('Custo')),
+              ButtonSegment(value: _Sort.type, label: Text('Tipo')),
+            ],
+            selected: {_sort},
+            onSelectionChanged: (v) => setState(() => _sort = v.first),
+          ),
         ]),
       ),
       const SizedBox(height: 8),
       PoolGrid(target: 96, children: [
-        for (final i in pool) PoolCardView(card: widget.pool[i], onTap: () => setState(() => _deck.add(i))),
+        for (final i in pool) PoolCardView(card: widget.pool[i], onTap: () => _set(() => _deck.add(i))),
       ]),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(widget.title, overflow: TextOverflow.ellipsis),
-          Text(
-              '${commanders.isEmpty ? '' : '${commanders.length} + '}'
-              '$_spells + $_landCount terrenos = $_total / $_target',
-              style: theme.textTheme.bodySmall?.copyWith(color: _total >= _target ? Colors.green : null)),
-        ]),
-        actions: [
-          FilledButton.tonalIcon(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-            onPressed: _deck.isEmpty || (widget.commander && _commanders.isEmpty) ? null : _save,
-            icon: const Icon(Icons.save_outlined),
-            label: const Text('Guardar'),
-          ),
-          const SizedBox(width: 8),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(widget.title, overflow: TextOverflow.ellipsis),
+            Text(
+                '${commanders.isEmpty ? '' : '${commanders.length} + '}'
+                '$_nonLands cartas + $lands terrenos = $_total / $_target',
+                style: theme.textTheme.bodySmall?.copyWith(color: _total >= _target ? Colors.green : null)),
+          ]),
+          actions: [
+            FilledButton.tonalIcon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+              onPressed: _deck.isEmpty || (widget.commander && _commanders.isEmpty) ? null : _save,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Guardar'),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: isWide(context)
+            ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: ListView(padding: const EdgeInsets.only(bottom: 32), children: poolSection)),
+                const VerticalDivider(width: 1),
+                Expanded(child: ListView(padding: const EdgeInsets.only(bottom: 32), children: deckSection)),
+              ])
+            : ListView(
+                padding: const EdgeInsets.only(bottom: 32),
+                children: [...deckSection, const Divider(), ...poolSection]),
       ),
-      body: isWide(context)
-          ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: ListView(padding: const EdgeInsets.only(bottom: 32), children: poolSection)),
-              const VerticalDivider(width: 1),
-              Expanded(child: ListView(padding: const EdgeInsets.only(bottom: 32), children: deckSection)),
-            ])
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 32),
-              children: [...deckSection, const Divider(), ...poolSection]),
     );
   }
 }
@@ -439,4 +627,70 @@ bool commanderPairOk(List<db.Card> cards) {
   if (db.canPartner(a, b)) return true;
   bool mono(db.Card c) => c.canBeCommander && db.ManaColors.lettersOf(c.colorMask).length == 1;
   return mono(a) && mono(b);
+}
+
+/// Continuar a montar um deck que ficou por montar.
+Future<void> resumeLimitedBuild(BuildContext context, WidgetRef ref, LimitedBuild b) =>
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => LimitedBuilderScreen(
+        pool: resolvePool(ref, b.pool),
+        title: b.title,
+        commander: b.commander,
+        restore: b,
+      ),
+    ));
+
+/// Cartão "Decks por montar" (separador Jogar): pools de sealed e draft que
+/// ficaram a meio.
+class LimitedBuildsCard extends ConsumerWidget {
+  const LimitedBuildsCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final builds = ref.watch(limitedBuildsProvider).builds;
+    if (builds.isEmpty || ref.watch(cardRepoProvider) == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.tertiaryContainer,
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Text('Decks por montar', style: theme.textTheme.titleSmall),
+        ),
+        for (final b in builds)
+          ListTile(
+            leading: const Icon(Icons.construction),
+            title: Text(b.title),
+            subtitle: Text('${b.pool.length} cartas na pool · ${b.deck.length} no deck · '
+                '${shortDate(b.savedAt)}'),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(
+                tooltip: 'Deitar fora',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Deitar fora a pool?'),
+                      content: Text('${b.title}: as ${b.pool.length} cartas perdem-se.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Deitar fora')),
+                      ],
+                    ),
+                  );
+                  if (ok == true) ref.read(limitedBuildsProvider).remove(b.id);
+                },
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+                onPressed: () => resumeLimitedBuild(context, ref, b),
+                child: const Text('Montar'),
+              ),
+            ]),
+          ),
+      ]),
+    );
+  }
 }

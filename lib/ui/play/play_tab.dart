@@ -8,6 +8,7 @@ import '../../net/discovery.dart';
 import '../create_room_screen.dart';
 import '../join_screen.dart';
 import '../limited/jumpstart_screen.dart';
+import '../limited/limited_builder.dart';
 import '../limited/sealed_screen.dart';
 import '../playtest/playtest_setup_screen.dart';
 import '../resume_game.dart';
@@ -24,6 +25,19 @@ class PlayTab extends ConsumerStatefulWidget {
 class _PlayTabState extends ConsumerState<PlayTab> {
   late final TextEditingController _name = TextEditingController(text: ref.read(playerNameProvider));
 
+  /// Ao voltar de outro ecrã o Flutter devolve o foco ao campo do nome (e
+  /// abre o teclado). Enquanto há outro ecrã por cima, o campo não o aceita.
+  final _nameFocus = FocusNode();
+
+  /// Abre outro ecrã sem que o campo do nome fique com o foco ao voltar.
+  Future<void> _push(Widget screen) async {
+    _nameFocus.canRequestFocus = false;
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    _nameFocus.canRequestFocus = true;
+  }
+
   String get _playerName => _name.text.trim().isEmpty ? 'Jogador' : _name.text.trim();
 
   Future<void> _go(Widget Function(String name) screen, {bool needsName = false}) async {
@@ -37,7 +51,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     ref.read(playerNameProvider.notifier).state = _name.text.trim();
     if (!mounted) return;
     FocusScope.of(context).unfocus();
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen(_playerName)));
+    await _push(screen(_playerName));
   }
 
   Future<String?> _askName() {
@@ -68,6 +82,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
   @override
   void dispose() {
     _name.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
@@ -92,8 +107,14 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             const SizedBox(height: 24),
             const ResumeCard(),
             const SoloResumeCard(),
+            const LimitedBuildsCard(),
             TextField(
               controller: _name,
+              focusNode: _nameFocus,
+              // Larga o foco ao tocar fora (num botão, por exemplo): senão,
+              // ao voltar de outro ecrã, o campo volta a abrir o teclado.
+              onTapOutside: (_) => _nameFocus.unfocus(),
+              onSubmitted: (_) => _nameFocus.unfocus(),
               textCapitalization: TextCapitalization.words,
               maxLength: 24,
               decoration: const InputDecoration(
@@ -165,7 +186,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () =>
-                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
+                  _push(const StatsScreen()),
               icon: const Icon(Icons.bar_chart),
               label: const Text('Histórico e estatísticas'),
             ),

@@ -310,6 +310,8 @@ class DraftHost {
       if (pack == null || now.isBefore(limit)) continue;
       _deadline.remove(pos);
       _changed(engine.pick(pos, botPick(pack, engine.pools[pos], engine.picksNow(pos), colorsOf)));
+      // O jogador não escolheu: tem de saber o que a app tirou por ele.
+      _sendPool(pos);
     }
   }
 
