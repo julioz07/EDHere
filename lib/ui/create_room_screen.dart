@@ -8,6 +8,7 @@ import '../net/hotspot.dart';
 import '../net/network_util.dart';
 import '../room/room_session.dart';
 import 'lobby_screen.dart';
+import 'widgets/responsive.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key, required this.playerName});
@@ -78,9 +79,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         hotspot = await Hotspot.start();
       }
 
-      final name = _roomName.text.trim().isEmpty
-          ? 'Mesa de ${widget.playerName}'
-          : _roomName.text.trim();
+      final name = _roomName.text.trim().isEmpty ? 'Mesa de ${widget.playerName}' : _roomName.text.trim();
       final pin = _pin.text.trim();
       server = HostServer(
         roomName: name,
@@ -143,7 +142,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Criar sala')),
-      body: ListView(
+      body: MaxWidth(
+          child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           TextField(
@@ -189,8 +189,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               value: _useHotspot,
               onChanged: _busy ? null : (v) => setState(() => _useHotspot = v),
               title: const Text('Criar hotspot (sem Wi-Fi)'),
-              subtitle: const Text(
-                  'Este telemóvel cria uma rede local. Os outros ligam-se a ela '
+              subtitle: const Text('Este telemóvel cria uma rede local. Os outros ligam-se a ela '
                   'pelo QR code do Wi-Fi.'),
             )
           else
@@ -207,12 +206,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           FilledButton(
             onPressed: _busy ? null : _create,
             child: _busy
-                ? const SizedBox.square(
-                    dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
+                ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                 : const Text('Abrir sala'),
           ),
         ],
-      ),
+      )),
     );
   }
 }

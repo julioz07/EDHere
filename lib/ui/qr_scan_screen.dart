@@ -40,10 +40,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
             ),
             onDetect: (capture) {
               if (_done) return;
-              final raw = capture.barcodes
-                  .map((b) => b.rawValue)
-                  .whereType<String>()
-                  .firstOrNull;
+              final raw = capture.barcodes.map((b) => b.rawValue).whereType<String>().firstOrNull;
               if (raw == null) return;
               _done = true;
               Navigator.of(context).pop(raw);

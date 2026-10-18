@@ -14,6 +14,7 @@ import '../cards/versions.dart';
 import '../playtest/playtest_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
+import '../widgets/responsive.dart';
 import 'decks_tab.dart';
 import 'hand_simulator_screen.dart';
 
@@ -36,8 +37,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     setState(() => _deck = ref.read(decksProvider).save(d));
   }
 
-  Map<String, db.Card> _cards() =>
-      ref.read(cardRepoProvider)!.getMany(_deck.entries.map((e) => e.oracleId));
+  Map<String, db.Card> _cards() => ref.read(cardRepoProvider)!.getMany(_deck.entries.map((e) => e.oracleId));
 
   List<DeckIssue> _issues(Map<String, db.Card> cards) {
     final f = _format;
@@ -82,11 +82,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
         title: commander ? 'Escolher comandante' : 'Juntar cartas',
         fixedFilter: filters.join(' '),
         initialQuery: commander ? 'is:commander' : '',
-        qtyOf: (id) => _deck.entries
-            .where((e) => e.oracleId == id)
-            .fold(0, (n, e) => n + e.qty),
-        onAdd: (c) =>
-            _update(_deck.add(c.oracleId, board: commander ? Board.command : Board.main)),
+        qtyOf: (id) => _deck.entries.where((e) => e.oracleId == id).fold(0, (n, e) => n + e.qty),
+        onAdd: (c) => _update(_deck.add(c.oracleId, board: commander ? Board.command : Board.main)),
       ),
     ));
     setState(() {});
@@ -101,8 +98,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     }
     ref.read(collectionProvider).addAll(cards, atLeast: true);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${cards.length} cartas juntas às minhas cartas.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${cards.length} cartas juntas às minhas cartas.')));
     }
   }
 
@@ -218,7 +215,13 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     final existing = {
       for (final e in _deck.entries)
         if (e.category != null) e.category!,
-      'Ramp', 'Draw', 'Remoção', 'Wipes', 'Terrenos', 'Proteção', 'Win cons',
+      'Ramp',
+      'Draw',
+      'Remoção',
+      'Wipes',
+      'Terrenos',
+      'Proteção',
+      'Win cons',
     }.toList();
     final ctrl = TextEditingController(text: current ?? '');
     return showDialog<String>(
@@ -229,8 +232,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           TextField(controller: ctrl, autofocus: true),
           const SizedBox(height: 12),
           Wrap(spacing: 6, runSpacing: 6, children: [
-            for (final c in existing)
-              ActionChip(label: Text(c), onPressed: () => Navigator.pop(ctx, c)),
+            for (final c in existing) ActionChip(label: Text(c), onPressed: () => Navigator.pop(ctx, c)),
           ]),
         ]),
         actions: [
@@ -440,6 +442,19 @@ class _CardList extends StatelessWidget {
   /// As minhas cartas (oracleId -> quantidade), para indicar o que falta.
   final Map<String, int> owned;
 
+  Widget _tile(DeckEntry e, db.Card c) => CardTile(
+        shown(e, c),
+        thumbWidth: 84,
+        subtitle: [c.typeLine, if (_ownedNote(e) case final n?) n].join(' · '),
+        leadingQty: e.qty,
+        onTap: () => onTap(e, c),
+        trailing: flagged(e)
+            ? const Icon(Icons.warning_amber_rounded, color: EdhColors.warn, size: 22)
+            : null,
+      );
+
+  bool flagged(DeckEntry e) => issues.any((i) => i.oracleId == e.oracleId);
+
   String? _ownedNote(DeckEntry e) {
     if (owned.isEmpty) return null;
     final have = owned[e.oracleId] ?? 0;
@@ -461,7 +476,10 @@ class _CardList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final flagged = {for (final i in issues) if (i.oracleId != null) i.oracleId!};
+    final flagged = {
+      for (final i in issues)
+        if (i.oracleId != null) i.oracleId!
+    };
     final sections = <(String, List<DeckEntry>)>[];
     String nameOf(DeckEntry e) => cards[e.oracleId]?.name ?? '';
     List<DeckEntry> sorted(Iterable<DeckEntry> es) => es.toList()
@@ -486,9 +504,14 @@ class _CardList extends StatelessWidget {
       groups.putIfAbsent(key, () => []).add(e);
     }
     const typeNames = {
-      'Creature': 'Criaturas', 'Instant': 'Instantâneos', 'Sorcery': 'Feitiços',
-      'Artifact': 'Artefactos', 'Enchantment': 'Encantamentos', 'Planeswalker': 'Planeswalkers',
-      'Battle': 'Batalhas', 'Land': 'Terrenos',
+      'Creature': 'Criaturas',
+      'Instant': 'Instantâneos',
+      'Sorcery': 'Feitiços',
+      'Artifact': 'Artefactos',
+      'Enchantment': 'Encantamentos',
+      'Planeswalker': 'Planeswalkers',
+      'Battle': 'Batalhas',
+      'Land': 'Terrenos',
     };
     final keys = groups.keys.toList()
       ..sort((a, b) {
@@ -553,7 +576,7 @@ class _CardList extends StatelessWidget {
                 child: GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: MediaQuery.of(context).size.width > 700 ? 5 : 3,
+                  crossAxisCount: cardColumns(MediaQuery.of(context).size.width),
                   childAspectRatio: cardAspect,
                   mainAxisSpacing: 8,
                   crossAxisSpacing: 8,
@@ -569,19 +592,26 @@ class _CardList extends StatelessWidget {
                   ],
                 ),
               )
+            else if (isWide(context))
+              // Tablet: a lista em várias colunas.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: GridView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 520,
+                    mainAxisExtent: 132,
+                  ),
+                  children: [
+                    for (final e in entries)
+                      if (cards[e.oracleId] case final c?) _tile(e, c),
+                  ],
+                ),
+              )
             else
               for (final e in entries)
-                if (cards[e.oracleId] case final c?)
-                  CardTile(
-                    shown(e, c),
-                    thumbWidth: 84,
-                    subtitle: [c.typeLine, if (_ownedNote(e) case final n?) n].join(' · '),
-                    leadingQty: e.qty,
-                    onTap: () => onTap(e, c),
-                    trailing: flagged.contains(e.oracleId)
-                        ? const Icon(Icons.warning_amber_rounded, color: EdhColors.warn, size: 22)
-                        : null,
-                  ),
+                if (cards[e.oracleId] case final c?) _tile(e, c),
           ],
       ],
     );
@@ -601,9 +631,14 @@ class _StatsView extends StatelessWidget {
     final maxCurve = s.curve.fold(1, (m, v) => v > m ? v : m);
     final library = deck.count(Board.main);
     const typeNames = {
-      'Creature': 'Criaturas', 'Instant': 'Instantâneos', 'Sorcery': 'Feitiços',
-      'Artifact': 'Artefactos', 'Enchantment': 'Encantamentos', 'Planeswalker': 'Planeswalkers',
-      'Battle': 'Batalhas', 'Land': 'Terrenos',
+      'Creature': 'Criaturas',
+      'Instant': 'Instantâneos',
+      'Sorcery': 'Feitiços',
+      'Artifact': 'Artefactos',
+      'Enchantment': 'Encantamentos',
+      'Planeswalker': 'Planeswalkers',
+      'Battle': 'Batalhas',
+      'Land': 'Terrenos',
     };
     Widget title(String t) => Padding(
           padding: const EdgeInsets.only(top: 20, bottom: 8),
@@ -669,8 +704,7 @@ class _StatsView extends StatelessWidget {
             Text('Pelo menos $k terrenos: '
                 '${(probabilityAtLeast(library, s.lands - _commandLands(), 7, k) * 100).toStringAsFixed(0)}%'),
           const SizedBox(height: 4),
-          Text('Calculado sobre as $library cartas do grimório.',
-              style: theme.textTheme.bodySmall),
+          Text('Calculado sobre as $library cartas do grimório.', style: theme.textTheme.bodySmall),
         ],
       ],
     );

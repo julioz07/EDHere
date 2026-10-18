@@ -10,6 +10,7 @@ import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'room_screen.dart';
 import 'table/table_screen.dart';
+import 'widgets/responsive.dart';
 
 /// Lobby de uma sala: cada jogador escolhe o deck e fica pronto; o
 /// anfitrião começa o jogo. Depois mostra a mesa.
@@ -41,8 +42,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     super.initState();
     WakelockPlus.enable();
     if (widget.session.isHost && widget.format != null) {
-      WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _game.configure(format: widget.format!, life: widget.life ?? 40));
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _game.configure(format: widget.format!, life: widget.life ?? 40));
     }
     _game.addListener(_maybeShowTable);
   }
@@ -55,7 +56,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       g.viewSeat = g.state.activeSeat;
     }
     _tableShown = true;
-    Navigator.of(context).push(MaterialPageRoute<void>(
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(
       builder: (_) => ListenableBuilder(
         listenable: _game,
         builder: (context, _) => TableScreen(
@@ -76,7 +78,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           onLeave: _leaveRoom,
         ),
       ),
-    )).then((_) {
+    ))
+        .then((_) {
       if (mounted && !_closing) Navigator.of(context).pop();
     });
   }
@@ -108,8 +111,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text('Escolher deck (${format.label})', style: Theme.of(ctx).textTheme.titleMedium),
           ),
-          if (decks.isEmpty)
-            const Padding(padding: EdgeInsets.all(16), child: Text('Ainda não tens decks.')),
+          if (decks.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Ainda não tens decks.')),
           for (final d in decks)
             ListTile(
               title: Text(d.name),
@@ -232,11 +234,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 ),
               ],
             ),
-            body: ListView(padding: const EdgeInsets.all(16), children: [
+            body: MaxWidth(
+                child: ListView(padding: const EdgeInsets.all(16), children: [
               if (status == LinkStatus.reconnecting)
-                const Card(child: ListTile(leading: CircularProgressIndicator(), title: Text('A voltar a ligar…'))),
+                const Card(
+                    child: ListTile(leading: CircularProgressIndicator(), title: Text('A voltar a ligar…'))),
               if (status == LinkStatus.closed && !_closing)
-                const Card(child: ListTile(leading: Icon(Icons.link_off), title: Text('A sala foi fechada.'))),
+                const Card(
+                    child: ListTile(leading: Icon(Icons.link_off), title: Text('A sala foi fechada.'))),
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
@@ -308,9 +313,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 FilledButton.icon(
                   onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(g.allReady
-                      ? 'Começar jogo'
-                      : 'Começar (só com quem está pronto)'),
+                  label: Text(g.allReady ? 'Começar jogo' : 'Começar (só com quem está pronto)'),
                 ),
               ],
               const SizedBox(height: 16),
@@ -319,7 +322,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 'do telemóvel dele.',
                 style: theme.textTheme.bodySmall,
               ),
-            ]),
+            ])),
           );
         },
       ),

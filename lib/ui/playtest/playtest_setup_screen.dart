@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
 import 'playtest_screen.dart';
+import '../widgets/responsive.dart';
 
 /// Escolher os decks do playtest: 1 deck = goldfish; 2 a 4 = hot-seat
 /// (vários lugares controlados por mim no mesmo dispositivo).
@@ -25,7 +26,8 @@ class _PlaytestSetupScreenState extends ConsumerState<PlaytestSetupScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Playtest')),
-      body: ListView(
+      body: MaxWidth(
+          child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -68,7 +70,8 @@ class _PlaytestSetupScreenState extends ConsumerState<PlaytestSetupScreen> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Modo tablet (mesa partilhada)'),
-              subtitle: const Text('Cada jogador fica com a sua área virada para si. Ideal para um tablet no meio da mesa.'),
+              subtitle: const Text(
+                  'Cada jogador fica com a sua área virada para si. Ideal para um tablet no meio da mesa.'),
               value: _tablet,
               onChanged: (v) => setState(() => _tablet = v),
             ),
@@ -86,7 +89,7 @@ class _PlaytestSetupScreenState extends ConsumerState<PlaytestSetupScreen> {
             child: Text(_chosen.length <= 1 ? 'Começar goldfish' : 'Começar hot-seat (${_chosen.length})'),
           ),
         ],
-      ),
+      )),
     );
   }
 }

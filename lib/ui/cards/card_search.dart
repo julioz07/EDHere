@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../widgets/card_view.dart';
+import '../widgets/responsive.dart';
 
 /// Campo de pesquisa com resultados, usado no separador Cartas e ao
 /// acrescentar cartas a um deck.
@@ -54,8 +55,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
     }
   }
 
-  Iterable<String>? get _restrict =>
-      widget.onlyOwned ? ref.read(collectionProvider).owned.keys : null;
+  Iterable<String>? get _restrict => widget.onlyOwned ? ref.read(collectionProvider).owned.keys : null;
 
   @override
   void dispose() {
@@ -109,7 +109,8 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.inventory_2_outlined, size: 14, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 3),
-        Text('$owned', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+        Text('$owned',
+            style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
       ]),
     );
     if (extra == null) return badge;
@@ -172,8 +173,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(_total == 1 ? '1 carta' : '$_total cartas',
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ),
           ),
         Expanded(
@@ -182,18 +182,36 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
               if (n.metrics.pixels > n.metrics.maxScrollExtent - 400) _loadMore();
               return false;
             },
-            child: ListView.builder(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              itemCount: _results.length,
-              itemBuilder: (context, i) {
+            child: LayoutBuilder(builder: (context, box) {
+              Widget tile(int i) {
                 final c = _results[i];
                 return CardTile(
                   ref.read(printsProvider).resolve(c),
+                  thumbWidth: box.maxWidth >= wideBreakpoint ? 64 : 56,
                   onTap: () => widget.onTap(c),
                   trailing: _trailing(c, collection.ownedOf(c.oracleId)),
                 );
-              },
-            ),
+              }
+
+              // Tablet: resultados em várias colunas.
+              if (box.maxWidth >= wideBreakpoint) {
+                return GridView.builder(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 520,
+                    mainAxisExtent: 104,
+                  ),
+                  itemCount: _results.length,
+                  itemBuilder: (_, i) => tile(i),
+                );
+              }
+              return ListView.builder(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                itemCount: _results.length,
+                itemBuilder: (_, i) => tile(i),
+              );
+            }),
           ),
         ),
       ],

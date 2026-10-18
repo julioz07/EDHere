@@ -9,6 +9,7 @@ import '../../data/settings.dart';
 import '../../game/game_controller.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
+import '../widgets/responsive.dart';
 import 'table_card.dart';
 import 'table_sheets.dart';
 
@@ -186,8 +187,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               onTap: () => run(() {
                 final hand = ctrl.zones(ctrl.actor).hand;
                 if (hand.isNotEmpty) {
-                  ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand,
-                      [for (final c in hand) c.pid], what: 'a mão'));
+                  ctrl.send(ctrl.table
+                      .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
                 }
               }),
             ),
@@ -244,14 +245,79 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 IconButton(tooltip: 'Mais', onPressed: _menu, icon: const Icon(Icons.more_vert)),
               ],
             ),
-            body: Column(children: [
-              if (widget.banner != null) widget.banner!,
-              _PlayersStrip(ctrl: ctrl),
-              Expanded(child: TableBattlefield(ctrl: ctrl)),
-              TableZonesRow(ctrl: ctrl),
-              TableHand(ctrl: ctrl),
-              _BottomBar(ctrl: ctrl, lastLog: s.log.isEmpty ? '' : ctrl.logText(s.log.last)),
-            ]),
+            body: LayoutBuilder(builder: (context, box) {
+              final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
+              if (box.maxWidth < wideBreakpoint) {
+                return Column(children: [
+                  if (widget.banner != null) widget.banner!,
+                  _PlayersStrip(ctrl: ctrl),
+                  Expanded(child: TableBattlefield(ctrl: ctrl)),
+                  TableZonesRow(ctrl: ctrl),
+                  TableHand(ctrl: ctrl),
+                  _BottomBar(ctrl: ctrl, lastLog: lastLog),
+                ]);
+              }
+              // Tablet: o campo fica com a altura toda; zonas e "Passar turno"
+              // passam para uma coluna à direita.
+              return Column(children: [
+                if (widget.banner != null) widget.banner!,
+                Expanded(
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(children: [
+                        _PlayersStrip(ctrl: ctrl),
+                        Expanded(child: TableBattlefield(ctrl: ctrl)),
+                        TableHand(ctrl: ctrl, height: 168),
+                      ]),
+                    ),
+                    Container(
+                      width: 128,
+                      decoration: BoxDecoration(
+                        border: Border(left: BorderSide(color: theme.colorScheme.outline)),
+                      ),
+                      child: SafeArea(
+                        left: false,
+                        child: Column(children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: TableZonesRow(ctrl: ctrl, vertical: true, pileWidth: 72),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: GestureDetector(
+                              onTap: () => showLogSheet(context, ctrl),
+                              child: Text(lastLog,
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(64),
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                              ),
+                              onPressed: ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork
+                                  ? ctrl.passTurn
+                                  : null,
+                              child: const Column(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.skip_next),
+                                Text('Passar turno', textAlign: TextAlign.center),
+                              ]),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ]),
+                ),
+              ]);
+            }),
           );
         },
       ),
@@ -315,11 +381,12 @@ class _PlayersStrip extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(mainAxisSize: MainAxisSize.min, children: [
-                            if (s.monarch == seat) const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
+                            if (s.monarch == seat)
+                              const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
                             if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
                             Text(p.name,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                    decoration: p.defeated ? TextDecoration.lineThrough : null)),
+                                style: theme.textTheme.labelMedium
+                                    ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
                           ]),
                           Text('✋${p.handCount}  📚${p.libraryCount}', style: theme.textTheme.labelSmall),
                         ],
@@ -332,10 +399,12 @@ class _PlayersStrip extends StatelessWidget {
                       if (poison > 0 || maxCmd > 0) ...[
                         const SizedBox(width: 6),
                         Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          if (poison > 0) Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                          if (poison > 0)
+                            Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
                           if (maxCmd > 0)
                             Text('★$maxCmd',
-                                style: TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : Colors.amber)),
+                                style: TextStyle(
+                                    fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : Colors.amber)),
                         ]),
                       ],
                     ]),
@@ -369,9 +438,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
   Widget build(BuildContext context) {
     final s = ctrl.state;
     final seat = widget.seat ?? ctrl.viewSeat;
-    final cards = s.cards.values
-        .where((c) => c.zone == Zone.battlefield && c.controller == seat)
-        .toList();
+    final cards = s.cards.values.where((c) => c.zone == Zone.battlefield && c.controller == seat).toList();
     // Anexos ficam por baixo da carta a que estão presos.
     cards.sort((a, b) {
       final la = a.attachedTo != null ? 0 : 1, lb = b.attachedTo != null ? 0 : 1;
@@ -385,7 +452,10 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
     return LayoutBuilder(builder: (context, box) {
       // Margem para as cartas nunca ficarem encostadas às extremidades.
       const pad = 10.0;
-      final cw = (box.maxWidth / 6.4 * settings.cardScale).clamp(40.0, 200.0);
+      // Cabem ~6 cartas na largura e ~3 filas na altura (paisagem).
+      final byWidth = box.maxWidth / 6.4;
+      final byHeight = box.maxHeight / 3.3 * cardAspect;
+      final cw = ((byWidth < byHeight ? byWidth : byHeight) * settings.cardScale).clamp(40.0, 220.0);
       final ch = cw / cardAspect;
       final spanX = (box.maxWidth - cw - 2 * pad).clamp(1.0, double.infinity);
       final spanY = (box.maxHeight - ch - 2 * pad).clamp(1.0, double.infinity);
@@ -421,8 +491,8 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
               : DecorationImage(
                   image: bg,
                   fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
+                  colorFilter:
+                      ColorFilter.mode(Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
                 ),
         ),
         child: Stack(clipBehavior: Clip.hardEdge, children: [
@@ -482,7 +552,10 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
               painter: _ArrowPainter(
                 [
                   for (final t in s.targets)
-                    if (t.from != null && t.card != null && centers[t.from] != null && centers[t.card] != null)
+                    if (t.from != null &&
+                        t.card != null &&
+                        centers[t.from] != null &&
+                        centers[t.card] != null)
                       (centers[t.from]!, centers[t.card]!),
                 ],
                 targetGlow,
@@ -529,9 +602,13 @@ class _ArrowPainter extends CustomPainter {
 
 /// Zona de comando, grimório, cemitério e exílio de um lugar.
 class TableZonesRow extends StatelessWidget {
-  const TableZonesRow({super.key, required this.ctrl, this.seat});
+  const TableZonesRow({super.key, required this.ctrl, this.seat, this.vertical = false, this.pileWidth = 44});
   final GameController ctrl;
   final int? seat;
+
+  /// Em coluna (barra lateral da mesa no tablet).
+  final bool vertical;
+  final double pileWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -542,7 +619,8 @@ class TableZonesRow extends StatelessWidget {
     final command = s.zoneCards(seat, Zone.command).toList();
     final grave = s.zoneCards(seat, Zone.graveyard).toList();
     final exile = s.zoneCards(seat, Zone.exile).toList();
-    const w = 44.0;
+    final w = pileWidth;
+    Widget gap() => vertical ? const SizedBox(height: 10) : const SizedBox(width: 8);
 
     Widget pile(String label, int count, Widget? top, VoidCallback onTap, {VoidCallback? onLong}) =>
         GestureDetector(
@@ -575,75 +653,86 @@ class TableZonesRow extends StatelessWidget {
         );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
-      child: Row(children: [
-        for (final c in command)
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: GestureDetector(
-              onTap: () {
-                ctrl.actAs(seat);
-                showCardActions(context, ctrl, c);
-              },
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TableCardView(
-                    instance: c,
-                    card: ctrl.card(c.oracleId, printId: c.printId),
-                    width: w,
-                    tax: p?.commanderTax(c.id),
-                    showTapped: false),
-                const Text('Comando', style: TextStyle(fontSize: 10)),
-              ]),
+      padding: vertical ? const EdgeInsets.fromLTRB(8, 10, 8, 4) : const EdgeInsets.fromLTRB(8, 6, 8, 2),
+      child: Flex(
+          direction: vertical ? Axis.vertical : Axis.horizontal,
+          mainAxisSize: vertical ? MainAxisSize.min : MainAxisSize.max,
+          children: [
+            for (final c in command)
+              Padding(
+                padding: vertical ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () {
+                    ctrl.actAs(seat);
+                    showCardActions(context, ctrl, c);
+                  },
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    TableCardView(
+                        instance: c,
+                        card: ctrl.card(c.oracleId, printId: c.printId),
+                        width: w,
+                        tax: p?.commanderTax(c.id),
+                        showTapped: false),
+                    const Text('Comando', style: TextStyle(fontSize: 10)),
+                  ]),
+                ),
+              ),
+            if (vertical) const SizedBox(height: 6) else const Spacer(),
+            pile(
+              'Grimório',
+              p?.libraryCount ?? 0,
+              (p?.libraryCount ?? 0) > 0 ? const CardBack() : null,
+              mine
+                  ? () {
+                      ctrl.actAs(seat);
+                      ctrl.draw();
+                    }
+                  : () {},
+              onLong: mine
+                  ? () {
+                      ctrl.actAs(seat);
+                      showLibraryMenu(context, ctrl);
+                    }
+                  : null,
             ),
-          ),
-        const Spacer(),
-        pile(
-          'Grimório',
-          p?.libraryCount ?? 0,
-          (p?.libraryCount ?? 0) > 0 ? const CardBack() : null,
-          mine
-              ? () {
-                  ctrl.actAs(seat);
-                  ctrl.draw();
-                }
-              : () {},
-          onLong: mine
-              ? () {
+            gap(),
+            pile(
+              'Cemitério',
+              grave.length,
+              grave.isEmpty
+                  ? null
+                  : TableCardView(
+                      instance: grave.last,
+                      card: ctrl.card(grave.last.oracleId, printId: grave.last.printId),
+                      width: w,
+                      showTapped: false),
+              () => showZoneList(context, ctrl, seat, Zone.graveyard),
+            ),
+            gap(),
+            pile(
+              'Exílio',
+              exile.length,
+              exile.isEmpty
+                  ? null
+                  : TableCardView(
+                      instance: exile.last,
+                      card: ctrl.card(exile.last.oracleId, printId: exile.last.printId),
+                      width: w,
+                      showTapped: false),
+              () => showZoneList(context, ctrl, seat, Zone.exile),
+            ),
+            if (mine) ...[
+              if (!vertical) const SizedBox(width: 4),
+              IconButton(
+                tooltip: 'Grimório',
+                onPressed: () {
                   ctrl.actAs(seat);
                   showLibraryMenu(context, ctrl);
-                }
-              : null,
-        ),
-        const SizedBox(width: 8),
-        pile(
-          'Cemitério',
-          grave.length,
-          grave.isEmpty
-              ? null
-              : TableCardView(instance: grave.last, card: ctrl.card(grave.last.oracleId, printId: grave.last.printId), width: w, showTapped: false),
-          () => showZoneList(context, ctrl, seat, Zone.graveyard),
-        ),
-        const SizedBox(width: 8),
-        pile(
-          'Exílio',
-          exile.length,
-          exile.isEmpty
-              ? null
-              : TableCardView(instance: exile.last, card: ctrl.card(exile.last.oracleId, printId: exile.last.printId), width: w, showTapped: false),
-          () => showZoneList(context, ctrl, seat, Zone.exile),
-        ),
-        if (mine) ...[
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Grimório',
-            onPressed: () {
-              ctrl.actAs(seat);
-              showLibraryMenu(context, ctrl);
-            },
-            icon: const Icon(Icons.more_horiz),
-          ),
-        ],
-      ]),
+                },
+                icon: const Icon(Icons.more_horiz),
+              ),
+            ],
+          ]),
     );
   }
 }
@@ -673,7 +762,8 @@ class _TableHandState extends ConsumerState<TableHand> {
       return SizedBox(
         height: 36,
         child: Center(
-          child: Text('Mão de ${ctrl.state.players[seat]?.name}: ${ctrl.state.players[seat]?.handCount ?? 0} cartas',
+          child: Text(
+              'Mão de ${ctrl.state.players[seat]?.name}: ${ctrl.state.players[seat]?.handCount ?? 0} cartas',
               style: theme.textTheme.bodySmall),
         ),
       );

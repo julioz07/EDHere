@@ -82,16 +82,17 @@ class TextCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _bar(Row(children: [
-                Expanded(
-                  child: Text(name,
-                      maxLines: small ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: fs * 1.05, fontWeight: FontWeight.w700, color: dark)),
-                ),
-                if (!small) ManaCost(cost, size: fs * 1.1),
-              ]), w),
+              _bar(
+                  Row(children: [
+                    Expanded(
+                      child: Text(name,
+                          maxLines: small ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: fs * 1.05, fontWeight: FontWeight.w700, color: dark)),
+                    ),
+                    if (!small) ManaCost(cost, size: fs * 1.1),
+                  ]),
+                  w),
               SizedBox(height: w * 0.02),
               Expanded(
                 flex: 4,
@@ -103,15 +104,17 @@ class TextCard extends StatelessWidget {
                   alignment: Alignment.center,
                   child: small
                       ? ManaCost(cost, size: fs * 1.4)
-                      : Icon(Icons.image_not_supported_outlined,
-                          size: w * 0.14, color: Colors.black26),
+                      : Icon(Icons.image_not_supported_outlined, size: w * 0.14, color: Colors.black26),
                 ),
               ),
               SizedBox(height: w * 0.02),
-              if (!small) _bar(Text(type,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: fs * 0.9, fontWeight: FontWeight.w600, color: dark)), w),
+              if (!small)
+                _bar(
+                    Text(type,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: fs * 0.9, fontWeight: FontWeight.w600, color: dark)),
+                    w),
               if (!small) SizedBox(height: w * 0.02),
               Expanded(
                 flex: small ? 2 : 5,
@@ -212,8 +215,7 @@ class CardTile extends StatelessWidget {
                   Text(subtitle ?? card.typeLine,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),

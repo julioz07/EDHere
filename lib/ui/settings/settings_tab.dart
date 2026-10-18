@@ -9,6 +9,7 @@ import '../../net/discovery.dart';
 import '../about_screen.dart';
 import '../data/data_tab.dart';
 import '../stats/stats_screen.dart';
+import '../widgets/responsive.dart';
 
 /// Definições: aparência, mesa, dados offline e sobre.
 class SettingsTab extends ConsumerWidget {
@@ -31,13 +32,15 @@ class SettingsTab extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Definições')),
-      body: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
+      body: MaxWidth(
+          child: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
         section('Aparência', Icons.palette_outlined),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SegmentedButton<ThemeMode>(
             segments: const [
-              ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto), label: Text('Sistema')),
+              ButtonSegment(
+                  value: ThemeMode.system, icon: Icon(Icons.brightness_auto), label: Text('Sistema')),
               ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode), label: Text('Escuro')),
               ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode), label: Text('Claro')),
             ],
@@ -157,7 +160,8 @@ class SettingsTab extends ConsumerWidget {
           leading: const Icon(Icons.bar_chart),
           title: const Text('Histórico e estatísticas'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
+          onTap: () =>
+              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
         ),
         section('Sobre', Icons.info_outline),
         ListTile(
@@ -165,7 +169,8 @@ class SettingsTab extends ConsumerWidget {
           title: const Text('Sobre o EDHere'),
           subtitle: const Text('Versão $appVersion'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
+          onTap: () =>
+              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
         ),
         ListTile(
           leading: const Icon(Icons.description_outlined),
@@ -181,7 +186,7 @@ class SettingsTab extends ConsumerWidget {
             ),
           ),
         ),
-      ]),
+      ])),
     );
   }
 

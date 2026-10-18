@@ -11,6 +11,7 @@ import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'qr_scan_screen.dart';
 import 'lobby_screen.dart';
+import 'widgets/responsive.dart';
 
 class JoinScreen extends StatefulWidget {
   const JoinScreen({super.key, required this.playerName});
@@ -45,8 +46,7 @@ class _JoinScreenState extends State<JoinScreen> {
     super.dispose();
   }
 
-  Future<void> _join(List<String> hosts, int port, String roomName,
-      {bool askPin = false}) async {
+  Future<void> _join(List<String> hosts, int port, String roomName, {bool askPin = false}) async {
     String? pin;
     if (askPin) {
       pin = await _askPin();
@@ -64,8 +64,7 @@ class _JoinScreenState extends State<JoinScreen> {
     );
     try {
       await client.connect();
-      final session =
-          RoomSession.client(client: client, roomName: client.roomName ?? roomName);
+      final session = RoomSession.client(client: client, roomName: client.roomName ?? roomName);
       if (!mounted) {
         await session.close();
         return;
@@ -115,16 +114,15 @@ class _JoinScreenState extends State<JoinScreen> {
   }
 
   Future<void> _scanQr() async {
-    final raw = await Navigator.of(context)
-        .push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
+    final raw =
+        await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
     if (raw == null || !mounted) return;
     final code = JoinCode.tryParse(raw);
     if (code != null) {
       return _join(code.hosts, code.port, code.roomName, askPin: code.hasPin);
     }
     if (raw.startsWith('WIFI:')) {
-      setState(() => _error =
-          'Esse é o QR do Wi-Fi. Lê-o com a câmara do telemóvel para ligar à rede '
+      setState(() => _error = 'Esse é o QR do Wi-Fi. Lê-o com a câmara do telemóvel para ligar à rede '
           'do anfitrião, volta aqui e escolhe a sala ou lê o QR da sala.');
     } else {
       setState(() => _error = 'Este QR code não é de uma sala EDHere.');
@@ -188,7 +186,8 @@ class _JoinScreenState extends State<JoinScreen> {
     final scheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Entrar numa sala')),
-      body: AbsorbPointer(
+      body: MaxWidth(
+          child: AbsorbPointer(
         absorbing: _busy,
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -197,8 +196,7 @@ class _JoinScreenState extends State<JoinScreen> {
               Text('Salas na rede', style: theme.textTheme.titleMedium),
               const SizedBox(width: 10),
               if (!_discoveryFailed)
-                const SizedBox.square(
-                    dimension: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox.square(dimension: 14, child: CircularProgressIndicator(strokeWidth: 2)),
             ]),
             const SizedBox(height: 12),
             if (_rooms.isEmpty)
@@ -211,8 +209,7 @@ class _JoinScreenState extends State<JoinScreen> {
                             'o gateway ou o IP.'
                         : 'À procura… Confirma que estás no mesmo Wi-Fi ou hotspot '
                             'que o anfitrião.',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: scheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ),
               )
@@ -234,8 +231,7 @@ class _JoinScreenState extends State<JoinScreen> {
                       trailing: room.hasPin ? const Icon(Icons.lock_outline) : null,
                       onTap: room.host == null
                           ? null
-                          : () => _join([room.host!], room.port, room.name,
-                              askPin: room.hasPin),
+                          : () => _join([room.host!], room.port, room.name, askPin: room.hasPin),
                     ),
                   ),
                 ),
@@ -269,7 +265,7 @@ class _JoinScreenState extends State<JoinScreen> {
             ],
           ],
         ),
-      ),
+      )),
     );
   }
 }

@@ -45,8 +45,7 @@ class _TabletTableScreenState extends State<TabletTableScreen> {
           child: RotatedBox(
             quarterTurns: flipped ? 2 : 0,
             child: Row(children: [
-              for (final s in flipped ? list.reversed : list)
-                Expanded(child: _SeatArea(ctrl: ctrl, seat: s)),
+              for (final s in flipped ? list.reversed : list) Expanded(child: _SeatArea(ctrl: ctrl, seat: s)),
             ]),
           ),
         );
@@ -84,8 +83,7 @@ class _CenterBar extends StatelessWidget {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        Text('Turno ${s.turn} · ${s.players[s.activeSeat]?.name ?? ''}',
-            style: theme.textTheme.titleSmall),
+        Text('Turno ${s.turn} · ${s.players[s.activeSeat]?.name ?? ''}', style: theme.textTheme.titleSmall),
         const Spacer(),
         IconButton(
           tooltip: 'Desfazer',
@@ -107,7 +105,8 @@ class _CenterBar extends StatelessWidget {
           onPressed: () => showLogSheet(context, ctrl),
           icon: const Icon(Icons.receipt_long),
         ),
-        IconButton(tooltip: 'd20', onPressed: () => ctrl.rollDie(20), icon: const Icon(Icons.casino_outlined)),
+        IconButton(
+            tooltip: 'd20', onPressed: () => ctrl.rollDie(20), icon: const Icon(Icons.casino_outlined)),
       ]),
     );
   }
@@ -150,8 +149,8 @@ class _SeatArea extends StatelessWidget {
                 showPlayerSheet(context, ctrl, seat);
               },
               child: Text('${p.life}',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800, color: p.life <= 0 ? EdhColors.bad : null)),
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800, color: p.life <= 0 ? EdhColors.bad : null)),
             ),
             IconButton(
               visualDensity: VisualDensity.compact,

@@ -13,8 +13,8 @@ class CardsTab extends ConsumerWidget {
 
   final VoidCallback onOpenData;
 
-  void _open(BuildContext context, card) => Navigator.of(context)
-      .push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
+  void _open(BuildContext context, card) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,8 +36,8 @@ class CardsTab extends ConsumerWidget {
             IconButton(
               tooltip: 'Importar para as minhas cartas',
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
+              onPressed: () => Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
             ),
           ],
           bottom: TabBar(tabs: [

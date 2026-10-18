@@ -4,6 +4,7 @@ import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 
 import '../widgets/card_view.dart';
+import '../widgets/responsive.dart';
 
 /// Gera mãos iniciais seguidas para ver se o deck abre bem.
 class HandSimulatorScreen extends StatefulWidget {
@@ -62,7 +63,8 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text('Mãos de ${widget.deck.name}')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: MaxWidth(
+          child: ListView(padding: const EdgeInsets.all(16), children: [
         Text('${_lands(_hand)} terrenos nesta mão', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         GridView.count(
@@ -79,7 +81,9 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
         ),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: FilledButton(onPressed: _library.length < 7 ? null : _newHand, child: const Text('Nova mão'))),
+          Expanded(
+              child: FilledButton(
+                  onPressed: _library.length < 7 ? null : _newHand, child: const Text('Nova mão'))),
           const SizedBox(width: 8),
           Expanded(
             child: OutlinedButton(
@@ -111,7 +115,7 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
               ),
             ]),
           ),
-      ]),
+      ])),
     );
   }
 }

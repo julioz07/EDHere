@@ -9,6 +9,7 @@ import '../create_room_screen.dart';
 import '../join_screen.dart';
 import '../playtest/playtest_setup_screen.dart';
 import '../stats/stats_screen.dart';
+import '../widgets/responsive.dart';
 
 class PlayTab extends ConsumerStatefulWidget {
   const PlayTab({super.key});
@@ -18,8 +19,7 @@ class PlayTab extends ConsumerStatefulWidget {
 }
 
 class _PlayTabState extends ConsumerState<PlayTab> {
-  late final TextEditingController _name =
-      TextEditingController(text: ref.read(playerNameProvider));
+  late final TextEditingController _name = TextEditingController(text: ref.read(playerNameProvider));
 
   String get _playerName => _name.text.trim().isEmpty ? 'Jogador' : _name.text.trim();
 
@@ -44,7 +44,8 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     final hasDecks = ref.watch(decksProvider).decks.isNotEmpty;
     final hasData = ref.watch(cardDataProvider).hasData;
     return Scaffold(
-      body: SafeArea(
+      body: MaxWidth(
+          child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
           children: [
@@ -80,8 +81,8 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () => Navigator.of(context)
-                  .push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
               icon: const Icon(Icons.bar_chart),
               label: const Text('Histórico e estatísticas'),
             ),
@@ -114,7 +115,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

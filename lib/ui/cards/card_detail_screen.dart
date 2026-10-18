@@ -109,6 +109,28 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Telemóvel: tudo numa coluna. Tablet: imagem e coleção à esquerda,
+  /// texto, legalidade e rulings à direita.
+  Widget _twoColumns({required List<Widget> left, required List<Widget> right}) {
+    return LayoutBuilder(builder: (context, box) {
+      if (box.maxWidth < 840) {
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          children: [...left, const SizedBox(height: 16), ...right],
+        );
+      }
+      return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 440,
+          child: ListView(padding: const EdgeInsets.fromLTRB(24, 8, 12, 32), children: left),
+        ),
+        Expanded(
+          child: ListView(padding: const EdgeInsets.fromLTRB(12, 8, 24, 32), children: right),
+        ),
+      ]);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(printsProvider);
@@ -122,9 +144,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(card.name, overflow: TextOverflow.ellipsis)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-        children: [
+      body: _twoColumns(
+        left: [
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340),
@@ -165,7 +186,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
             const SizedBox(height: 12),
             ...widget.actions,
           ],
-          const SizedBox(height: 16),
+        ],
+        right: [
           for (final f in faces) ...[
             Card(
               child: Padding(
@@ -217,8 +239,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
             spacing: 6,
             runSpacing: 6,
             children: [
-              for (final MapEntry(key: k, value: label) in _formatLabels.entries)
-                _LegalChip(label, legal[k]),
+              for (final MapEntry(key: k, value: label) in _formatLabels.entries) _LegalChip(label, legal[k]),
             ],
           ),
           if (rulings.isNotEmpty) ...[
@@ -229,8 +250,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                 padding: const EdgeInsets.only(top: 10),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(r.publishedAt,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                   OracleText(r.comment, style: theme.textTheme.bodyMedium),
                 ]),
               ),
@@ -290,8 +310,8 @@ class _OwnedAndDecks extends ConsumerWidget {
             Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(owned == 0 ? 'Não tens esta carta' : 'Tens $owned',
-                  style: theme.textTheme.titleSmall),
+              child:
+                  Text(owned == 0 ? 'Não tens esta carta' : 'Tens $owned', style: theme.textTheme.titleSmall),
             ),
             IconButton(
               onPressed: owned > 0 ? () => collection.change(oracleId, -1) : null,

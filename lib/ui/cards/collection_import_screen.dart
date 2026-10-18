@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/collection.dart';
 import '../../data/providers.dart';
+import '../widgets/responsive.dart';
 
 /// Importar cartas para "As minhas cartas": CSV (ManaBox, Moxfield,
 /// Deckbox, Dragon Shield...) ou lista de texto, colada ou de um ficheiro.
@@ -86,7 +87,8 @@ class _CollectionImportScreenState extends ConsumerState<CollectionImportScreen>
     final total = r?.cards.values.fold(0, (a, b) => a + b) ?? 0;
     return Scaffold(
       appBar: AppBar(title: const Text('Importar as minhas cartas')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: MaxWidth(
+          child: ListView(padding: const EdgeInsets.all(16), children: [
         Text(
           'Exporta a coleção do ManaBox, Moxfield, Deckbox, Dragon Shield ou outra app em CSV, '
           'ou cola uma lista de texto ("1 Sol Ring"). As várias edições da mesma carta '
@@ -139,10 +141,12 @@ class _CollectionImportScreenState extends ConsumerState<CollectionImportScreen>
         ),
         if (r != null) ...[
           const SizedBox(height: 16),
-          Text('$total cartas reconhecidas (${r.cards.length} diferentes).', style: theme.textTheme.titleSmall),
+          Text('$total cartas reconhecidas (${r.cards.length} diferentes).',
+              style: theme.textTheme.titleSmall),
           if (r.unresolved.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text('Não encontradas (${r.unresolved.length}):', style: TextStyle(color: theme.colorScheme.error)),
+            Text('Não encontradas (${r.unresolved.length}):',
+                style: TextStyle(color: theme.colorScheme.error)),
             for (final l in r.unresolved.take(30))
               Text('linha ${l.line}: ${l.qty} ${l.name}', style: theme.textTheme.bodySmall),
           ],
@@ -158,7 +162,7 @@ class _CollectionImportScreenState extends ConsumerState<CollectionImportScreen>
             ),
           ),
         ]),
-      ]),
+      ])),
     );
   }
 }

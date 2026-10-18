@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
 import '../widgets/card_view.dart';
+import '../widgets/responsive.dart';
 
 /// Resultado do seletor: uma versão, ou [isDefault] para voltar à por defeito.
 class VersionChoice {
@@ -118,14 +119,13 @@ Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text('${list.length} versões',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ),
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.all(12),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: MediaQuery.of(ctx).size.width > 700 ? 5 : 3,
+                      crossAxisCount: cardColumns(MediaQuery.of(ctx).size.width, target: 170),
                       childAspectRatio: cardAspect * 0.86,
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,

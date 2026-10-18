@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../qr_scan_screen.dart';
 import 'deck_editor_screen.dart';
+import '../widgets/responsive.dart';
 
 /// Importar uma lista colada (Moxfield, Archidekt, MTGO, Arena).
 class DeckImportScreen extends ConsumerStatefulWidget {
@@ -35,8 +36,8 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
   }
 
   Future<void> _scan() async {
-    final raw = await Navigator.of(context)
-        .push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
+    final raw =
+        await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
     if (raw == null || !mounted) return;
     final shared = SharedDeck.tryDecode(raw);
     if (shared == null) {
@@ -100,7 +101,8 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           IconButton(tooltip: 'Ler QR de um deck', onPressed: _scan, icon: const Icon(Icons.qr_code_scanner)),
         ],
       ),
-      body: ListView(
+      body: MaxWidth(
+          child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           TextField(
@@ -159,7 +161,7 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
             Expanded(child: FilledButton(onPressed: _import, child: const Text('Importar'))),
           ]),
         ],
-      ),
+      )),
     );
   }
 }

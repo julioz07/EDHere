@@ -120,14 +120,14 @@ class ManaSymbol extends StatelessWidget {
 
     // Símbolo que a fonte não tem: letra simples.
     inner ??= Center(
-        child: FittedBox(
-          child: Padding(
-            padding: const EdgeInsets.all(2),
-            child: Text(symbol,
-                style: TextStyle(color: _ink, fontWeight: FontWeight.w800, fontSize: size * 0.6)),
-          ),
+      child: FittedBox(
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child:
+              Text(symbol, style: TextStyle(color: _ink, fontWeight: FontWeight.w800, fontSize: size * 0.6)),
         ),
-      );
+      ),
+    );
     return Container(
       width: size,
       height: size,

@@ -209,8 +209,8 @@ class TableCardView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(pt.$1,
-                  style: TextStyle(
-                      color: Colors.white, fontSize: iconSize * 0.9, fontWeight: FontWeight.w800)),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: iconSize * 0.9, fontWeight: FontWeight.w800)),
             ),
           ),
         if (targeted)

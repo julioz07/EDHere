@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../cards/cards_tab.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
+import '../widgets/responsive.dart';
 import 'deck_editor_screen.dart';
 import 'deck_import_screen.dart';
 
@@ -78,10 +79,16 @@ class DecksTab extends ConsumerWidget {
                         textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
                   ),
                 )
-              : ListView.separated(
+              : GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                  // Telemóvel: uma coluna. Tablet: várias.
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: isWide(context) ? 560 : 10000,
+                    mainAxisExtent: 124,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                  ),
                   itemCount: decks.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {
                     final d = decks[i];
                     final format = GameFormat.byId(d.format);
@@ -119,8 +126,8 @@ class DecksTab extends ConsumerWidget {
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Text(d.name,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700)),
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${format.label} · ${format.hasCommandZone ? d.playableCount : d.count(Board.main)} cartas'

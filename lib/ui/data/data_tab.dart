@@ -5,6 +5,7 @@ import '../../data/card_data_service.dart';
 import '../../data/image_service.dart';
 import '../../data/providers.dart';
 import '../about_screen.dart';
+import '../widgets/responsive.dart';
 
 String formatBytes(int b) {
   if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(0)} KB';
@@ -51,12 +52,13 @@ class _DataTabState extends ConsumerState<DataTab> {
           IconButton(
             tooltip: 'Sobre',
             icon: const Icon(Icons.info_outline),
-            onPressed: () => Navigator.of(context)
-                .push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
+            onPressed: () =>
+                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
           ),
         ],
       ),
-      body: ListView(
+      body: MaxWidth(
+          child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -71,8 +73,7 @@ class _DataTabState extends ConsumerState<DataTab> {
                 const SizedBox(height: 10),
                 if (data.hasData) ...[
                   Text('${data.cardCount} cartas · dados do Scryfall de ${formatDate(data.localDate)}'),
-                  Text(data.hasRulings ? 'Com rulings' : 'Sem rulings',
-                      style: theme.textTheme.bodySmall),
+                  Text(data.hasRulings ? 'Com rulings' : 'Sem rulings', style: theme.textTheme.bodySmall),
                 ] else
                   const Text('Ainda não descarregada.'),
                 if (data.remoteOracle != null) ...[
@@ -98,8 +99,8 @@ class _DataTabState extends ConsumerState<DataTab> {
                     const SizedBox(height: 6),
                   ],
                   Text(data.message,
-                      style: TextStyle(
-                          color: data.phase == DataPhase.error ? theme.colorScheme.error : null)),
+                      style:
+                          TextStyle(color: data.phase == DataPhase.error ? theme.colorScheme.error : null)),
                   const SizedBox(height: 8),
                 ],
                 Row(children: [
@@ -151,10 +152,7 @@ class _DataTabState extends ConsumerState<DataTab> {
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
-          if (!data.hasData)
-            const Text('Descarrega primeiro a base de cartas.')
-          else
-            _Packs(size: _size),
+          if (!data.hasData) const Text('Descarrega primeiro a base de cartas.') else _Packs(size: _size),
           if (data.hasData) ...[
             const SizedBox(height: 8),
             const _VersionsPack(),
@@ -162,7 +160,7 @@ class _DataTabState extends ConsumerState<DataTab> {
           const SizedBox(height: 16),
           _Storage(),
         ],
-      ),
+      )),
     );
   }
 }
@@ -292,7 +290,8 @@ class _StorageState extends ConsumerState<_Storage> {
                             content: const Text('Podes voltar a descarregá-las depois.'),
                             actions: [
                               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-                              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
                             ],
                           ),
                         );

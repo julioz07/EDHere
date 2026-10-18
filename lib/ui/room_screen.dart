@@ -8,6 +8,7 @@ import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_model.dart';
 import '../room/room_session.dart';
+import 'widgets/responsive.dart';
 
 class RoomScreen extends StatefulWidget {
   const RoomScreen({super.key, required this.session, this.diagnostics = false});
@@ -50,14 +51,11 @@ class _RoomScreenState extends State<RoomScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(isHost ? 'Fechar a sala?' : 'Sair da sala?'),
-        content: Text(isHost
-            ? 'Todos os jogadores perdem a ligação.'
-            : 'O teu lugar fica livre para outra pessoa.'),
+        content: Text(
+            isHost ? 'Todos os jogadores perdem a ligação.' : 'O teu lugar fica livre para outra pessoa.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ficar')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(isHost ? 'Fechar' : 'Sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(isHost ? 'Fechar' : 'Sair')),
         ],
       ),
     );
@@ -98,11 +96,11 @@ class _RoomScreenState extends State<RoomScreen> {
                 ),
               ],
             ),
-            body: Column(
+            body: MaxWidth(
+                child: Column(
               children: [
                 if (status == LinkStatus.reconnecting) const _ReconnectingBanner(),
-                if (status == LinkStatus.closed && !_closing)
-                  const _ClosedBanner(),
+                if (status == LinkStatus.closed && !_closing) const _ClosedBanner(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: _StatusCard(model: _model, session: s),
@@ -131,7 +129,7 @@ class _RoomScreenState extends State<RoomScreen> {
                   ),
                 ),
               ],
-            ),
+            )),
           );
         },
       ),
@@ -164,11 +162,11 @@ class _StatusCard extends StatelessWidget {
       if (client != null) ('Saltos', '${client.seqGaps}'),
       if (client != null) ('Religações', '${client.reconnects}'),
       if (session.isHost)
-        ('Endereço', session.hostAddresses.isEmpty
-            ? 'sem rede'
-            : '${session.hostAddresses.first}:${session.port}'),
-      if (client?.connectedHost != null)
-        ('Anfitrião', '${client!.connectedHost}:${client.port}'),
+        (
+          'Endereço',
+          session.hostAddresses.isEmpty ? 'sem rede' : '${session.hostAddresses.first}:${session.port}'
+        ),
+      if (client?.connectedHost != null) ('Anfitrião', '${client!.connectedHost}:${client.port}'),
       if (session.hotspot != null) ('Hotspot', session.hotspot!.ssid),
     ];
     return Card(
@@ -310,8 +308,7 @@ class _EventLog extends StatelessWidget {
             children: [
               SizedBox(
                 width: 44,
-                child: Text('#${e.seq}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+                child: Text('#${e.seq}', style: theme.textTheme.bodySmall?.copyWith(color: muted)),
               ),
               Expanded(
                 child: Text(
@@ -372,8 +369,7 @@ class _ReconnectingBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const MaterialBanner(
         backgroundColor: Color(0x33E0A63A),
-        leading: SizedBox.square(
-            dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        leading: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
         content: Text('Ligação perdida. A tentar voltar a ligar…'),
         actions: [SizedBox.shrink()],
       );
@@ -459,8 +455,7 @@ class _QrSheetState extends State<_QrSheet> {
               Text(
                 'IP: ${s.hostAddresses.join(' / ')} · porta ${s.port}',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
           ],

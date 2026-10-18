@@ -29,8 +29,7 @@ Future<int?> pickNumber(BuildContext context, String title, {int initial = 1, in
               onPressed: n > 1 ? () => set(() => n--) : null, icon: const Icon(Icons.remove)),
           SizedBox(
             width: 64,
-            child: Text('$n',
-                textAlign: TextAlign.center, style: Theme.of(ctx).textTheme.headlineMedium),
+            child: Text('$n', textAlign: TextAlign.center, style: Theme.of(ctx).textTheme.headlineMedium),
           ),
           IconButton.filledTonal(
               onPressed: n < max ? () => set(() => n++) : null, icon: const Icon(Icons.add)),
@@ -44,11 +43,8 @@ Future<int?> pickNumber(BuildContext context, String title, {int initial = 1, in
   );
 }
 
-Future<int?> pickPlayer(BuildContext context, GameController ctrl, String title,
-    {bool excludeSelf = false}) {
-  final players = ctrl.state.players.values
-      .where((p) => !excludeSelf || p.seat != ctrl.actor)
-      .toList();
+Future<int?> pickPlayer(BuildContext context, GameController ctrl, String title, {bool excludeSelf = false}) {
+  final players = ctrl.state.players.values.where((p) => !excludeSelf || p.seat != ctrl.actor).toList();
   return showDialog<int>(
     context: context,
     builder: (ctx) => SimpleDialog(
@@ -87,9 +83,10 @@ Widget _header(BuildContext context, db.Card? card, CardInstance? inst, {String?
             const SizedBox(height: 4),
             Text(card.typeLine, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 6),
-            OracleText(card.faces.isNotEmpty
-                ? card.faces[(inst?.faceIndex ?? 0).clamp(0, card.faces.length - 1)].oracleText
-                : card.oracleText,
+            OracleText(
+                card.faces.isNotEmpty
+                    ? card.faces[(inst?.faceIndex ?? 0).clamp(0, card.faces.length - 1)].oracleText
+                    : card.oracleText,
                 style: Theme.of(context).textTheme.bodySmall),
           ],
           if (subtitle != null) ...[
@@ -168,8 +165,10 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
             final seat = await pickPlayer(context, ctrl, 'Novo controlador');
             if (seat != null) ctrl.send(Intent(Ev.control, {'id': c.id, 'seat': seat}));
           }),
-          _tile(Icons.content_copy, 'Duplicar como token', () => done(() => ctrl.send(
-              ctrl.table.createToken(ctrl.actor,
+          _tile(
+              Icons.content_copy,
+              'Duplicar como token',
+              () => done(() => ctrl.send(ctrl.table.createToken(ctrl.actor,
                   oracleId: c.oracleId,
                   name: c.tokenName,
                   pt: c.tokenPt,
@@ -186,8 +185,7 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
         const Divider(),
         for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
           if (z != c.zone && (z != Zone.command || c.isCommander || ctrl.state.format == 'free'))
-            _tile(_zoneIcon(z), 'Para ${_zoneWithArticle(z)}',
-                () => done(() => ctrl.moveCard(c, z))),
+            _tile(_zoneIcon(z), 'Para ${_zoneWithArticle(z)}', () => done(() => ctrl.moveCard(c, z))),
         _tile(Icons.vertical_align_top, 'Para o topo do grimório',
             () => done(() => ctrl.moveCard(c, Zone.library))),
         _tile(Icons.vertical_align_bottom, 'Para o fundo do grimório',
@@ -217,23 +215,29 @@ IconData _zoneIcon(Zone z) => switch (z) {
 
 Future<CardInstance?> _pickFieldCard(BuildContext context, GameController ctrl,
     {required int exclude, required String title}) {
-  final cards = ctrl.state.cards.values
-      .where((c) => c.zone == Zone.battlefield && c.id != exclude)
-      .toList()
+  final cards = ctrl.state.cards.values.where((c) => c.zone == Zone.battlefield && c.id != exclude).toList()
     ..sort((a, b) => a.controller.compareTo(b.controller));
-  return _sheet<CardInstance>(context, (ctx) => ListView(shrinkWrap: true, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(title, style: Theme.of(ctx).textTheme.titleMedium),
-        ),
-        for (final c in cards)
-          ListTile(
-            leading: SizedBox(width: 36, child: TableCardView(instance: c, card: ctrl.card(c.oracleId, printId: c.printId), width: 36, showTapped: false)),
-            title: Text(ctrl.card(c.oracleId, printId: c.printId)?.name ?? c.tokenName ?? 'Token'),
-            subtitle: Text(ctrl.state.players[c.controller]?.name ?? ''),
-            onTap: () => Navigator.pop(ctx, c),
-          ),
-      ]));
+  return _sheet<CardInstance>(
+      context,
+      (ctx) => ListView(shrinkWrap: true, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(title, style: Theme.of(ctx).textTheme.titleMedium),
+            ),
+            for (final c in cards)
+              ListTile(
+                leading: SizedBox(
+                    width: 36,
+                    child: TableCardView(
+                        instance: c,
+                        card: ctrl.card(c.oracleId, printId: c.printId),
+                        width: 36,
+                        showTapped: false)),
+                title: Text(ctrl.card(c.oracleId, printId: c.printId)?.name ?? c.tokenName ?? 'Token'),
+                subtitle: Text(ctrl.state.players[c.controller]?.name ?? ''),
+                onTap: () => Navigator.pop(ctx, c),
+              ),
+          ]));
 }
 
 /// Escolher um alvo: um jogador ou uma carta no campo de qualquer jogador.
@@ -282,7 +286,10 @@ Future<void> showTargetPicker(BuildContext context, GameController ctrl, {int? f
                       onTap: () => pick({'to': c.id}),
                       child: LayoutBuilder(
                         builder: (_, k) => TableCardView(
-                            instance: c, card: ctrl.card(c.oracleId, printId: c.printId), width: k.maxWidth, showTapped: false),
+                            instance: c,
+                            card: ctrl.card(c.oracleId, printId: c.printId),
+                            width: k.maxWidth,
+                            showTapped: false),
                       ),
                     ),
               ],
@@ -295,166 +302,200 @@ Future<void> showTargetPicker(BuildContext context, GameController ctrl, {int? f
 
 /// Habilidades comuns que se podem dar a uma carta (equipamentos, auras...).
 const grantableAbilities = [
-  'Flying', 'First strike', 'Double strike', 'Deathtouch', 'Lifelink', 'Vigilance',
-  'Trample', 'Haste', 'Hexproof', 'Indestructible', 'Menace', 'Reach', 'Defender',
-  'Ward', 'Shroud', 'Protection', 'Infect', 'Unblockable',
+  'Flying',
+  'First strike',
+  'Double strike',
+  'Deathtouch',
+  'Lifelink',
+  'Vigilance',
+  'Trample',
+  'Haste',
+  'Hexproof',
+  'Indestructible',
+  'Menace',
+  'Reach',
+  'Defender',
+  'Ward',
+  'Shroud',
+  'Protection',
+  'Infect',
+  'Unblockable',
 ];
 
 /// Contadores, modificadores de poder/resistência e habilidades de uma carta.
 /// Os valores tocam-se para escrever um número diretamente.
 Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardInstance c) {
   const kinds = [
-    CounterKind.plus, CounterKind.minus, CounterKind.loyalty, 'charge', 'shield', 'stun',
-    'oil', 'time', 'lore', 'flood', 'doom', 'rad',
+    CounterKind.plus,
+    CounterKind.minus,
+    CounterKind.loyalty,
+    'charge',
+    'shield',
+    'stun',
+    'oil',
+    'time',
+    'lore',
+    'flood',
+    'doom',
+    'rad',
   ];
-  return _sheet<void>(context, (ctx) => ListenableBuilder(
-        listenable: ctrl,
-        builder: (ctx, _) {
-          final cur = ctrl.state.cards[c.id];
-          if (cur == null) return const SizedBox.shrink();
-          final theme = Theme.of(ctx);
-          final card = ctrl.card(cur.oracleId, printId: cur.printId);
-          final pt = effectivePt(cur, card);
-          final extra = cur.counters.keys
-              .where((k) => !kinds.contains(k) && !k.startsWith('mod:') && !k.startsWith(CounterKind.keyword))
-              .toList();
+  return _sheet<void>(
+      context,
+      (ctx) => ListenableBuilder(
+            listenable: ctrl,
+            builder: (ctx, _) {
+              final cur = ctrl.state.cards[c.id];
+              if (cur == null) return const SizedBox.shrink();
+              final theme = Theme.of(ctx);
+              final card = ctrl.card(cur.oracleId, printId: cur.printId);
+              final pt = effectivePt(cur, card);
+              final extra = cur.counters.keys
+                  .where((k) =>
+                      !kinds.contains(k) && !k.startsWith('mod:') && !k.startsWith(CounterKind.keyword))
+                  .toList();
 
-          void setValue(String kind, int v) =>
-              ctrl.send(Intent(Ev.counter, {'id': cur.id, 'kind': kind, 'value': v}));
+              void setValue(String kind, int v) =>
+                  ctrl.send(Intent(Ev.counter, {'id': cur.id, 'kind': kind, 'value': v}));
 
-          Future<void> edit(String kind, String label, {bool signed = false}) async {
-            final v = await pickValue(ctx, label, initial: cur.counters[kind] ?? 0, signed: signed);
-            if (v != null) setValue(kind, v);
-          }
+              Future<void> edit(String kind, String label, {bool signed = false}) async {
+                final v = await pickValue(ctx, label, initial: cur.counters[kind] ?? 0, signed: signed);
+                if (v != null) setValue(kind, v);
+              }
 
-          Widget stepper(String kind, String label, {Widget? leading, bool signed = false}) {
-            final v = cur.counters[kind] ?? 0;
-            return ListTile(
-              dense: true,
-              leading: leading,
-              title: Text(label),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                IconButton(
-                  onPressed: signed || v > 0 ? () => ctrl.counter(cur, kind, -1) : null,
-                  icon: const Icon(Icons.remove_circle_outline),
-                ),
-                InkWell(
-                  onTap: () => edit(kind, label, signed: signed),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 48,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outline),
+              Widget stepper(String kind, String label, {Widget? leading, bool signed = false}) {
+                final v = cur.counters[kind] ?? 0;
+                return ListTile(
+                  dense: true,
+                  leading: leading,
+                  title: Text(label),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                      onPressed: signed || v > 0 ? () => ctrl.counter(cur, kind, -1) : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    InkWell(
+                      onTap: () => edit(kind, label, signed: signed),
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(signed && v > 0 ? '+$v' : '$v',
-                        textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-                  ),
-                ),
-                IconButton(onPressed: () => ctrl.counter(cur, kind, 1), icon: const Icon(Icons.add_circle_outline)),
-              ]),
-            );
-          }
-
-          Widget icon(String kind) {
-            final i = counterIconFor(kind);
-            return i == null ? const SizedBox(width: 24) : ManaIcon(i, size: 22);
-          }
-
-          Future<void> addOther() async {
-            final text = TextEditingController();
-            final kind = await showDialog<String>(
-              context: ctx,
-              builder: (d) => AlertDialog(
-                title: const Text('Outro contador'),
-                content: TextField(
-                  controller: text,
-                  autofocus: true,
-                  decoration: const InputDecoration(hintText: 'Ex.: page, verse, fuse'),
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
-                  TextButton(
-                    onPressed: () => Navigator.pop(d, text.text.trim().toLowerCase()),
-                    child: const Text('Juntar'),
-                  ),
-                ],
-              ),
-            );
-            if (kind != null && kind.isNotEmpty) ctrl.counter(cur, kind, 1);
-          }
-
-          return SizedBox(
-            height: MediaQuery.of(ctx).size.height * 0.8,
-            child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Row(children: [
-                  Expanded(
-                    child: Text(card?.name ?? cur.tokenName ?? 'Carta', style: theme.textTheme.titleMedium),
-                  ),
-                  if (pt != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: pt.$2 ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 48,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.outline),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(signed && v > 0 ? '+$v' : '$v',
+                            textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
                       ),
-                      child: Text(pt.$1,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800, color: pt.$2 ? theme.colorScheme.onPrimary : null)),
                     ),
-                ]),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text('Poder e resistência (equipamentos, efeitos)', style: theme.textTheme.labelLarge),
-              ),
-              stepper(CounterKind.modPower, 'Poder ±', signed: true, leading: const Icon(Icons.flash_on)),
-              stepper(CounterKind.modToughness, 'Resistência ±',
-                  signed: true, leading: const Icon(Icons.shield_outlined)),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text('Contadores', style: theme.textTheme.labelLarge),
-              ),
-              for (final k in [...kinds, ...extra]) stepper(k, k, leading: icon(k)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: addOther,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Outro contador'),
+                    IconButton(
+                        onPressed: () => ctrl.counter(cur, kind, 1),
+                        icon: const Icon(Icons.add_circle_outline)),
+                  ]),
+                );
+              }
+
+              Widget icon(String kind) {
+                final i = counterIconFor(kind);
+                return i == null ? const SizedBox(width: 24) : ManaIcon(i, size: 22);
+              }
+
+              Future<void> addOther() async {
+                final text = TextEditingController();
+                final kind = await showDialog<String>(
+                  context: ctx,
+                  builder: (d) => AlertDialog(
+                    title: const Text('Outro contador'),
+                    content: TextField(
+                      controller: text,
+                      autofocus: true,
+                      decoration: const InputDecoration(hintText: 'Ex.: page, verse, fuse'),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(d, text.text.trim().toLowerCase()),
+                        child: const Text('Juntar'),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Text('Habilidades dadas por efeitos', style: theme.textTheme.labelLarge),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(spacing: 6, runSpacing: 6, children: [
-                  for (final kw in grantableAbilities)
-                    Builder(builder: (_) {
-                      final key = '${CounterKind.keyword}$kw';
-                      final on = (cur.counters[key] ?? 0) > 0;
-                      final ic = abilityIconFor(kw);
-                      return FilterChip(
-                        selected: on,
-                        avatar: ic == null ? null : ManaIcon(ic, size: 18),
-                        label: Text(kw),
-                        onSelected: (v) => setValue(key, v ? 1 : 0),
-                      );
-                    }),
+                );
+                if (kind != null && kind.isNotEmpty) ctrl.counter(cur, kind, 1);
+              }
+
+              return SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.8,
+                child: ListView(padding: const EdgeInsets.only(bottom: 16), children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Row(children: [
+                      Expanded(
+                        child:
+                            Text(card?.name ?? cur.tokenName ?? 'Carta', style: theme.textTheme.titleMedium),
+                      ),
+                      if (pt != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                pt.$2 ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(pt.$1,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: pt.$2 ? theme.colorScheme.onPrimary : null)),
+                        ),
+                    ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text('Poder e resistência (equipamentos, efeitos)',
+                        style: theme.textTheme.labelLarge),
+                  ),
+                  stepper(CounterKind.modPower, 'Poder ±', signed: true, leading: const Icon(Icons.flash_on)),
+                  stepper(CounterKind.modToughness, 'Resistência ±',
+                      signed: true, leading: const Icon(Icons.shield_outlined)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text('Contadores', style: theme.textTheme.labelLarge),
+                  ),
+                  for (final k in [...kinds, ...extra]) stepper(k, k, leading: icon(k)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: addOther,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Outro contador'),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text('Habilidades dadas por efeitos', style: theme.textTheme.labelLarge),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(spacing: 6, runSpacing: 6, children: [
+                      for (final kw in grantableAbilities)
+                        Builder(builder: (_) {
+                          final key = '${CounterKind.keyword}$kw';
+                          final on = (cur.counters[key] ?? 0) > 0;
+                          final ic = abilityIconFor(kw);
+                          return FilterChip(
+                            selected: on,
+                            avatar: ic == null ? null : ManaIcon(ic, size: 18),
+                            label: Text(kw),
+                            onSelected: (v) => setValue(key, v ? 1 : 0),
+                          );
+                        }),
+                    ]),
+                  ),
                 ]),
-              ),
-            ]),
-          );
-        },
-      ));
+              );
+            },
+          ));
 }
 
 /// Pede um número inteiro escrevendo-o (aceita negativos se [signed]).
@@ -488,8 +529,8 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
       f();
     }
 
-    final isInstant = card != null &&
-        (card.frontType.contains('Instant') || card.frontType.contains('Sorcery'));
+    final isInstant =
+        card != null && (card.frontType.contains('Instant') || card.frontType.contains('Sorcery'));
     return ListView(shrinkWrap: true, children: [
       _header(ctx, card, null),
       if (isInstant)
@@ -504,8 +545,11 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
           () => done(() => ctrl.playFromHand(pc, to: Zone.library))),
       _tile(Icons.vertical_align_bottom, 'Pôr no fundo do grimório',
           () => done(() => ctrl.playFromHand(pc, to: Zone.library, pos: 'bottom'))),
-      _tile(Icons.visibility, 'Revelar a todos', () => done(() => ctrl.send(
-          ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))),
+      _tile(
+          Icons.visibility,
+          'Revelar a todos',
+          () => done(() =>
+              ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))),
       if (card != null)
         _tile(Icons.zoom_in, 'Ver carta', () {
           Navigator.pop(ctx);
@@ -581,47 +625,49 @@ Future<void> showBottomPicker(BuildContext context, GameController ctrl, int n) 
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => ListenableBuilder(listenable: ctrl, builder: (ctx, _) => StatefulBuilder(builder: (ctx, set) {
-      final hand = ctrl.zones(ctrl.actor).hand;
-      return AlertDialog(
-        title: Text('Escolhe $n para o fundo'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 4,
-            childAspectRatio: cardAspect,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
-            children: [
-              for (final pc in hand)
-                GestureDetector(
-                  onTap: () => set(() => chosen.contains(pc.pid)
-                      ? chosen.remove(pc.pid)
-                      : (chosen.length < n ? chosen.add(pc.pid) : null)),
-                  child: Opacity(
-                    opacity: chosen.contains(pc.pid) ? 0.4 : 1,
-                    child: ctrl.card(pc.oracleId, printId: pc.printId) == null
-                        ? const CardBack()
-                        : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 4),
+    builder: (ctx) => ListenableBuilder(
+        listenable: ctrl,
+        builder: (ctx, _) => StatefulBuilder(builder: (ctx, set) {
+              final hand = ctrl.zones(ctrl.actor).hand;
+              return AlertDialog(
+                title: Text('Escolhe $n para o fundo'),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    crossAxisCount: 4,
+                    childAspectRatio: cardAspect,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    children: [
+                      for (final pc in hand)
+                        GestureDetector(
+                          onTap: () => set(() => chosen.contains(pc.pid)
+                              ? chosen.remove(pc.pid)
+                              : (chosen.length < n ? chosen.add(pc.pid) : null)),
+                          child: Opacity(
+                            opacity: chosen.contains(pc.pid) ? 0.4 : 1,
+                            child: ctrl.card(pc.oracleId, printId: pc.printId) == null
+                                ? const CardBack()
+                                : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 4),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: chosen.length == n && chosen.every((p) => hand.any((c) => c.pid == p))
-                ? () {
-                    Navigator.pop(ctx);
-                    ctrl.send(ctrl.table.bottom(ctrl.actor, chosen.toList()));
-                  }
-                : null,
-            child: Text('Confirmar (${chosen.length}/$n)'),
-          ),
-        ],
-      );
-    })),
+                actions: [
+                  TextButton(
+                    onPressed: chosen.length == n && chosen.every((p) => hand.any((c) => c.pid == p))
+                        ? () {
+                            Navigator.pop(ctx);
+                            ctrl.send(ctrl.table.bottom(ctrl.actor, chosen.toList()));
+                          }
+                        : null,
+                    child: Text('Confirmar (${chosen.length}/$n)'),
+                  ),
+                ],
+              );
+            })),
   );
 }
 
@@ -631,272 +677,299 @@ Future<void> showScrySheet(BuildContext context, GameController ctrl, int n, {re
   final top = ctrl.zones(seat).library.take(n).toList();
   final where = {for (final c in top) c.pid: 'top'};
   final order = [...top];
-  return _sheet<void>(context, (ctx) => StatefulBuilder(builder: (ctx, set) {
-        final altLabel = kind == 'surveil' ? 'Cemitério' : 'Fundo';
-        return Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Text(
-              kind == 'look'
-                  ? 'Topo do grimório (só tu vês)'
-                  : '${kind == 'scry' ? 'Scry' : 'Surveil'} $n · arrasta para ordenar (o primeiro fica no topo)',
-              style: Theme.of(ctx).textTheme.titleSmall,
-            ),
-          ),
-          Flexible(
-            child: ReorderableListView(
-              shrinkWrap: true,
-              onReorder: (a, b) => set(() {
-                if (b > a) b--;
-                order.insert(b, order.removeAt(a));
-              }),
-              children: [
-                for (final pc in order)
-                  ListTile(
-                    key: ValueKey(pc.pid),
-                    leading: SizedBox(
-                      width: 40,
-                      child: ctrl.card(pc.oracleId, printId: pc.printId) == null
-                          ? const CardBack()
-                          : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 3),
-                    ),
-                    title: Text(ctrl.cardName(pc.oracleId)),
-                    trailing: kind == 'look'
-                        ? null
-                        : SegmentedButton<String>(
-                            showSelectedIcon: false,
-                            segments: [
-                              const ButtonSegment(value: 'top', label: Text('Topo')),
-                              ButtonSegment(value: 'alt', label: Text(altLabel)),
-                            ],
-                            selected: {where[pc.pid] == 'top' ? 'top' : 'alt'},
-                            onSelectionChanged: (s) => set(() => where[pc.pid] = s.first),
-                          ),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                if (kind == 'look') {
-                  // Só reordena o topo, sem dizer nada aos outros.
-                  ctrl.send(ctrl.table.scryDone(seat, top: [for (final c in order) c.pid], kind: 'look'));
-                  return;
-                }
-                final keep = [for (final c in order) if (where[c.pid] == 'top') c.pid];
-                final alt = [for (final c in order) if (where[c.pid] != 'top') c.pid];
-                ctrl.send(kind == 'surveil'
-                    ? ctrl.table.scryDone(seat, top: keep, graveyard: alt, kind: 'surveil')
-                    : ctrl.table.scryDone(seat, top: keep, bottom: alt));
-              },
-              child: const Text('Concluir'),
-            ),
-          ),
-        ]);
-      }));
+  return _sheet<void>(
+      context,
+      (ctx) => StatefulBuilder(builder: (ctx, set) {
+            final altLabel = kind == 'surveil' ? 'Cemitério' : 'Fundo';
+            return Column(mainAxisSize: MainAxisSize.min, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Text(
+                  kind == 'look'
+                      ? 'Topo do grimório (só tu vês)'
+                      : '${kind == 'scry' ? 'Scry' : 'Surveil'} $n · arrasta para ordenar (o primeiro fica no topo)',
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
+              ),
+              Flexible(
+                child: ReorderableListView(
+                  shrinkWrap: true,
+                  onReorder: (a, b) => set(() {
+                    if (b > a) b--;
+                    order.insert(b, order.removeAt(a));
+                  }),
+                  children: [
+                    for (final pc in order)
+                      ListTile(
+                        key: ValueKey(pc.pid),
+                        leading: SizedBox(
+                          width: 40,
+                          child: ctrl.card(pc.oracleId, printId: pc.printId) == null
+                              ? const CardBack()
+                              : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 3),
+                        ),
+                        title: Text(ctrl.cardName(pc.oracleId)),
+                        trailing: kind == 'look'
+                            ? null
+                            : SegmentedButton<String>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  const ButtonSegment(value: 'top', label: Text('Topo')),
+                                  ButtonSegment(value: 'alt', label: Text(altLabel)),
+                                ],
+                                selected: {where[pc.pid] == 'top' ? 'top' : 'alt'},
+                                onSelectionChanged: (s) => set(() => where[pc.pid] = s.first),
+                              ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    if (kind == 'look') {
+                      // Só reordena o topo, sem dizer nada aos outros.
+                      ctrl.send(ctrl.table.scryDone(seat, top: [for (final c in order) c.pid], kind: 'look'));
+                      return;
+                    }
+                    final keep = [
+                      for (final c in order)
+                        if (where[c.pid] == 'top') c.pid
+                    ];
+                    final alt = [
+                      for (final c in order)
+                        if (where[c.pid] != 'top') c.pid
+                    ];
+                    ctrl.send(kind == 'surveil'
+                        ? ctrl.table.scryDone(seat, top: keep, graveyard: alt, kind: 'surveil')
+                        : ctrl.table.scryDone(seat, top: keep, bottom: alt));
+                  },
+                  child: const Text('Concluir'),
+                ),
+              ),
+            ]);
+          }));
 }
 
 /// Procurar no grimório (tutor): escolher uma carta e para onde vai.
 Future<void> showLibrarySearch(BuildContext context, GameController ctrl) {
   final seat = ctrl.actor;
   var filter = '';
-  return _sheet<void>(context, (ctx) => StatefulBuilder(builder: (ctx, set) {
-        final lib = [...ctrl.zones(seat).library]
-          ..sort((a, b) => ctrl.cardName(a.oracleId).compareTo(ctrl.cardName(b.oracleId)));
-        final shown = lib
-            .where((c) => filter.isEmpty ||
-                ctrl.cardName(c.oracleId).toLowerCase().contains(filter.toLowerCase()) ||
-                (ctrl.card(c.oracleId, printId: c.printId)?.typeLine.toLowerCase().contains(filter.toLowerCase()) ?? false))
-            .toList();
-        return SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.8,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search), hintText: 'Nome ou tipo (ex.: land)'),
-                onChanged: (v) => set(() => filter = v),
-              ),
-            ),
-            Expanded(
-              child: ListView(children: [
-                for (final pc in shown)
-                  if (ctrl.card(pc.oracleId, printId: pc.printId) case final card?)
-                    CardTile(card, onTap: () async {
-                      final to = await showDialog<String>(
-                        context: ctx,
-                        builder: (d) => SimpleDialog(title: Text(card.name), children: [
-                          for (final (k, l) in const [
-                            ('hand', 'Para a mão'),
-                            ('battlefield', 'Para o campo'),
-                            ('top', 'Para o topo'),
-                            ('graveyard', 'Para o cemitério'),
-                            ('exile', 'Para o exílio'),
-                          ])
-                            SimpleDialogOption(onPressed: () => Navigator.pop(d, k), child: Text(l)),
-                        ]),
-                      );
-                      if (to == null || !ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      if (to == 'top') {
-                        ctrl.send(ctrl.table.shuffle(seat));
-                        // Depois de baralhar, a carta procurada vai para o topo.
-                        ctrl.send(ctrl.table.scryDone(seat, top: [pc.pid], kind: 'look'));
-                      } else {
-                        ctrl.fromLibrary(pc, Zone.byId(to));
-                        ctrl.send(ctrl.table.shuffle(seat));
-                      }
-                    }),
+  return _sheet<void>(
+      context,
+      (ctx) => StatefulBuilder(builder: (ctx, set) {
+            final lib = [...ctrl.zones(seat).library]
+              ..sort((a, b) => ctrl.cardName(a.oracleId).compareTo(ctrl.cardName(b.oracleId)));
+            final shown = lib
+                .where((c) =>
+                    filter.isEmpty ||
+                    ctrl.cardName(c.oracleId).toLowerCase().contains(filter.toLowerCase()) ||
+                    (ctrl
+                            .card(c.oracleId, printId: c.printId)
+                            ?.typeLine
+                            .toLowerCase()
+                            .contains(filter.toLowerCase()) ??
+                        false))
+                .toList();
+            return SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.8,
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search), hintText: 'Nome ou tipo (ex.: land)'),
+                    onChanged: (v) => set(() => filter = v),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(children: [
+                    for (final pc in shown)
+                      if (ctrl.card(pc.oracleId, printId: pc.printId) case final card?)
+                        CardTile(card, onTap: () async {
+                          final to = await showDialog<String>(
+                            context: ctx,
+                            builder: (d) => SimpleDialog(title: Text(card.name), children: [
+                              for (final (k, l) in const [
+                                ('hand', 'Para a mão'),
+                                ('battlefield', 'Para o campo'),
+                                ('top', 'Para o topo'),
+                                ('graveyard', 'Para o cemitério'),
+                                ('exile', 'Para o exílio'),
+                              ])
+                                SimpleDialogOption(onPressed: () => Navigator.pop(d, k), child: Text(l)),
+                            ]),
+                          );
+                          if (to == null || !ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          if (to == 'top') {
+                            ctrl.send(ctrl.table.shuffle(seat));
+                            // Depois de baralhar, a carta procurada vai para o topo.
+                            ctrl.send(ctrl.table.scryDone(seat, top: [pc.pid], kind: 'look'));
+                          } else {
+                            ctrl.fromLibrary(pc, Zone.byId(to));
+                            ctrl.send(ctrl.table.shuffle(seat));
+                          }
+                        }),
+                  ]),
+                ),
               ]),
-            ),
-          ]),
-        );
-      }));
+            );
+          }));
 }
 
 /// Lista de uma zona pública (cemitério, exílio, comando) de um jogador.
 Future<void> showZoneList(BuildContext context, GameController ctrl, int seat, Zone zone) {
-  return _sheet<void>(context, (ctx) => ListenableBuilder(
-        listenable: ctrl,
-        builder: (ctx, _) {
-          final cards = ctrl.state.zoneCards(seat, zone).toList().reversed.toList();
-          return SizedBox(
-            height: MediaQuery.of(ctx).size.height * 0.6,
-            child: Column(children: [
-              Text('${zone.label} de ${ctrl.state.players[seat]?.name} (${cards.length})',
-                  style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Expanded(
-                child: cards.isEmpty
-                    ? const Center(child: Text('Vazio'))
-                    : GridView.count(
-                        padding: const EdgeInsets.all(12),
-                        crossAxisCount: 4,
-                        childAspectRatio: cardAspect,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        children: [
-                          for (final c in cards)
-                            GestureDetector(
-                              onTap: () => showCardActions(context, ctrl, c),
-                              child: LayoutBuilder(
-                                builder: (_, k) => TableCardView(
-                                    instance: c, card: ctrl.card(c.oracleId, printId: c.printId), width: k.maxWidth, showTapped: false),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-            ]),
-          );
-        },
-      ));
+  return _sheet<void>(
+      context,
+      (ctx) => ListenableBuilder(
+            listenable: ctrl,
+            builder: (ctx, _) {
+              final cards = ctrl.state.zoneCards(seat, zone).toList().reversed.toList();
+              return SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.6,
+                child: Column(children: [
+                  Text('${zone.label} de ${ctrl.state.players[seat]?.name} (${cards.length})',
+                      style: Theme.of(ctx).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: cards.isEmpty
+                        ? const Center(child: Text('Vazio'))
+                        : GridView.count(
+                            padding: const EdgeInsets.all(12),
+                            crossAxisCount: 4,
+                            childAspectRatio: cardAspect,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            children: [
+                              for (final c in cards)
+                                GestureDetector(
+                                  onTap: () => showCardActions(context, ctrl, c),
+                                  child: LayoutBuilder(
+                                    builder: (_, k) => TableCardView(
+                                        instance: c,
+                                        card: ctrl.card(c.oracleId, printId: c.printId),
+                                        width: k.maxWidth,
+                                        showTapped: false),
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ),
+                ]),
+              );
+            },
+          ));
 }
 
 /// Vida, dano de comandante e contadores de um jogador.
 Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat) {
-  return _sheet<void>(context, (ctx) => ListenableBuilder(
-        listenable: ctrl,
-        builder: (ctx, _) {
-          final s = ctrl.state;
-          final p = s.players[seat]!;
-          final theme = Theme.of(ctx);
-          final enemyCommanders = s.cards.values.where((c) => c.isCommander && c.owner != seat).toList();
-          Widget stepper(String label, int value, void Function(int) change, {Widget? leading}) => ListTile(
-                dense: true,
-                leading: leading,
-                title: Text(label),
-                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  IconButton(onPressed: () => change(-1), icon: const Icon(Icons.remove_circle_outline)),
-                  SizedBox(width: 32, child: Text('$value', textAlign: TextAlign.center, style: theme.textTheme.titleMedium)),
-                  IconButton(onPressed: () => change(1), icon: const Icon(Icons.add_circle_outline)),
+  return _sheet<void>(
+      context,
+      (ctx) => ListenableBuilder(
+            listenable: ctrl,
+            builder: (ctx, _) {
+              final s = ctrl.state;
+              final p = s.players[seat]!;
+              final theme = Theme.of(ctx);
+              final enemyCommanders = s.cards.values.where((c) => c.isCommander && c.owner != seat).toList();
+              Widget stepper(String label, int value, void Function(int) change, {Widget? leading}) =>
+                  ListTile(
+                    dense: true,
+                    leading: leading,
+                    title: Text(label),
+                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                      IconButton(onPressed: () => change(-1), icon: const Icon(Icons.remove_circle_outline)),
+                      SizedBox(
+                          width: 32,
+                          child: Text('$value',
+                              textAlign: TextAlign.center, style: theme.textTheme.titleMedium)),
+                      IconButton(onPressed: () => change(1), icon: const Icon(Icons.add_circle_outline)),
+                    ]),
+                  );
+              return ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 16), children: [
+                Center(child: Text(p.name, style: theme.textTheme.titleLarge)),
+                const SizedBox(height: 8),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  for (final d in [-5, -1])
+                    Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
+                        onPressed: () => ctrl.life(seat, d),
+                        child: Text('$d'),
+                      ),
+                    ),
+                  SizedBox(
+                    width: 96,
+                    child: Text('${p.life}',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                  ),
+                  for (final d in [1, 5])
+                    Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
+                        onPressed: () => ctrl.life(seat, d),
+                        child: Text('+$d'),
+                      ),
+                    ),
                 ]),
-              );
-          return ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 16), children: [
-            Center(child: Text(p.name, style: theme.textTheme.titleLarge)),
-            const SizedBox(height: 8),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              for (final d in [-5, -1])
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
-                    onPressed: () => ctrl.life(seat, d),
-                    child: Text('$d'),
+                if (enemyCommanders.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Text('Dano de comandante (desconta na vida)', style: theme.textTheme.titleSmall),
                   ),
+                  for (final c in enemyCommanders)
+                    stepper(
+                      '${ctrl.card(c.oracleId, printId: c.printId)?.frontName ?? '?'} (${s.players[c.owner]?.name})',
+                      p.commanderDamage[c.id] ?? 0,
+                      (d) => ctrl.commanderDamage(seat, c.id, d),
+                      leading: Icon(Icons.star_rounded,
+                          color: (p.commanderDamage[c.id] ?? 0) >= 21 ? EdhColors.bad : Colors.amber),
+                    ),
+                ],
+                const Divider(),
+                for (final (k, l) in const [
+                  (PlayerCounter.poison, 'Veneno'),
+                  (PlayerCounter.energy, 'Energia'),
+                  (PlayerCounter.experience, 'Experiência'),
+                  (PlayerCounter.rad, 'Rad'),
+                ])
+                  stepper(l, p.counters[k] ?? 0, (d) => ctrl.playerCounter(seat, k, d)),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.gps_fixed, color: targetGlow),
+                  title: const Text('Apontar para este jogador'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ctrl.send(Intent(Ev.arrow, {'seat': seat}));
+                  },
                 ),
-              SizedBox(
-                width: 96,
-                child: Text('${p.life}',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
-              ),
-              for (final d in [1, 5])
-                Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
-                    onPressed: () => ctrl.life(seat, d),
-                    child: Text('+$d'),
-                  ),
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Monarca'),
+                  value: s.monarch == seat,
+                  onChanged: (v) => ctrl.send(Intent(Ev.monarch, {'seat': v ? seat : null})),
                 ),
-            ]),
-            if (enemyCommanders.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text('Dano de comandante (desconta na vida)', style: theme.textTheme.titleSmall),
-              ),
-              for (final c in enemyCommanders)
-                stepper(
-                  '${ctrl.card(c.oracleId, printId: c.printId)?.frontName ?? '?'} (${s.players[c.owner]?.name})',
-                  p.commanderDamage[c.id] ?? 0,
-                  (d) => ctrl.commanderDamage(seat, c.id, d),
-                  leading: Icon(Icons.star_rounded,
-                      color: (p.commanderDamage[c.id] ?? 0) >= 21 ? EdhColors.bad : Colors.amber),
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Iniciativa'),
+                  value: s.initiative == seat,
+                  onChanged: (v) => ctrl.send(Intent(Ev.initiative, {'seat': v ? seat : null})),
                 ),
-            ],
-            const Divider(),
-            for (final (k, l) in const [
-              (PlayerCounter.poison, 'Veneno'),
-              (PlayerCounter.energy, 'Energia'),
-              (PlayerCounter.experience, 'Experiência'),
-              (PlayerCounter.rad, 'Rad'),
-            ])
-              stepper(l, p.counters[k] ?? 0, (d) => ctrl.playerCounter(seat, k, d)),
-            ListTile(
-              dense: true,
-              leading: const Icon(Icons.gps_fixed, color: targetGlow),
-              title: const Text('Apontar para este jogador'),
-              onTap: () {
-                Navigator.pop(ctx);
-                ctrl.send(Intent(Ev.arrow, {'seat': seat}));
-              },
-            ),
-            SwitchListTile(
-              dense: true,
-              title: const Text('Monarca'),
-              value: s.monarch == seat,
-              onChanged: (v) => ctrl.send(Intent(Ev.monarch, {'seat': v ? seat : null})),
-            ),
-            SwitchListTile(
-              dense: true,
-              title: const Text('Iniciativa'),
-              value: s.initiative == seat,
-              onChanged: (v) => ctrl.send(Intent(Ev.initiative, {'seat': v ? seat : null})),
-            ),
-            SwitchListTile(
-              dense: true,
-              title: const Text('Derrotado'),
-              value: p.defeated,
-              onChanged: (v) => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v})),
-            ),
-          ]);
-        },
-      ));
+                SwitchListTile(
+                  dense: true,
+                  title: const Text('Derrotado'),
+                  value: p.defeated,
+                  onChanged: (v) => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v})),
+                ),
+              ]);
+            },
+          ));
 }
 
 /// Criar tokens: oficiais (da base) ou personalizados.
@@ -905,90 +978,105 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
   final pt = TextEditingController();
   var qty = 1;
   var query = '';
-  return _sheet<void>(context, (ctx) => StatefulBuilder(builder: (ctx, set) {
-        final results = query.trim().isEmpty
-            ? const <db.Card>[]
-            : ctrl.repo.search('$query is:token', limit: 40).cards;
-        void create({String? oracleId, String? n, String? p}) {
-          Navigator.pop(ctx);
-          ctrl.send(ctrl.table.createToken(ctrl.actor,
-              oracleId: oracleId, name: n, pt: p, qty: qty, x: 0.5, y: 0.5));
-        }
+  return _sheet<void>(
+      context,
+      (ctx) => StatefulBuilder(builder: (ctx, set) {
+            final results = query.trim().isEmpty
+                ? const <db.Card>[]
+                : ctrl.repo.search('$query is:token', limit: 40).cards;
+            void create({String? oracleId, String? n, String? p}) {
+              Navigator.pop(ctx);
+              ctrl.send(ctrl.table
+                  .createToken(ctrl.actor, oracleId: oracleId, name: n, pt: p, qty: qty, x: 0.5, y: 0.5));
+            }
 
-        return SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.8,
-          child: Column(children: [
-            Text('Criar token', style: Theme.of(ctx).textTheme.titleMedium),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Text('Quantidade'),
-              IconButton(onPressed: qty > 1 ? () => set(() => qty--) : null, icon: const Icon(Icons.remove)),
-              Text('$qty', style: Theme.of(ctx).textTheme.titleMedium),
-              IconButton(onPressed: () => set(() => qty++), icon: const Icon(Icons.add)),
-            ]),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search), hintText: 'Token oficial (ex.: treasure, soldier)'),
-                onChanged: (v) => set(() => query = v),
-              ),
-            ),
-            Expanded(
-              child: ListView(children: [
-                for (final c in results)
-                  CardTile(c, onTap: () => create(oracleId: c.oracleId), subtitle: '${c.typeLine} ${c.power ?? ''}${c.power == null ? '' : '/${c.toughness}'}'),
-              ]),
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(children: [
-                Expanded(child: TextField(controller: name, decoration: const InputDecoration(labelText: 'Personalizado'))),
-                const SizedBox(width: 8),
-                SizedBox(width: 72, child: TextField(controller: pt, decoration: const InputDecoration(labelText: 'P/R'))),
-                IconButton.filled(
-                  onPressed: () => create(
-                      n: name.text.trim().isEmpty ? 'Token' : name.text.trim(),
-                      p: pt.text.trim().isEmpty ? null : pt.text.trim()),
-                  icon: const Icon(Icons.add),
+            return SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.8,
+              child: Column(children: [
+                Text('Criar token', style: Theme.of(ctx).textTheme.titleMedium),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Text('Quantidade'),
+                  IconButton(
+                      onPressed: qty > 1 ? () => set(() => qty--) : null, icon: const Icon(Icons.remove)),
+                  Text('$qty', style: Theme.of(ctx).textTheme.titleMedium),
+                  IconButton(onPressed: () => set(() => qty++), icon: const Icon(Icons.add)),
+                ]),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search), hintText: 'Token oficial (ex.: treasure, soldier)'),
+                    onChanged: (v) => set(() => query = v),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(children: [
+                    for (final c in results)
+                      CardTile(c,
+                          onTap: () => create(oracleId: c.oracleId),
+                          subtitle:
+                              '${c.typeLine} ${c.power ?? ''}${c.power == null ? '' : '/${c.toughness}'}'),
+                  ]),
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  child: Row(children: [
+                    Expanded(
+                        child: TextField(
+                            controller: name, decoration: const InputDecoration(labelText: 'Personalizado'))),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                        width: 72,
+                        child:
+                            TextField(controller: pt, decoration: const InputDecoration(labelText: 'P/R'))),
+                    IconButton.filled(
+                      onPressed: () => create(
+                          n: name.text.trim().isEmpty ? 'Token' : name.text.trim(),
+                          p: pt.text.trim().isEmpty ? null : pt.text.trim()),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ]),
                 ),
               ]),
-            ),
-          ]),
-        );
-      }));
+            );
+          }));
 }
 
 Future<void> showLogSheet(BuildContext context, GameController ctrl) {
-  return _sheet<void>(context, (ctx) => ListenableBuilder(
-        listenable: ctrl,
-        builder: (ctx, _) {
-          final log = ctrl.state.log.reversed.toList();
-          return SizedBox(
-            height: MediaQuery.of(ctx).size.height * 0.7,
-            child: Column(children: [
-              Text('Registo', style: Theme.of(ctx).textTheme.titleMedium),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: log.length,
-                  itemBuilder: (_, i) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      SizedBox(
-                          width: 44,
-                          child: Text('#${log[i].seq}',
-                              style: Theme.of(ctx).textTheme.bodySmall
-                                  ?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
-                      Expanded(child: Text(ctrl.logText(log[i]))),
-                    ]),
+  return _sheet<void>(
+      context,
+      (ctx) => ListenableBuilder(
+            listenable: ctrl,
+            builder: (ctx, _) {
+              final log = ctrl.state.log.reversed.toList();
+              return SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.7,
+                child: Column(children: [
+                  Text('Registo', style: Theme.of(ctx).textTheme.titleMedium),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: log.length,
+                      itemBuilder: (_, i) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          SizedBox(
+                              width: 44,
+                              child: Text('#${log[i].seq}',
+                                  style: Theme.of(ctx)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
+                          Expanded(child: Text(ctrl.logText(log[i]))),
+                        ]),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ]),
-          );
-        },
-      ));
+                ]),
+              );
+            },
+          ));
 }
 
 Future<void> showRevealDialog(BuildContext context, GameController ctrl, Reveal r) {
