@@ -29,8 +29,9 @@ class TutorialRunner extends ChangeNotifier implements TableView {
   /// O que dizer depois de uma ação que não era a pedida.
   String? hint;
 
-  /// O que os adversários estão a fazer (enquanto [busy]).
-  String? narration;
+  /// O que os adversários fizeram nesta vez, por ordem (enquanto [busy]).
+  final List<String> narrated = [];
+  String? get narration => narrated.lastOrNull;
   bool busy = false;
   bool finished = false;
 
@@ -231,27 +232,30 @@ class TutorialRunner extends ChangeNotifier implements TableView {
 
   Future<void> _runActs(List<Act> acts, {bool quiet = false}) async {
     busy = true;
+    narrated.clear();
     notifyListeners();
     for (final act in acts) {
       if (_disposed) return;
       if (!quiet && act.say != null) {
-        narration = act.say;
+        narrated.add(act.say!);
         notifyListeners();
-        await Future<void>.delayed(_ms(650));
+        // Tempo para ler o que vai acontecer antes de acontecer.
+        await Future<void>.delayed(_ms(1200));
       }
       // A mesa mostra o campo de quem está a jogar, para se ver o que fez.
       final who = _seatOf(act);
       if (!quiet && who != null && who != ctrl.viewSeat) ctrl.setView(who);
       _script(() => _perform(act));
-      if (!quiet) await Future<void>.delayed(_ms(act is Pause ? act.ms : 450));
+      // Cada jogada fica uns segundos na mesa, para se ver o que mudou.
+      if (!quiet) await Future<void>.delayed(_ms(act is Pause ? act.ms * 2 : 2300));
     }
-    narration = null;
-    busy = false;
     if (!quiet && ctrl.viewSeat != 0) {
       // Uma pausa no campo do adversário, e volta ao teu.
-      await Future<void>.delayed(_ms(500));
+      await Future<void>.delayed(_ms(1500));
       if (!_disposed) ctrl.setView(0);
     }
+    narrated.clear();
+    busy = false;
     notifyListeners();
   }
 

@@ -7,6 +7,7 @@ import '../../tutorial/tutorial.dart';
 import '../../tutorial/tutorial_runner.dart';
 import '../table/table_screen.dart';
 import '../widgets/card_view.dart';
+import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'glossary_screen.dart';
 
@@ -35,22 +36,36 @@ class TutorialProgress extends ChangeNotifier {
 final tutorialProgressProvider =
     ChangeNotifierProvider<TutorialProgress>((ref) => TutorialProgress(ref.watch(prefsProvider)));
 
-/// Texto com **negrito** e linhas "• " como lista.
+/// Texto com **negrito**, linhas "• " como lista e símbolos de mana {G}.
 class RichLesson extends StatelessWidget {
-  const RichLesson(this.text, {super.key, this.style});
+  const RichLesson(this.text, {super.key, this.style, this.textAlign});
   final String text;
   final TextStyle? style;
+  final TextAlign? textAlign;
+
+  static final _mana = RegExp(r'\{([0-9WUBRGCXTS]|[WUBRG2]/[WUBRGP])\}');
 
   @override
   Widget build(BuildContext context) {
     final base = style ?? Theme.of(context).textTheme.bodyLarge;
     final spans = <InlineSpan>[];
+    final size = (base?.fontSize ?? 14) * 1.05;
     final parts = text.split('**');
     for (var i = 0; i < parts.length; i++) {
-      spans.add(
-          TextSpan(text: parts[i], style: i.isOdd ? const TextStyle(fontWeight: FontWeight.w700) : null));
+      final bold = i.isOdd ? const TextStyle(fontWeight: FontWeight.w700) : null;
+      // Os custos ({1}{G}, {T}…) desenham-se como símbolos de mana.
+      var last = 0;
+      for (final m in _mana.allMatches(parts[i])) {
+        if (m.start > last) spans.add(TextSpan(text: parts[i].substring(last, m.start), style: bold));
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: ManaSymbol(m.group(1)!, size: size),
+        ));
+        last = m.end;
+      }
+      if (last < parts[i].length) spans.add(TextSpan(text: parts[i].substring(last), style: bold));
     }
-    return Text.rich(TextSpan(style: base?.copyWith(height: 1.4), children: spans));
+    return Text.rich(TextSpan(style: base?.copyWith(height: 1.4), children: spans), textAlign: textAlign);
   }
 }
 
@@ -329,8 +344,8 @@ class _LessonPage extends ConsumerWidget {
                     if (tc.caption != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child:
-                            Text(tc.caption!, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
+                        child: RichLesson(tc.caption!,
+                            textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
                       ),
                   ]),
                 ),
@@ -402,11 +417,39 @@ class _CoachPanelState extends State<CoachPanel> {
                     ]),
                     if (!_small) ...[
                       if (r.busy && r.narration != null)
-                        Row(children: [
-                          Icon(Icons.hourglass_top_rounded, size: 20, color: theme.colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Expanded(child: RichLesson(r.narration!, style: theme.textTheme.bodyMedium)),
-                        ])
+                        // Tudo o que os adversários fizeram nesta vez; a última em destaque.
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxHeight: short ? 64 : 180),
+                          child: SingleChildScrollView(
+                            reverse: true,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              for (final (i, line) in r.narrated.indexed)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4, right: 8),
+                                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Icon(
+                                      i == r.narrated.length - 1
+                                          ? Icons.hourglass_top_rounded
+                                          : Icons.check_rounded,
+                                      size: 20,
+                                      color: i == r.narrated.length - 1
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: RichLesson(line,
+                                          style: i == r.narrated.length - 1
+                                              ? theme.textTheme.bodyMedium
+                                                  ?.copyWith(fontWeight: FontWeight.w600)
+                                              : theme.textTheme.bodyMedium
+                                                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                    ),
+                                  ]),
+                                ),
+                            ]),
+                          ),
+                        )
                       else if (s != null && !r.busy)
                         ConstrainedBox(
                           constraints: BoxConstraints(maxHeight: short ? 64 : 180),
@@ -424,7 +467,7 @@ class _CoachPanelState extends State<CoachPanel> {
                             Icon(Icons.info_outline, size: 18, color: theme.colorScheme.error),
                             const SizedBox(width: 6),
                             Expanded(
-                              child: Text(r.hint!,
+                              child: RichLesson(r.hint!,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
                             ),
