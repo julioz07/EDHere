@@ -885,10 +885,23 @@ class _StatsView extends StatelessWidget {
               Text(bracket.count == 0
                   ? 'Sem Game Changers.'
                   : '${plural(bracket.count, 'Game Changer', 'Game Changers')}: ${bracket.gameChangers.join(', ')}'),
+              if (bracket.landDenial.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text('Destruição de terrenos em massa (só nos brackets 4–5): ${bracket.landDenial.join(', ')}',
+                    style: TextStyle(color: theme.colorScheme.error)),
+              ],
+              if (bracket.extraTurns.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                    '${plural(bracket.extraTurns.length, 'carta de turno extra', 'cartas de turno extra')}: '
+                    '${bracket.extraTurns.join(', ')}'
+                    '${bracket.chainsExtraTurns ? '. Nos brackets 1–3 não se encadeiam turnos extra.' : ''}',
+                    style: bracket.chainsExtraTurns ? TextStyle(color: theme.colorScheme.error) : null),
+              ],
               const SizedBox(height: 4),
               Text(
-                'Conta só os Game Changers. Combos de duas cartas, destruição de terrenos em massa '
-                'e turnos extra também sobem o bracket.',
+                'Combos de duas cartas também contam para o bracket e não se detetam pela lista: '
+                'fala disso com a mesa.',
                 style: theme.textTheme.bodySmall,
               ),
             ]),

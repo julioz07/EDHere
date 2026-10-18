@@ -683,7 +683,7 @@ class Table {
     final shown = p['fd'] == true ? 'uma carta virada para baixo' : '[[$oid]]';
     final verb = switch ((from, to)) {
       (Zone.hand, Zone.battlefield) => 'jogou',
-      (Zone.hand, Zone.graveyard) => 'descartou',
+      (Zone.hand, Zone.graveyard) => p['cast'] == true ? 'lançou' : 'descartou',
       _ => 'moveu',
     };
     return verb == 'moveu' ? '${pl.name} moveu $shown ${_whereTo(to, pos)}' : '${pl.name} $verb $shown';
@@ -739,8 +739,9 @@ class Table {
   Intent shuffle(int seat) => Intent(Ev.shuffle, {'seat': seat});
 
   /// Move uma carta da mão ou do grimório (pid) para outra zona.
+  /// [cast]: um instantâneo ou feitiço lançado (o registo diz "lançou").
   Intent moveHidden(int seat, Zone from, int pid, Zone to,
-      {double? x, double? y, String pos = 'top', bool faceDown = false}) {
+      {double? x, double? y, String pos = 'top', bool faceDown = false, bool cast = false}) {
     final z = zonesOf(seat);
     final list = from == Zone.hand ? z.hand : z.library;
     final card = list.firstWhere((c) => c.pid == pid);
@@ -753,6 +754,7 @@ class Table {
       if (x != null) 'x': x,
       if (y != null) 'y': y,
       if (faceDown) 'fd': true,
+      if (cast) 'cast': true,
       if (!to.hidden) ...{
         'newId': newId(seat),
         'o': card.oracleId,

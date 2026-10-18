@@ -332,7 +332,13 @@ Future<void> showTargetPicker(BuildContext context, GameController ctrl, {int? f
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
               children: [
-                for (final c in s.zoneCards(seat, Zone.battlefield))
+                // Criaturas e outras cartas primeiro; os terrenos (raramente o alvo) no fim.
+                for (final c in [
+                  ...s
+                      .zoneCards(seat, Zone.battlefield)
+                      .where((c) => !(ctrl.card(c.oracleId)?.isLand ?? false)),
+                  ...s.zoneCards(seat, Zone.battlefield).where((c) => ctrl.card(c.oracleId)?.isLand ?? false),
+                ])
                   if (c.id != from)
                     GestureDetector(
                       onTap: () => pick({'to': c.id}),
@@ -587,7 +593,7 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
       _header(ctx, card, null),
       if (isInstant)
         _tile(Icons.flash_on, 'Lançar (vai para o cemitério)',
-            () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard))),
+            () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard, cast: true))),
       _tile(Icons.dashboard_outlined, 'Jogar para o campo', () => done(() => ctrl.playFromHand(pc))),
       _tile(Icons.flip_to_back, 'Jogar virada para baixo',
           () => done(() => ctrl.playFromHand(pc, faceDown: true))),

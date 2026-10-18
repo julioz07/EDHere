@@ -31,6 +31,11 @@ List<Intent> _candidates(TutorialRunner r) {
     for (final x in mine.where((x) => x.zone == Zone.battlefield))
       Intent(Ev.counter, {'id': x.id, 'kind': CounterKind.plus, 'delta': 1}),
     t.draw(0, 1),
+    t.mulligan(0),
+    // Bloqueios: setas das minhas criaturas para as dos outros.
+    for (final x in mine.where((x) => x.zone == Zone.battlefield))
+      for (final y in s.cards.values.where((y) => y.owner != 0 && y.zone == Zone.battlefield))
+        Intent(Ev.arrow, {'from': x.id, 'to': y.id}),
     for (final seat in [1, 2]) Intent(Ev.life, {'seat': seat, 'delta': -1}),
     for (final seat in [1, 2])
       for (final x in mine.where((x) => x.isCommander))
@@ -97,6 +102,12 @@ void main() {
           r.ctrl.sendAs(0, i);
           if (r.ctrl.state.seq != before) {
             moved = true;
+            // Uma seta não pedida fica na mesa e não acaba o passo: tenta outra.
+            if (i.type == Ev.arrow && !(s.done!(r))) {
+              r.ctrl.sendAs(0, const Intent(Ev.arrow, {}));
+              moved = false;
+              continue;
+            }
             break;
           }
         }
@@ -119,6 +130,41 @@ void main() {
     r.ctrl.sendAs(0, r.ctrl.table.movePublic(marwynCard.id, Zone.battlefield));
     expect(r.state.seq, before);
     expect(r.hint, isNotNull);
+    r.dispose();
+  });
+
+  test('o capítulo de responder bloqueia e resolve a cadeia', () async {
+    final chapter = commanderChapters.firstWhere((c) => c.id == 'cmd-respond');
+    final r = TutorialRunner(chapter: chapter, repo: repo, playerName: 'Eu');
+    expect(r.build(), isTrue);
+    await r.start();
+    await _settle();
+    // Uma seta para outra criatura que não ataca não conta como bloqueio.
+    expect(r.step, 0);
+    final warrior = r.cardsNamed('Elvish Warrior', zone: Zone.battlefield, seat: 0).single;
+    final isamaru = r.cardsNamed('Isamaru, Hound of Konda', zone: Zone.battlefield).single;
+    r.ctrl.sendAs(0, Intent(Ev.arrow, {'from': warrior.id, 'to': isamaru.id}));
+    await _settle();
+    expect(r.step, greaterThan(0));
+    r.dispose();
+  });
+
+  test('o mulligan de treino devolve a mão do guião', () async {
+    final chapter = commanderChapters.firstWhere((c) => c.id == 'cmd-start');
+    final r = TutorialRunner(chapter: chapter, repo: repo, playerName: 'Eu');
+    expect(r.build(), isTrue);
+    await r.start();
+    await _settle();
+    r.next();
+    await _settle();
+    r.next();
+    await _settle();
+    r.ctrl.mulligan();
+    await _settle();
+    expect(r.ctrl.zones(0).hand.map((c) => repo.get(c.oracleId)!.name),
+        unorderedEquals(['Forest', 'Forest', 'Forest', 'Elvish Mystic', 'Grizzly Bears', 'Elvish Visionary',
+            'Leatherback Baloth']));
+    expect(r.state.players[0]!.handCount, 7);
     r.dispose();
   });
 

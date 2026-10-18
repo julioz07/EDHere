@@ -4,7 +4,6 @@ import 'chapters_commander.dart';
 import 'tutorial.dart';
 import 'tutorial_runner.dart';
 
-const giantGrowth = 'Giant Growth';
 const solRing = 'Sol Ring';
 const anthem = 'Glorious Anthem';
 const cultivate = 'Cultivate';
@@ -125,7 +124,7 @@ final basicsChapters = <Chapter>[
       const TStep(
         'O Elvish Mystic dá mana quando se vira, mas acabou de entrar: uma criatura que entrou neste turno '
         'não pode virar-se nem atacar (chama-se **enjoo de invocação**). No próximo turno já pode.',
-        focus: mystic,
+        focus: [mystic],
       ),
       TStep(
         'Já não podes fazer mais nada. Passa a vez com **Passar turno**.',
@@ -135,7 +134,7 @@ final basicsChapters = <Chapter>[
       ),
       TStep(
         'É outra vez a tua vez. No início do turno, as tuas cartas viradas **desviram-se** sozinhas. Depois '
-        '**compras uma carta**: toca no teu **Grimório** e escolhe **Comprar 1**.',
+        '**compras uma carta**: toca uma vez no teu **Grimório** (por baixo do campo).',
         run: const [
           Play(bruno, mountain, say: 'O Bruno joga uma Mountain e passa.'),
           PassTurn(),
@@ -144,7 +143,7 @@ final basicsChapters = <Chapter>[
         ],
         allow: Allow.draw,
         done: Done.handAtLeast(0, 6),
-        hint: 'Toca no teu Grimório (por baixo do campo) e escolhe "Comprar 1".',
+        hint: 'Toca uma vez no teu Grimório (por baixo do campo): compras uma carta.',
       ),
       TStep(
         'Joga outro **Forest**.',
@@ -192,14 +191,15 @@ final basicsChapters = <Chapter>[
         'A app não obriga a seguir as fases: é uma mesa, como a da tua casa. O botão no topo mostra a fase '
             'em que estás, se quiseres marcá-la para os outros.\n\n'
             '• Ao **passar o turno**, as cartas do jogador seguinte desviram-se sozinhas.\n'
-            '• Para comprar, toca no **Grimório** → **Comprar 1** (ou liga a compra automática no menu).',
+            '• Para comprar, toca no **Grimório**. Mantendo o dedo no Grimório abres mais opções (baralhar, '
+            'scry, mulligan…).',
       ),
     ],
   ),
   Chapter(
     id: 'mtg-combat',
     title: 'Criaturas e combate',
-    summary: 'Atacar, bloquear, o dano e as habilidades das criaturas',
+    summary: 'Atacar, bloquear para te defender, o dano e as habilidades',
     minutes: 5,
     pages: const [
       TPage(
@@ -235,15 +235,15 @@ final basicsChapters = <Chapter>[
         TSeat(
           name: 'Tu',
           commander: marwyn,
-          battlefield: [..._many(forest, 3), bears, warrior],
-          hand: [forest, baloth],
+          battlefield: [..._many(forest, 3), bears, warrior, baloth],
+          hand: [forest],
           library: _many(forest, 8),
         ),
         TSeat(
           name: 'Bruno',
           commander: krenko,
           battlefield: [..._many(mountain, 3), piker],
-          hand: [mountain, bolt],
+          hand: [raging, mountain],
           library: _many(mountain, 8),
         ),
         TSeat(
@@ -257,14 +257,17 @@ final basicsChapters = <Chapter>[
     ),
     steps: [
       const TStep(
-        'Tens o **Grizzly Bears** (2/2) e o **Elvish Warrior** (2/3) em campo desde turnos anteriores, por isso '
-        'podem atacar. O Bruno tem um **Goblin Piker** (2/1) desvirado, que pode bloquear.',
+        'Tens o **Grizzly Bears** (2/2), o **Elvish Warrior** (2/3) e o **Leatherback Baloth** (4/5) em campo '
+        'desde turnos anteriores, por isso podem atacar. O Bruno tem um **Goblin Piker** (2/1) desvirado, que '
+        'pode bloquear.',
       ),
       TStep(
-        'Ataca o Bruno com as duas criaturas: vira o **Grizzly Bears** e o **Elvish Warrior**.',
+        'Ataca o Bruno com o **Grizzly Bears** e o **Elvish Warrior**: vira os dois. O **Baloth fica em casa** '
+        'para te defender no turno do Bruno (uma criatura virada não pode bloquear).',
         allow: Allow.tap([bears, warrior]),
         done: Done.all([Done.tapped(bears), Done.tapped(warrior)]),
-        hint: 'Toca em cada uma e escolhe "Virar (tap)".',
+        hint: 'Toca no Grizzly Bears e no Elvish Warrior e escolhe "Virar (tap)". O Baloth fica desvirado.',
+        focus: [bears, warrior],
       ),
       TStep(
         'O Bruno bloqueou o Grizzly Bears com o Goblin Piker. Cada um deu 2 de dano ao outro: o Goblin Piker '
@@ -277,17 +280,46 @@ final basicsChapters = <Chapter>[
         allow: Allow.move(bears, Zone.graveyard),
         done: Done.inZone(bears, Zone.graveyard),
         hint: 'Toca no Grizzly Bears e escolhe "Para o cemitério".',
+        focus: [bears],
       ),
       TStep(
         'O Elvish Warrior não foi bloqueado: dá 2 de dano ao Bruno. Toca no cartão do **Bruno** (lá em cima) '
-        'e tira-lhe **2 de vida**.',
+        'e tira-lhe **2 de vida** (o botão **-1**, duas vezes).',
         allow: Allow.life(bruno),
         done: Done.lifeAtMost(bruno, 38),
-        hint: 'Toca no cartão do Bruno e usa o − da vida, duas vezes.',
+        hint: 'Toca no cartão do Bruno e usa o -1 da vida, duas vezes.',
+      ),
+      TStep(
+        'Passa a vez. Agora vais ver o outro lado: defender.',
+        allow: Allow.passTurn,
+        done: Done.turnOf(bruno),
+        hint: 'Toca em "Passar turno".',
+      ),
+      TStep(
+        'O Bruno jogou um **Raging Goblin** (1/1) com **Haste** e atacou-te logo. O Warrior está virado (atacou) '
+        'e não pode bloquear, mas o **Baloth** ficou em casa. Bloqueia: toca no **Leatherback Baloth** → '
+        '**Apontar para…** → **Raging Goblin**.',
+        run: const [
+          Play(bruno, mountain, say: 'O Bruno joga uma Mountain…'),
+          Play(bruno, raging, say: '…e um Raging Goblin, com Haste.'),
+          Attack(bruno, raging, 0, say: 'O Raging Goblin ataca-te!'),
+        ],
+        done: Done.arrow(baloth, raging),
+        hint: 'Toca no Leatherback Baloth, escolhe "Apontar para…" e depois o Raging Goblin.',
+        focus: [baloth],
       ),
       const TStep(
-        'É assim o combate: atacas, o defensor escolhe os bloqueios e trocam dano. Na app, o dano e as '
-        'criaturas mortas registam-se à mão, como numa mesa a sério.',
+        'O Baloth dá 4 de dano ao Goblin (resistência 1), que morre. O Goblin dá 1 ao Baloth (resistência 5), '
+        'que nem sente. Bloquear bem é tão importante como atacar.',
+        run: [
+          ClearTargets(bruno),
+          ClearTargets(0),
+          MoveCard(bruno, raging, Zone.graveyard, say: 'O Raging Goblin morre.'),
+        ],
+      ),
+      const TStep(
+        'É assim o combate: atacas, o defensor escolhe os bloqueios e trocam dano. Na app, o bloqueio marca-se '
+        'com uma seta, e o dano e as criaturas mortas registam-se à mão, como numa mesa a sério.',
       ),
     ],
   ),
@@ -345,12 +377,13 @@ final basicsChapters = <Chapter>[
         '**Forest** para pagar {G}.',
         run: const [
           Tap(bruno, [mountain]),
+          Target(bruno, warrior, targetSeat: 0),
           Cast(bruno, bolt, say: 'O Bruno lança Lightning Bolt no teu Elvish Warrior!'),
         ],
         allow: Allow.tap([forest]),
         done: Done.tapped(forest),
         hint: 'Toca num Forest e escolhe "Virar (tap)".',
-        focus: warrior,
+        focus: [warrior],
       ),
       TStep(
         'Agora lança o **Giant Growth**: toca nele na mão e escolhe **Lançar (vai para o cemitério)**.',
@@ -362,7 +395,8 @@ final basicsChapters = <Chapter>[
         'O Giant Growth resolve primeiro: o Elvish Warrior fica 5/6. Depois o Lightning Bolt dá-lhe 3 de dano, '
         'e ele sobrevive! No fim do turno o efeito acaba e o dano desaparece.\n\n'
         'Na app, quando é preciso, marcas o +3/+3 na carta em **Contadores** → modificadores.',
-        focus: warrior,
+        focus: [warrior],
+        run: [ClearTargets(bruno)],
       ),
     ],
   ),

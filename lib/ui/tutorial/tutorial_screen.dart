@@ -114,7 +114,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     r.start();
   }
 
+  int _lastStep = -1;
+
   void _changed() {
+    final r = _runner;
+    // Um passo novo: fecha folhas abertas (vida, contadores…), para se ler o
+    // texto seguinte.
+    if (r != null && r.step != _lastStep) {
+      _lastStep = r.step;
+      if (mounted) Navigator.of(context).popUntil((route) => route is! PopupRoute);
+    }
     if (_runner?.finished == true && !_ended) {
       _ended = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
@@ -125,6 +134,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     ref.read(tutorialProgressProvider).markDone(chapter.id);
     if (!mounted) return;
     final hasNext = widget.index + 1 < widget.chapters.length;
+    if (!hasNext) {
+      await _trackDone();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
     final go = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -149,6 +163,43 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       Navigator.of(context).pop();
     }
   }
+
+  /// Fim de uma versão do tutorial: o que se aprendeu.
+  Future<void> _trackDone() => showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final theme = Theme.of(ctx);
+          return AlertDialog(
+            icon: const Icon(Icons.emoji_events, size: 48, color: Colors.amber),
+            title: const Text('Tutorial concluído!'),
+            content: SingleChildScrollView(
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Aprendeste:'),
+                    const SizedBox(height: 6),
+                    for (final c in widget.chapters)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Icon(Icons.check_circle, size: 18, color: Colors.green),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(c.title, style: theme.textTheme.bodyMedium)),
+                        ]),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                        'Próximo passo: monta (ou importa) o teu deck e cria uma sala com os amigos. O glossário '
+                        'está sempre no ícone do livro.',
+                        style: theme.textTheme.bodySmall),
+                  ]),
+            ),
+            actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Bons jogos!'))],
+          );
+        },
+      );
 
   Future<bool> _confirmLeave(BuildContext context) async {
     if (_runner?.finished == true) return true;
@@ -311,81 +362,90 @@ class _CoachPanelState extends State<CoachPanel> {
         final r = widget.runner;
         final s = r.current;
         final total = r.chapter.steps.length;
+        // Telemóvel deitado: pouca altura, o guia fica compacto para a mesa caber.
+        final short = MediaQuery.of(context).size.height < 520;
         return Material(
           color: theme.colorScheme.primaryContainer,
           child: AnimatedSize(
             duration: const Duration(milliseconds: 200),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Row(children: [
-                  Icon(Icons.school_outlined, size: 18, color: theme.colorScheme.onPrimaryContainer),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      r.finished ? 'Capítulo concluído' : 'Passo ${r.step + 1} de $total',
-                      style:
-                          theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Glossário',
-                    onPressed: () => Navigator.of(context)
-                        .push(MaterialPageRoute<void>(builder: (_) => const GlossaryScreen())),
-                    icon: const Icon(Icons.menu_book_outlined, size: 20),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: _small ? 'Mostrar o guia' : 'Encolher o guia',
-                    onPressed: () => setState(() => _small = !_small),
-                    icon: Icon(_small ? Icons.expand_more : Icons.expand_less),
-                  ),
-                ]),
-                if (!_small) ...[
-                  if (r.busy && r.narration != null)
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: ConstrainedBox(
+                // No tablet, linhas curtas lêem-se melhor.
+                constraints: const BoxConstraints(maxWidth: 820),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(14, short ? 2 : 8, 6, short ? 2 : 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     Row(children: [
-                      const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                      const SizedBox(width: 10),
-                      Expanded(child: RichLesson(r.narration!, style: theme.textTheme.bodyMedium)),
-                    ])
-                  else if (s != null && !r.busy)
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 180),
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: RichLesson(s.text, style: theme.textTheme.bodyMedium),
+                      Icon(Icons.school_outlined, size: 18, color: theme.colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          r.finished ? 'Capítulo concluído' : 'Passo ${r.step + 1} de $total',
+                          style: theme.textTheme.labelLarge
+                              ?.copyWith(color: theme.colorScheme.onPrimaryContainer),
                         ),
                       ),
-                    ),
-                  if (r.hint != null && !r.busy)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, right: 8),
-                      child: Row(children: [
-                        Icon(Icons.info_outline, size: 18, color: theme.colorScheme.error),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(r.hint!,
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
-                        ),
-                      ]),
-                    ),
-                  if (s != null && s.done == null && !r.busy)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 6, right: 8),
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-                          onPressed: r.next,
-                          child: Text(r.step + 1 >= total ? 'Concluir' : 'Continuar'),
-                        ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Glossário',
+                        onPressed: () => Navigator.of(context)
+                            .push(MaterialPageRoute<void>(builder: (_) => const GlossaryScreen())),
+                        icon: const Icon(Icons.menu_book_outlined, size: 20),
                       ),
-                    ),
-                ],
-              ]),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: _small ? 'Mostrar o guia' : 'Encolher o guia',
+                        onPressed: () => setState(() => _small = !_small),
+                        icon: Icon(_small ? Icons.expand_more : Icons.expand_less),
+                      ),
+                    ]),
+                    if (!_small) ...[
+                      if (r.busy && r.narration != null)
+                        Row(children: [
+                          Icon(Icons.hourglass_top_rounded, size: 20, color: theme.colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Expanded(child: RichLesson(r.narration!, style: theme.textTheme.bodyMedium)),
+                        ])
+                      else if (s != null && !r.busy)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxHeight: short ? 64 : 180),
+                          child: SingleChildScrollView(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: RichLesson(s.text, style: theme.textTheme.bodyMedium),
+                            ),
+                          ),
+                        ),
+                      if (r.hint != null && !r.busy)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6, right: 8),
+                          child: Row(children: [
+                            Icon(Icons.info_outline, size: 18, color: theme.colorScheme.error),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(r.hint!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
+                            ),
+                          ]),
+                        ),
+                      if (s != null && s.done == null && !r.busy)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 6, right: 8),
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                              onPressed: r.next,
+                              child: Text(r.step + 1 >= total ? 'Concluir' : 'Continuar'),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ]),
+                ),
+              ),
             ),
           ),
         );

@@ -96,15 +96,14 @@ class TutorialRunner extends ChangeNotifier implements TableView {
       ctrl.sendAs(setup.active, Intent(Ev.startGame, {'first': setup.active}));
       for (var i = 0; i < setup.seats.length; i++) {
         final s = setup.seats[i];
-        var land = 0, other = 0;
         for (final n in s.battlefield) {
-          final isLand = repo.get(_oracle[n]!)?.isLand ?? false;
-          final x = isLand ? (land++ % 6) * 0.17 : (other++ % 6) * 0.17;
-          _fromLibrary(i, n, Zone.battlefield, x: x, y: isLand ? 1.0 : 0.3);
+          _fromLibrary(i, n, Zone.battlefield);
         }
         if (s.hand.isNotEmpty) ctrl.sendAs(i, table.draw(i, s.hand.length));
       }
-      table.state.turn = setup.turn;
+      // O guião conta os turnos de cada um ("o teu 3.º turno"): a mesa conta
+      // os de todos, por isso converte-se para que a ronda dê certo.
+      table.state.turn = (setup.turn - 1) * setup.seats.length + 1 + setup.active;
     });
     return true;
   }
@@ -133,17 +132,19 @@ class TutorialRunner extends ChangeNotifier implements TableView {
     if (_disposed) return;
     if (i >= chapter.steps.length) {
       finished = true;
-      ctrl.highlight(null);
+      ctrl.coachFocus = const {};
+      if (ctrl.viewSeat != 0) ctrl.setView(0);
       notifyListeners();
       return;
     }
     step = i;
     hint = null;
+    ctrl.coachFocus = const {};
     final s = chapter.steps[i];
     if (s.run.isNotEmpty) await _runActs(s.run);
     if (_disposed) return;
-    final focus = s.focus == null ? null : _firstNamed(s.focus!);
-    _script(() => ctrl.highlight(focus));
+    ctrl.coachFocus = {for (final n in s.focus) _oracle[n] ?? oracleOf(n)}.whereType<String>().toSet();
+    ctrl.setView(s.view ?? 0);
     notifyListeners();
     // Um passo que já está feito (por exemplo, depois de os adversários jogarem).
     if (s.done != null && s.done!(this)) unawaited(_next());
@@ -240,7 +241,7 @@ class TutorialRunner extends ChangeNotifier implements TableView {
       }
       // A mesa mostra o campo de quem está a jogar, para se ver o que fez.
       final who = _seatOf(act);
-      if (!quiet && who != null && who != ctrl.viewSeat && who != 0) ctrl.setView(who);
+      if (!quiet && who != null && who != ctrl.viewSeat) ctrl.setView(who);
       _script(() => _perform(act));
       if (!quiet) await Future<void>.delayed(_ms(act is Pause ? act.ms : 450));
     }
@@ -261,6 +262,8 @@ class TutorialRunner extends ChangeNotifier implements TableView {
         CommanderHit(:final to) => to,
         Life(:final seat) => seat,
         MoveCard(:final seat) => seat,
+        Target(:final targetSeat) => targetSeat ?? 0,
+        Attack(:final seat) => seat,
         _ => null,
       };
 
@@ -275,7 +278,10 @@ class TutorialRunner extends ChangeNotifier implements TableView {
         final c = ctrl.state.cards.values
             .where((c) => c.isCommander && c.owner == seat && c.zone == Zone.command)
             .firstOrNull;
-        if (c != null) ctrl.sendAs(seat, t.movePublic(c.id, Zone.battlefield, x: 0.42, y: 0.3));
+        if (c != null) {
+          final (x, y) = ctrl.nextSpot(seat: seat);
+          ctrl.sendAs(seat, t.movePublic(c.id, Zone.battlefield, x: x, y: y));
+        }
       case Tap(:final seat, :final names, :final value):
         final ids = [
           for (final n in names)
@@ -301,13 +307,55 @@ class TutorialRunner extends ChangeNotifier implements TableView {
         final c = cardsNamed(name, zone: Zone.battlefield, seat: seat).firstOrNull;
         if (c != null) ctrl.sendAs(seat, Intent(Ev.counter, {'id': c.id, 'kind': kind, 'delta': delta}));
       case Token(:final seat, :final tokenName, :final pt, :final qty):
-        ctrl.sendAs(seat, t.createToken(seat, name: tokenName, pt: pt, qty: qty, x: 0.6, y: 0.3));
+        final (x, y) = ctrl.nextSpot(seat: seat);
+        ctrl.sendAs(seat, t.createToken(seat, name: tokenName, pt: pt, qty: qty, x: x, y: y));
+      case Target(:final seat, :final name, :final targetSeat):
+        final c = cardsNamed(name, zone: Zone.battlefield, seat: targetSeat).firstOrNull;
+        if (c != null) ctrl.sendAs(seat, Intent(Ev.arrow, {'to': c.id}));
+      case Attack(:final seat, :final name, :final target):
+        final c = cardsNamed(name, zone: Zone.battlefield, seat: seat).where((c) => !c.tapped).firstOrNull;
+        if (c != null) {
+          ctrl.sendAs(
+              seat,
+              Intent(Ev.tap, {
+                'ids': [c.id],
+                'value': true
+              }));
+          ctrl.sendAs(seat, Intent(Ev.arrow, {'from': c.id, 'seat': target}));
+        }
+      case ClearTargets(:final seat):
+        ctrl.sendAs(seat, const Intent(Ev.arrow, {}));
+      case SetHand(:final seat, :final names):
+        final z = ctrl.zones(seat);
+        final all = [...z.hand, ...z.library];
+        final hand = <PrivateCard>[];
+        for (final n in names) {
+          final o = _oracle[n] ?? oracleOf(n);
+          final pc = all.where((c) => c.oracleId == o && !hand.contains(c)).firstOrNull;
+          if (pc != null) hand.add(pc);
+        }
+        final rest = all.where((c) => !hand.contains(c)).toList();
+        z.hand
+          ..clear()
+          ..addAll(hand);
+        z.library
+          ..clear()
+          ..addAll(rest);
+        ctrl.state.players[seat]
+          ?..handCount = hand.length
+          ..libraryCount = rest.length;
+        ctrl.notifyListeners();
       case Draw(:final seat, :final n):
         ctrl.sendAs(seat, t.draw(seat, n));
       case PassTurn():
         ctrl.sendAs(ctrl.state.activeSeat, const Intent(Ev.passTurn, {}));
       case Concede(:final seat):
         ctrl.sendAs(seat, Intent(Ev.defeated, {'seat': seat, 'value': true}));
+        // Quem perde sai do jogo com as suas cartas.
+        for (final c
+            in ctrl.state.cards.values.where((c) => c.owner == seat && c.zone == Zone.battlefield).toList()) {
+          ctrl.sendAs(seat, t.movePublic(c.id, Zone.exile));
+        }
       case Pause():
         break;
     }
@@ -317,7 +365,9 @@ class TutorialRunner extends ChangeNotifier implements TableView {
     final o = _oracle[name] ?? oracleOf(name);
     final pc = ctrl.zones(seat).hand.where((c) => c.oracleId == o).firstOrNull;
     if (pc == null) return false;
-    ctrl.sendAs(seat, ctrl.table.moveHidden(seat, Zone.hand, pc.pid, to, x: 0.5, y: 0.3));
+    final (x, y) = ctrl.nextSpot(isLand: repo.get(o!)?.isLand ?? false, seat: seat);
+    ctrl.sendAs(
+        seat, ctrl.table.moveHidden(seat, Zone.hand, pc.pid, to, x: x, y: y, cast: to == Zone.graveyard));
     return true;
   }
 
@@ -325,12 +375,12 @@ class TutorialRunner extends ChangeNotifier implements TableView {
     final o = _oracle[name] ?? oracleOf(name);
     final pc = ctrl.zones(seat).library.where((c) => c.oracleId == o).firstOrNull;
     if (pc == null) return;
-    ctrl.sendAs(seat, ctrl.table.moveHidden(seat, Zone.library, pc.pid, to, x: x ?? 0.5, y: y ?? 0.3));
+    final spot = ctrl.nextSpot(isLand: repo.get(o!)?.isLand ?? false, seat: seat);
+    ctrl.sendAs(
+        seat,
+        ctrl.table.moveHidden(seat, Zone.library, pc.pid, to,
+            x: x ?? spot.$1, y: y ?? spot.$2, cast: to == Zone.graveyard));
   }
-
-  CardInstance? _firstNamed(String name) =>
-      cardsNamed(name, zone: Zone.battlefield).firstOrNull ??
-      cardsNamed(name, zone: Zone.command).firstOrNull;
 
   // -------------------------------------------------------------------
   // TableView
@@ -356,6 +406,9 @@ class TutorialRunner extends ChangeNotifier implements TableView {
 
   @override
   int handCount(int seat) => ctrl.zones(seat).hand.length;
+
+  @override
+  int mulligans(int seat) => ctrl.state.log.where((e) => e.type == Ev.mulligan && e.actor == seat).length;
 
   @override
   bool inHand(int seat, String name) => ctrl.zones(seat).hand.any((c) => c.oracleId == _oracle[name]);
@@ -395,6 +448,15 @@ abstract final class Done {
 
   static bool Function(TableView) turnOf(int seat) => (t) => t.state.activeSeat == seat;
   static bool Function(TableView) handAtLeast(int seat, int n) => (t) => t.handCount(seat) >= n;
+
+  /// Uma seta de [from] (carta do jogador) para [to] (carta de outro): um bloqueio.
+  static bool Function(TableView) arrow(String from, String to) => (t) {
+        final f = t.cardsNamed(from, zone: Zone.battlefield, seat: 0).map((c) => c.id).toSet();
+        final d = t.cardsNamed(to, zone: Zone.battlefield).map((c) => c.id).toSet();
+        return t.state.targets.any((m) => f.contains(m.from) && d.contains(m.card));
+      };
+
+  static bool Function(TableView) mulliganed(int seat) => (t) => t.mulligans(seat) >= 1;
 
   static bool Function(TableView) all(List<bool Function(TableView)> list) => (t) => list.every((f) => f(t));
 }

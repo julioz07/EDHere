@@ -102,7 +102,8 @@ class TAction {
 /// Um passo: o texto do guia, o que se pode fazer e quando está feito.
 /// Sem [done], o passo é só para ler (botão "Continuar").
 class TStep {
-  const TStep(this.text, {this.allow, this.done, this.hint, this.run = const [], this.focus, this.title});
+  const TStep(this.text,
+      {this.allow, this.done, this.hint, this.run = const [], this.focus = const [], this.view, this.title});
 
   final String? title;
   final String text;
@@ -119,8 +120,11 @@ class TStep {
   /// O que acontece antes do texto aparecer (os adversários jogam).
   final List<Act> run;
 
-  /// Carta a destacar no campo.
-  final String? focus;
+  /// Cartas a destacar (na mão, no campo e na zona de comando): onde tocar.
+  final List<String> focus;
+
+  /// Mostra o campo deste lugar durante o passo (para ver o que o texto diz).
+  final int? view;
 }
 
 /// Uma ação com guião, feita por um lugar (normalmente um adversário).
@@ -216,6 +220,38 @@ class Concede extends Act {
   final int seat;
 }
 
+/// Um adversário aponta para uma carta (o alvo de um feitiço, ou um ataque).
+class Target extends Act {
+  const Target(this.seat, this.name, {this.targetSeat, super.say});
+  final int seat;
+  final String name;
+
+  /// Dono da carta apontada (null = qualquer um).
+  final int? targetSeat;
+}
+
+/// Atacar: vira a criatura e aponta-a ao jogador atacado.
+class Attack extends Act {
+  const Attack(this.seat, this.name, this.target, {super.say});
+  final int seat;
+  final String name;
+  final int target;
+}
+
+/// Apaga as setas de um lugar.
+class ClearTargets extends Act {
+  const ClearTargets(this.seat, {super.say});
+  final int seat;
+}
+
+/// Repõe a mão de um lugar com estas cartas (depois de um mulligan de
+/// treino, para o resto do capítulo continuar com o guião).
+class SetHand extends Act {
+  const SetHand(this.seat, this.names, {super.say});
+  final int seat;
+  final List<String> names;
+}
+
 /// Só uma pausa com texto (por exemplo "O Bruno pensa…").
 class Pause extends Act {
   const Pause({super.say, this.ms = 900});
@@ -228,6 +264,7 @@ abstract class TableView {
   String? nameOf(String? oracleId);
   List<CardInstance> cardsNamed(String name, {Zone? zone, int? seat});
   int handCount(int seat);
+  int mulligans(int seat);
   bool inHand(int seat, String name);
 }
 
@@ -255,6 +292,7 @@ abstract final class Allow {
       (a) => a.type == Ev.commanderDamage && a.p['seat'] == seat;
 
   static bool passTurn(TAction a) => a.type == Ev.passTurn;
+  static bool mulligan(TAction a) => a.type == Ev.mulligan || a.type == Ev.bottom;
   static bool draw(TAction a) => a.type == Ev.draw;
 
   static bool Function(TAction) any(List<bool Function(TAction)> list) => (a) => list.any((f) => f(a));

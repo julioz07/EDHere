@@ -428,9 +428,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               title: Text(
                 s.over
                     ? 'Jogo terminado'
-                    : myTurn
-                        ? 'T${s.turn} · o teu turno'
-                        : 'T${s.turn} · ${active?.name ?? ''}',
+                    : ctrl.scripted
+                        ? 'Ronda ${ctrl.round} · ${myTurn ? 'o teu turno' : active?.name ?? ''}'
+                        : myTurn
+                            ? 'T${s.turn} · o teu turno'
+                            : 'T${s.turn} · ${active?.name ?? ''}',
                 style: theme.textTheme.titleMedium,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -624,7 +626,11 @@ class _PlayersStrip extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: GestureDetector(
-                  onTap: () => viewing ? showPlayerSheet(context, ctrl, seat) : ctrl.setView(seat),
+                  // No tutorial um toque mostra o campo e a folha do jogador.
+                  onTap: () {
+                    if (!viewing) ctrl.setView(seat);
+                    if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
+                  },
                   onLongPress: () => showPlayerSheet(context, ctrl, seat),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
@@ -843,7 +849,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
                     instance: c,
                     card: ctrl.card(c.oracleId, printId: c.printId),
                     width: cw,
-                    highlighted: s.highlight == c.id,
+                    highlighted: s.highlight == c.id || ctrl.coachFocus.contains(c.oracleId),
                     targeted: s.targets.any((t) => t.card == c.id),
                     targeting: s.targets.any((t) => t.from == c.id),
                   ),
@@ -976,6 +982,7 @@ class TableZonesRow extends StatelessWidget {
                         card: ctrl.card(c.oracleId, printId: c.printId),
                         width: w,
                         tax: p?.commanderTax(c.id),
+                        highlighted: ctrl.coachFocus.contains(c.oracleId),
                         showTapped: false),
                     const Text('Comando', style: TextStyle(fontSize: 10)),
                   ]),
@@ -1134,7 +1141,19 @@ class _TableHandState extends ConsumerState<TableHand> {
                       }),
                     ),
                     const SizedBox(height: 2),
-                    covered || card == null ? const CardBack() : CardImage(card, radius: 5),
+                    covered || card == null
+                        ? const CardBack()
+                        : ctrl.coachFocus.contains(pc.oracleId)
+                            ? DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(6),
+                                  boxShadow: [
+                                    BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
+                                  ],
+                                ),
+                                child: CardImage(card, radius: 5),
+                              )
+                            : CardImage(card, radius: 5),
                   ]),
                 ),
               );

@@ -174,6 +174,17 @@ class GameController extends ChangeNotifier {
   /// Decide se uma ação pode acontecer (o tutorial só deixa o passo pedido).
   bool Function(int seat, Intent intent)? guard;
 
+  /// Cartas a destacar para o jogador (Oracle IDs): o tutorial mostra onde
+  /// tocar, na mão, no campo e na zona de comando.
+  Set<String> coachFocus = const {};
+
+  /// Ronda do jogo (cada jogador jogou uma vez), para quem conta "o meu
+  /// 2.º turno" em vez dos turnos de todos.
+  int get round {
+    final n = state.players.length;
+    return n == 0 ? state.turn : (state.turn - 1) ~/ n + 1;
+  }
+
   GameState get state => table.state;
 
   /// O lugar que age: no hot-seat é o que está no ecrã.
@@ -293,10 +304,15 @@ class GameController extends ChangeNotifier {
       }));
 
   void playFromHand(PrivateCard pc,
-      {Zone to = Zone.battlefield, double? x, double? y, bool faceDown = false, String pos = 'top'}) {
+      {Zone to = Zone.battlefield,
+      double? x,
+      double? y,
+      bool faceDown = false,
+      String pos = 'top',
+      bool cast = false}) {
     final placed = nextSpot(isLand: card(pc.oracleId)?.isLand ?? false);
     send(table.moveHidden(actor, Zone.hand, pc.pid, to,
-        x: x ?? placed.$1, y: y ?? placed.$2, faceDown: faceDown, pos: pos));
+        x: x ?? placed.$1, y: y ?? placed.$2, faceDown: faceDown, pos: pos, cast: cast));
   }
 
   void fromLibrary(PrivateCard pc, Zone to, {String pos = 'top'}) {
@@ -315,9 +331,10 @@ class GameController extends ChangeNotifier {
 
   /// Primeiro lugar livre numa grelha de 6 colunas: terrenos em baixo, o
   /// resto em cima, como numa mesa real.
-  (double, double) nextSpot({bool isLand = false}) {
+  (double, double) nextSpot({bool isLand = false, int? seat}) {
+    final who = seat ?? actor;
     final taken = state.cards.values
-        .where((c) => c.zone == Zone.battlefield && c.controller == actor && c.attachedTo == null)
+        .where((c) => c.zone == Zone.battlefield && c.controller == who && c.attachedTo == null)
         .map((c) => (c.x, c.y))
         .toList();
     bool free(double x, double y) => !taken.any((t) => (t.$1 - x).abs() < 0.1 && (t.$2 - y).abs() < 0.15);
