@@ -7,6 +7,7 @@ import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../decks/deck_editor_screen.dart';
 import '../widgets/card_view.dart';
+import '../widgets/set_symbol.dart';
 import '../widgets/mana.dart';
 import 'versions.dart';
 
@@ -230,7 +231,10 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               ]),
             ),
             if (card.gameChanger) const Chip(label: Text('Game Changer')),
-            Chip(label: Text('${card.setCode.toUpperCase()} · ${card.rarity}')),
+            Chip(
+              avatar: SetSymbol(card.setCode, rarity: card.rarity, size: 18),
+              label: Text('${card.setCode.toUpperCase()} · ${card.rarity}'),
+            ),
           ]),
           const SizedBox(height: 16),
           Text('Legalidade', style: theme.textTheme.titleMedium),

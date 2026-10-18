@@ -94,6 +94,7 @@ EDHere é **conteúdo de fãs não oficial**, permitido pela [Fan Content Policy
 
 - Dados e imagens das cartas: [Scryfall](https://scryfall.com), descarregados diretamente para o dispositivo de cada utilizador. O EDHere não é produzido nem apoiado pelo Scryfall.
 - Composição dos boosters e pacotes JumpStart: [MTGJSON](https://mtgjson.com) (licença MIT).
+- Símbolos dos sets: fonte [Keyrune](https://github.com/andrewgioia/keyrune), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/keyrune_LICENSE.md`). Para sets novos: atualizar `assets/fonts/keyrune.ttf` e correr `python -I tool/gen_keyrune_glyphs.py keyrune.css`.
 - Símbolos de mana, contadores e habilidades: fonte [Mana](https://github.com/andrewgioia/mana), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/mana_OFL.txt`).
 
 A app é e será **100% gratuita**: sem anúncios, sem funcionalidades pagas, sem contas.

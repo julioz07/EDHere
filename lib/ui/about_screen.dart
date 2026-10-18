@@ -49,6 +49,10 @@ class AboutScreen extends StatelessWidget {
               'Boosters e JumpStart',
               'A composição dos boosters de cada set e as listas dos pacotes JumpStart vêm do MTGJSON '
                   '(licença MIT) e estão incluídas na app.'),
+          section(
+              'Símbolos dos sets',
+              'Os símbolos dos sets são da fonte Keyrune, de Andrew Gioia (SIL OFL 1.1). Os símbolos '
+                  'originais são marcas da Wizards of the Coast.'),
           section('Símbolos de mana',
               'Os símbolos de mana são desenhados pela própria app e mostram sempre a letra da cor.'),
         ],

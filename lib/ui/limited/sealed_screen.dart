@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/booster_service.dart';
 import '../../data/providers.dart';
 import '../widgets/responsive.dart';
+import '../widgets/set_symbol.dart';
 import 'limited_builder.dart';
 import 'limited_common.dart';
 
@@ -44,7 +45,11 @@ Future<db.BoosterSetInfo?> showSetPicker(BuildContext context, List<db.BoosterSe
                     dense: true,
                     leading: SizedBox(
                       width: 52,
-                      child: Text(s.code, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        SetSymbol(s.code, rarity: 'R', size: 24),
+                        const SizedBox(height: 2),
+                        Text(s.code, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                      ]),
                     ),
                     title: Text(s.name),
                     subtitle: Text('${s.year} · ${s.kind == 'play' ? 'Play Booster' : 'Draft Booster'} · '
@@ -118,7 +123,7 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => PackOpeningScreen(packs: packs, title: title),
+      builder: (_) => PackOpeningScreen(packs: packs, title: title, setCode: _cube ? null : _set!.code),
     ));
   }
 
@@ -149,7 +154,8 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
           if (!_cube)
             Card(
               child: ListTile(
-                leading: const Icon(Icons.style),
+                leading:
+                    _set == null ? const Icon(Icons.style) : SetSymbol(_set!.code, rarity: 'M', size: 30),
                 title: Text(_set?.name ?? 'Escolher set'),
                 subtitle: Text(_set == null
                     ? (_sets.isEmpty ? 'A carregar…' : '${_sets.length} sets disponíveis, de 1993 até hoje')
@@ -252,9 +258,12 @@ class _Stepper extends StatelessWidget {
 
 /// Abrir os boosters um a um (ou todos de uma vez) e depois montar o deck.
 class PackOpeningScreen extends ConsumerStatefulWidget {
-  const PackOpeningScreen({super.key, required this.packs, required this.title});
+  const PackOpeningScreen({super.key, required this.packs, required this.title, this.setCode});
   final List<List<db.PackCard>> packs;
   final String title;
+
+  /// Para o símbolo no cabeçalho de cada booster (null num cubo).
+  final String? setCode;
 
   @override
   ConsumerState<PackOpeningScreen> createState() => _PackOpeningScreenState();
@@ -292,7 +301,13 @@ class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
         for (var i = _opened - 1; i >= 0; i--) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Booster ${i + 1}', style: theme.textTheme.titleMedium),
+            child: Row(children: [
+              if (widget.setCode != null) ...[
+                SetSymbol(widget.setCode!, rarity: 'R', size: 22),
+                const SizedBox(width: 8),
+              ],
+              Text('Booster ${i + 1}', style: theme.textTheme.titleMedium),
+            ]),
           ),
           PoolGrid(children: [for (final c in _packs[i]) PoolCardView(card: c)]),
         ],

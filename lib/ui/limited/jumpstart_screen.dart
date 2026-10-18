@@ -10,6 +10,7 @@ import '../decks/deck_editor_screen.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
 import '../widgets/responsive.dart';
+import '../widgets/set_symbol.dart';
 import 'limited_common.dart';
 
 /// Nomes dos produtos JumpStart (o código vem do MTGJSON).
@@ -161,6 +162,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                     ),
                     for (final s in sets)
                       ChoiceChip(
+                        avatar: SetSymbol(s, size: 16),
                         label: Text(_jumpstartNames[s] ?? s),
                         selected: _set == s,
                         onSelected: (_) {
@@ -279,7 +281,14 @@ class _PacketCard extends ConsumerWidget {
             Text(packet.theme,
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                 textAlign: TextAlign.center),
-            Text(_jumpstartNames[packet.set] ?? packet.set, style: theme.textTheme.bodySmall),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              SetSymbol(packet.set, rarity: 'R', size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(_jumpstartNames[packet.set] ?? packet.set,
+                    style: theme.textTheme.bodySmall, overflow: TextOverflow.ellipsis),
+              ),
+            ]),
             const SizedBox(height: 8),
             if (shown != null) CardImage(shown, radius: 8) else const CardBack(),
             const SizedBox(height: 8),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
 import '../widgets/card_view.dart';
+import '../widgets/set_symbol.dart';
 import '../widgets/responsive.dart';
 
 /// Resultado do seletor: uma versão, ou [isDefault] para voltar à por defeito.
@@ -56,13 +57,21 @@ class VersionThumb extends ConsumerWidget {
         ),
       ),
       const SizedBox(height: 4),
-      Text(print.label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-              color: selected ? scheme.primary : null)),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        if (print.setCode.isNotEmpty) ...[
+          SetSymbol(print.setCode, rarity: print.rarity, size: 13),
+          const SizedBox(width: 4),
+        ],
+        Flexible(
+          child: Text(print.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: selected ? scheme.primary : null)),
+        ),
+      ]),
     ]);
   }
 }
