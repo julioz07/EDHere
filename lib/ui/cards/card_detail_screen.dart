@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme.dart';
+import '../../data/collection.dart';
 import '../../data/providers.dart';
+import '../decks/deck_editor_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import 'versions.dart';
@@ -157,6 +159,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                   : 'Versões ($_versionCount) · ${card.setCode.toUpperCase()} #${card.collectorNumber}'),
             ),
           ),
+          const SizedBox(height: 12),
+          _OwnedAndDecks(oracleId: card.oracleId),
           if (widget.actions.isNotEmpty) ...[
             const SizedBox(height: 12),
             ...widget.actions,
@@ -261,6 +265,68 @@ class _LegalChip extends StatelessWidget {
         Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
         Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w700)),
       ]),
+    );
+  }
+}
+
+/// Quantas tenho desta carta e em que decks está.
+class _OwnedAndDecks extends ConsumerWidget {
+  const _OwnedAndDecks({required this.oracleId});
+
+  final String oracleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final collection = ref.watch(collectionProvider);
+    ref.watch(decksProvider);
+    final owned = collection.ownedOf(oracleId);
+    final decks = ref.read(deckStoreProvider).decksWith(oracleId);
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 6, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(owned == 0 ? 'Não tens esta carta' : 'Tens $owned',
+                  style: theme.textTheme.titleSmall),
+            ),
+            IconButton(
+              onPressed: owned > 0 ? () => collection.change(oracleId, -1) : null,
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            IconButton(
+              onPressed: () => collection.change(oracleId, 1),
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+          ]),
+          if (decks.isNotEmpty) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('Nos meus decks', style: theme.textTheme.labelLarge),
+            ),
+            for (final (deck, qty) in decks)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.style_outlined, size: 20),
+                title: Text(deck.name),
+                trailing: Text('×$qty'),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => DeckEditorScreen(deckId: deck.id!),
+                )),
+              ),
+            if (owned > 0 && decks.fold(0, (n, d) => n + d.$2) > owned)
+              Text(
+                'Usada em mais decks do que as cópias que tens (é só um aviso).',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+          ],
+        ]),
+      ),
     );
   }
 }

@@ -104,6 +104,24 @@ void main() {
     expect(ImageRef.allOf(c).map((r) => r.key), ['p7_0', 'p7_1']);
   });
 
+  test('as minhas cartas e em que decks estão', () {
+    final dir = Directory.systemTemp.createTempSync('coll');
+    final store = DeckStore.open('${dir.path}/user.sqlite');
+    store.setOwned('a', 2);
+    store.addOwned({'a': 1, 'b': 4});
+    expect(store.collection(), {'a': 3, 'b': 4});
+    store.addOwned({'a': 2, 'c': 1}, atLeast: true);
+    expect(store.collection(), {'a': 3, 'b': 4, 'c': 1});
+    store.setOwned('b', 0);
+    expect(store.owned('b'), 0);
+
+    store.save(const Deck(name: 'D1', format: 'commander').add('a', qty: 2));
+    store.save(const Deck(name: 'D2', format: 'modern').add('a', board: Board.side).add('x'));
+    final where = store.decksWith('a');
+    expect({for (final (d, n) in where) d.name: n}, {'D1': 2, 'D2': 1});
+    store.close();
+  });
+
   test('mover entre boards junta quantidades', () {
     final d = const Deck(name: 'x', format: 'modern')
         .add('a', qty: 2)

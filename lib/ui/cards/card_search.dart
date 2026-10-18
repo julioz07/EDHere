@@ -4,6 +4,7 @@ import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../widgets/card_view.dart';
 
@@ -18,7 +19,11 @@ class CardSearchView extends ConsumerStatefulWidget {
     this.fixedFilter = '',
     this.autofocus = false,
     this.hint = 'Nome ou filtros (t:dragon id:rg)',
+    this.onlyOwned = false,
   });
+
+  /// Só as minhas cartas (a coleção); sem texto mostra-as todas.
+  final bool onlyOwned;
 
   final void Function(db.Card card) onTap;
   final Widget? Function(db.Card card)? trailingFor;
@@ -44,8 +49,13 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuery.isNotEmpty) _run();
+    if (widget.initialQuery.isNotEmpty || widget.onlyOwned) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+    }
   }
+
+  Iterable<String>? get _restrict =>
+      widget.onlyOwned ? ref.read(collectionProvider).owned.keys : null;
 
   @override
   void dispose() {
@@ -56,7 +66,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
 
   String get _query {
     final q = _ctrl.text.trim();
-    if (q.isEmpty) return '';
+    if (q.isEmpty) return widget.onlyOwned ? widget.fixedFilter : '';
     return widget.fixedFilter.isEmpty ? q : '$q ${widget.fixedFilter}';
   }
 
@@ -69,7 +79,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
   void _run() {
     final repo = ref.read(cardRepoProvider);
     if (repo == null || !mounted) return;
-    final r = repo.search(_query, limit: 60);
+    final r = repo.search(_query, limit: 60, restrictTo: _restrict);
     setState(() {
       _results = r.cards;
       _total = r.total;
@@ -81,9 +91,29 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
     final repo = ref.read(cardRepoProvider);
     if (repo == null || _loadingMore || _results.length >= _total) return;
     _loadingMore = true;
-    final r = repo.search(_query, limit: 60, offset: _results.length);
+    final r = repo.search(_query, limit: 60, offset: _results.length, restrictTo: _restrict);
     setState(() => _results = [..._results, ...r.cards]);
     _loadingMore = false;
+  }
+
+  /// Quantas tenho (se tiver) e o botão extra de quem usa a pesquisa.
+  Widget? _trailing(db.Card c, int owned) {
+    final extra = widget.trailingFor?.call(c);
+    if (owned == 0) return extra;
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.inventory_2_outlined, size: 14, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 3),
+        Text('$owned', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+      ]),
+    );
+    if (extra == null) return badge;
+    return Row(mainAxisSize: MainAxisSize.min, children: [badge, const SizedBox(width: 4), extra]);
   }
 
   @override
@@ -91,6 +121,10 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
     final theme = Theme.of(context);
     ref.listen(cardDataProvider.select((s) => s.generation), (_, __) => _run());
     ref.watch(printsProvider);
+    final collection = ref.watch(collectionProvider);
+    if (widget.onlyOwned) {
+      ref.listen(collectionProvider, (_, __) => _run());
+    }
     return Column(
       children: [
         Padding(
@@ -132,12 +166,12 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
             child: Text('Filtro não reconhecido: ${_errors.join(', ')}',
                 style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
           ),
-        if (_query.isNotEmpty)
+        if (_query.isNotEmpty || widget.onlyOwned)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('$_total cartas',
+              child: Text(_total == 1 ? '1 carta' : '$_total cartas',
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ),
@@ -156,7 +190,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
                 return CardTile(
                   ref.read(printsProvider).resolve(c),
                   onTap: () => widget.onTap(c),
-                  trailing: widget.trailingFor?.call(c),
+                  trailing: _trailing(c, collection.ownedOf(c.oracleId)),
                 );
               },
             ),

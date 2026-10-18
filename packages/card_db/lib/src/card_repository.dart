@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqlite3/sqlite3.dart';
 
 import 'card.dart';
@@ -55,15 +57,21 @@ class CardRepository {
           r['key'] as String: r['value'] as String,
       };
 
-  SearchResult search(String query, {int limit = 60, int offset = 0}) {
+  /// Pesquisa. Com [restrictTo], só entre essas cartas (por exemplo a
+  /// coleção); nesse caso uma pesquisa vazia devolve-as todas.
+  SearchResult search(String query, {int limit = 60, int offset = 0, Iterable<String>? restrictTo}) {
     final q = compileSearch(query);
-    if (q.isEmpty) return SearchResult(const [], 0, q.errors);
-    final total = _db
-        .select('SELECT COUNT(*) AS n FROM cards WHERE ${q.where}', q.args)
-        .first['n'] as int;
+    if (q.isEmpty && restrictTo == null) return SearchResult(const [], 0, q.errors);
+    var where = q.where;
+    final args = [...q.args];
+    if (restrictTo != null) {
+      where = '($where) AND oracle_id IN (SELECT value FROM json_each(?))';
+      args.add(jsonEncode(restrictTo.toList()));
+    }
+    final total = _db.select('SELECT COUNT(*) AS n FROM cards WHERE $where', args).first['n'] as int;
     final rows = _db.select(
-      'SELECT * FROM cards WHERE ${q.where} ORDER BY ${q.orderBy} LIMIT ? OFFSET ?',
-      [...q.args, limit, offset],
+      'SELECT * FROM cards WHERE $where ORDER BY ${q.orderBy} LIMIT ? OFFSET ?',
+      [...args, limit, offset],
     );
     return SearchResult([for (final r in rows) _remember(Card.fromRow(r))], total, q.errors);
   }

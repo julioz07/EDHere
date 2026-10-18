@@ -77,6 +77,16 @@ class DeckStore {
         )''');
       db.execute('PRAGMA user_version = 3');
     }
+    if (version < 4) {
+      // As minhas cartas: só quantidades indicativas, sem inventário.
+      db.execute('''
+        CREATE TABLE IF NOT EXISTS collection(
+          oracle_id TEXT PRIMARY KEY,
+          qty INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )''');
+      db.execute('PRAGMA user_version = 4');
+    }
     return DeckStore._(db);
   }
 
@@ -205,6 +215,52 @@ class DeckStore {
   void setPreferredPrint(String oracleId, String? printId) => printId == null
       ? _db.execute('DELETE FROM preferred_prints WHERE oracle_id = ?', [oracleId])
       : _db.execute('INSERT OR REPLACE INTO preferred_prints VALUES (?, ?)', [oracleId, printId]);
+
+  // ---------------------------------------------------------------------
+  // As minhas cartas
+  // ---------------------------------------------------------------------
+
+  /// Quantidade de cada carta que tenho (oracleId -> qty).
+  Map<String, int> collection() => {
+        for (final r in _db.select('SELECT oracle_id, qty FROM collection'))
+          r['oracle_id'] as String: r['qty'] as int,
+      };
+
+  int owned(String oracleId) {
+    final rows = _db.select('SELECT qty FROM collection WHERE oracle_id = ?', [oracleId]);
+    return rows.isEmpty ? 0 : rows.first['qty'] as int;
+  }
+
+  /// Fixa a quantidade (0 ou menos tira a carta da coleção).
+  void setOwned(String oracleId, int qty) => qty <= 0
+      ? _db.execute('DELETE FROM collection WHERE oracle_id = ?', [oracleId])
+      : _db.execute('INSERT OR REPLACE INTO collection VALUES (?, ?, ?)',
+          [oracleId, qty, DateTime.now().millisecondsSinceEpoch]);
+
+  /// Junta cartas à coleção. Com [atLeast], só sobe até essa quantidade
+  /// (não soma): útil para "tenho este deck físico".
+  void addOwned(Map<String, int> cards, {bool atLeast = false}) {
+    final current = collection();
+    _db.execute('BEGIN');
+    for (final MapEntry(key: id, value: n) in cards.entries) {
+      final have = current[id] ?? 0;
+      final qty = atLeast ? (n > have ? n : have) : have + n;
+      setOwned(id, qty);
+    }
+    _db.execute('COMMIT');
+  }
+
+  /// Decks onde uma carta aparece, com quantas cópias (principal + comando).
+  List<(Deck deck, int qty)> decksWith(String oracleId) {
+    final rows = _db.select(
+        "SELECT deck_id, SUM(qty) AS n FROM deck_cards WHERE oracle_id = ? "
+        "AND board IN ('main','command','side') GROUP BY deck_id",
+        [oracleId]);
+    return [
+      for (final r in rows)
+        if (getDeck(r['deck_id'] as int) case final d?) (d, r['n'] as int),
+    ];
+  }
 
   String? setting(String key) {
     final rows = _db.select('SELECT value FROM settings WHERE key = ?', [key]);

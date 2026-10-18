@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../app/theme.dart';
+import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../cards/card_detail_screen.dart';
 import '../cards/card_search.dart';
@@ -89,6 +90,20 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
       ),
     ));
     setState(() {});
+  }
+
+  /// "Tenho este deck físico": junta as cartas às minhas cartas (sem somar
+  /// às que já lá estão).
+  Future<void> _ownDeck() async {
+    final cards = <String, int>{};
+    for (final e in _deck.entries.where((e) => e.board != Board.maybe)) {
+      cards[e.oracleId] = (cards[e.oracleId] ?? 0) + e.qty;
+    }
+    ref.read(collectionProvider).addAll(cards, atLeast: true);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${cards.length} cartas juntas às minhas cartas.')));
+    }
   }
 
   void _entryActions(DeckEntry e, db.Card card) {
@@ -349,6 +364,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             PopupMenuButton<String>(
               onSelected: (v) => switch (v) {
                 'edit' => _editSettings(),
+                'own' => _ownDeck(),
                 'hands' => Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => HandSimulatorScreen(deck: _deck, cards: _cards()),
                   )),
@@ -357,6 +373,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
               },
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'hands', child: Text('Simular mãos iniciais')),
+                PopupMenuItem(value: 'own', child: Text('Tenho este deck (juntar às minhas cartas)')),
                 PopupMenuItem(value: 'edit', child: Text('Nome e formato')),
                 PopupMenuItem(value: 'delete', child: Text('Apagar deck')),
               ],
@@ -393,6 +410,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             issues: issues,
             onTap: _entryActions,
             shown: (e, c) => ref.read(printsProvider).resolve(c, printId: e.printId),
+            owned: ref.watch(collectionProvider).owned,
             onChooseCommander: () => _addCards(commander: true),
           ),
           _StatsView(deck: _deck, cards: cards),
@@ -412,11 +430,25 @@ class _CardList extends StatelessWidget {
     required this.onTap,
     required this.onChooseCommander,
     required this.shown,
+    this.owned = const {},
     this.grid = false,
   });
 
   /// A carta com a versão desta entrada (ou a preferida).
   final db.Card Function(DeckEntry e, db.Card base) shown;
+
+  /// As minhas cartas (oracleId -> quantidade), para indicar o que falta.
+  final Map<String, int> owned;
+
+  String? _ownedNote(DeckEntry e) {
+    if (owned.isEmpty) return null;
+    final have = owned[e.oracleId] ?? 0;
+    final c = cards[e.oracleId];
+    if (c != null && c.isBasicLand) return null;
+    if (have == 0) return 'não tens';
+    if (have < e.qty) return 'tens $have';
+    return null;
+  }
 
   final Deck deck;
   final Map<String, db.Card> cards;
@@ -486,6 +518,21 @@ class _CardList extends StatelessWidget {
               label: const Text('Escolher comandante'),
             ),
           ),
+        if (owned.isNotEmpty)
+          Builder(builder: (context) {
+            final relevant = deck.entries
+                .where((e) => e.board != Board.maybe && !(cards[e.oracleId]?.isBasicLand ?? false));
+            final need = relevant.fold(0, (n, e) => n + e.qty);
+            final have = relevant.fold(0, (n, e) => n + ((owned[e.oracleId] ?? 0).clamp(0, e.qty)));
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(children: [
+                Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
+                Text('Tens $have de $need cartas (sem terrenos básicos)', style: theme.textTheme.bodySmall),
+              ]),
+            );
+          }),
         if (deck.notes.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -528,6 +575,7 @@ class _CardList extends StatelessWidget {
                   CardTile(
                     shown(e, c),
                     thumbWidth: 84,
+                    subtitle: [c.typeLine, if (_ownedNote(e) case final n?) n].join(' · '),
                     leadingQty: e.qty,
                     onTap: () => onTap(e, c),
                     trailing: flagged.contains(e.oracleId)
@@ -701,6 +749,7 @@ class _AddCardsScreen extends StatefulWidget {
 
 class _AddCardsScreenState extends State<_AddCardsScreen> {
   bool _filtered = true;
+  bool _onlyOwned = false;
 
   void _add(db.Card c) {
     widget.onAdd(c);
@@ -719,6 +768,11 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          IconButton(
+            tooltip: _onlyOwned ? 'Só as minhas cartas' : 'Todas as cartas',
+            icon: Icon(_onlyOwned ? Icons.inventory_2 : Icons.inventory_2_outlined),
+            onPressed: () => setState(() => _onlyOwned = !_onlyOwned),
+          ),
           if (widget.fixedFilter.isNotEmpty)
             IconButton(
               tooltip: _filtered ? 'A filtrar por formato e identidade' : 'Sem filtros',
@@ -728,7 +782,9 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
         ],
       ),
       body: CardSearchView(
-        key: ValueKey(_filtered),
+        key: ValueKey('$_filtered$_onlyOwned'),
+        onlyOwned: _onlyOwned,
+        hint: _onlyOwned ? 'Só as minhas cartas…' : 'Nome ou filtros (t:dragon id:rg)',
         autofocus: widget.initialQuery.isEmpty,
         initialQuery: widget.initialQuery,
         fixedFilter: _filtered ? widget.fixedFilter : '',

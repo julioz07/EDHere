@@ -194,3 +194,72 @@ class SharedDeck {
     }
   }
 }
+
+/// Lê uma lista de coleção: CSV com cabeçalho (ManaBox, Moxfield, Deckbox,
+/// Dragon Shield, Archidekt...) ou texto simples ("1 Sol Ring").
+/// Devolve uma linha por carta encontrada (as repetidas não se juntam aqui).
+List<ParsedLine> parseCollectionText(String text) {
+  final lines = text.replaceAll('\r', '').split('\n').where((l) => l.trim().isNotEmpty).toList();
+  if (lines.isEmpty) return const [];
+  final header = _csvRow(lines.first).map((h) => h.trim().toLowerCase()).toList();
+  int col(List<String> names) => header.indexWhere(names.contains);
+  final nameCol = col(const ['name', 'card name', 'card', 'card_name', 'cardname']);
+  final qtyCol = col(const ['quantity', 'count', 'qty', 'amount', 'total quantity', 'quantidade']);
+  if (header.length < 2 || nameCol < 0) {
+    // Sem cabeçalho CSV: lista de texto como as de deck.
+    return [for (final l in parseDeckText(text)) ParsedLine(l.qty, l.name, Board.main, line: l.line)];
+  }
+  final out = <ParsedLine>[];
+  for (var i = 1; i < lines.length; i++) {
+    final row = _csvRow(lines[i]);
+    if (nameCol >= row.length) continue;
+    final name = row[nameCol].trim();
+    if (name.isEmpty) continue;
+    final qty = qtyCol >= 0 && qtyCol < row.length ? int.tryParse(row[qtyCol].trim()) ?? 1 : 1;
+    if (qty <= 0) continue;
+    out.add(ParsedLine(qty, name, Board.main, line: i + 1));
+  }
+  return out;
+}
+
+/// Uma linha CSV (vírgula ou ponto e vírgula), com aspas.
+List<String> _csvRow(String line) {
+  final sep = line.split(',').length >= line.split(';').length ? ',' : ';';
+  final out = <String>[];
+  final buf = StringBuffer();
+  var quoted = false;
+  for (var i = 0; i < line.length; i++) {
+    final ch = line[i];
+    if (ch == '"') {
+      if (quoted && i + 1 < line.length && line[i + 1] == '"') {
+        buf.write('"');
+        i++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (ch == sep && !quoted) {
+      out.add(buf.toString());
+      buf.clear();
+    } else {
+      buf.write(ch);
+    }
+  }
+  out.add(buf.toString());
+  return out;
+}
+
+/// Junta as linhas resolvidas por carta (oracleId -> quantidade total).
+({Map<String, int> cards, List<ParsedLine> unresolved}) resolveCollection(
+    List<ParsedLine> lines, Card? Function(String name) find) {
+  final cards = <String, int>{};
+  final unresolved = <ParsedLine>[];
+  for (final l in lines) {
+    final card = find(l.name) ?? (l.name.contains('/') ? find(l.name.split('/').first.trim()) : null);
+    if (card == null) {
+      unresolved.add(l);
+    } else {
+      cards[card.oracleId] = (cards[card.oracleId] ?? 0) + l.qty;
+    }
+  }
+  return (cards: cards, unresolved: unresolved);
+}

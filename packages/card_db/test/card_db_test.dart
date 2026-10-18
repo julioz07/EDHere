@@ -92,6 +92,13 @@ void main() {
       expect(names('pow>=3'), ['Atraxa, Praetors\' Voice']);
     });
 
+    test('pesquisa só nas minhas cartas', () {
+      final mine = [repo.findByName('Lightning Bolt')!.oracleId, repo.findByName('Forest')!.oracleId];
+      expect(repo.search('', restrictTo: mine).cards.map((c) => c.name), ['Forest', 'Lightning Bolt']);
+      expect(repo.search('t:instant', restrictTo: mine).cards.single.name, 'Lightning Bolt');
+      expect(repo.search('', restrictTo: const []).total, 0);
+    });
+
     test('filtro desconhecido é reportado', () {
       final r = repo.search('xyz:abc bolt');
       expect(r.errors, ['xyz:abc']);
@@ -154,6 +161,27 @@ Sideboard
       expect(back.name, 'Atraxa');
       expect(back.text, text);
       expect(SharedDeck.tryDecode('lixo'), isNull);
+    });
+
+    test('coleção do ManaBox (CSV com aspas) junta edições da mesma carta', () {
+      const csv = 'Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID\n'
+          'Sol Ring,c21,Commander 2021,263,normal,uncommon,2,1,abc\n'
+          'Sol Ring,cmr,Commander Legends,472,foil,uncommon,1,2,def\n'
+          '"Atraxa, Praetors\' Voice",2xm,Double Masters,190,normal,mythic,1,3,ghi\n'
+          'Carta Inventada,xxx,X,1,normal,common,3,4,jkl\n';
+      final r = resolveCollection(parseCollectionText(csv), repo.findByName);
+      final byName = {for (final e in r.cards.entries) repo.get(e.key)!.name: e.value};
+      expect(byName, {'Sol Ring': 3, "Atraxa, Praetors' Voice": 1});
+      expect(r.unresolved.single.name, 'Carta Inventada');
+    });
+
+    test('coleção do Moxfield/Deckbox (Count) e lista simples', () {
+      const csv = 'Count,Tradelist Count,Name,Edition,Condition\n4,0,Forest,,NM\n1,0,Fire // Ice,,NM\n';
+      final r = resolveCollection(parseCollectionText(csv), repo.findByName);
+      expect(r.cards.length, 2);
+      expect(r.cards[repo.findByName('Forest')!.oracleId], 4);
+      final t = resolveCollection(parseCollectionText('2 Counterspell\n1x Sol Ring (CMR) 472'), repo.findByName);
+      expect(t.cards.values.toList(), [2, 1]);
     });
 
     test('categorias do Archidekt', () {

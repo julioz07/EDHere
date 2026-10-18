@@ -20,6 +20,7 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - Deck builder com validação por formato (tamanho, singleton, banidas, identidade de cor, parceiros e backgrounds), vista em lista ou grelha, estatísticas, simulador de mão inicial.
 - Importar e exportar listas (Moxfield, Archidekt, MTGO, Arena) e partilhar decks por QR code.
 - Versões alternativas das cartas: escolher a arte por entrada de deck ou como preferida em todo o lado; só se descarrega a imagem escolhida.
+- As minhas cartas: coleção indicativa (importação do ManaBox, Moxfield, Deckbox, Dragon Shield ou texto), filtro "só as que tenho" ao construir decks e, em cada carta, em que decks está.
 - Pacotes de imagens à escolha (Commander, Modern, tokens…), em resolução pequena ou normal.
 
 **Mesa**
@@ -88,3 +89,7 @@ EDHere é **conteúdo de fãs não oficial**, permitido pela [Fan Content Policy
 - Símbolos de mana, contadores e habilidades: fonte [Mana](https://github.com/andrewgioia/mana), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/mana_OFL.txt`).
 
 A app é e será **100% gratuita**: sem anúncios, sem funcionalidades pagas, sem contas.
+
+## Direitos
+
+© Júlio Rodrigues. Todos os direitos reservados. O EDHere é gratuito, mas o código não é aberto: este repositório é privado e não pode ser copiado, modificado nem redistribuído sem autorização. Sugestões são bem-vindas.
