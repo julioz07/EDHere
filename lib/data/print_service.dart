@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:card_db/card_db.dart';
 import 'package:flutter/foundation.dart';
@@ -128,6 +129,49 @@ class PrintService extends ChangeNotifier {
     _preferred = store.preferredPrints();
     notifyListeners();
     if (p != null) await use(base, p);
+  }
+
+  /// Usa como preferidas as versões que tenho (coleção + número, como vêm
+  /// do ManaBox). Pede ao Scryfall em lotes de 75. Devolve quantas ficaram.
+  Future<int> preferOwnedPrints(Map<String, ({String set, String number})> owned, Map<String, Card> cards,
+      {void Function(int done, int total)? onProgress}) async {
+    final ids = owned.entries.where((e) => cards[e.key] != null).toList();
+    var applied = 0;
+    final client = newHttpClient();
+    try {
+      for (var i = 0; i < ids.length; i += 75) {
+        final batch = ids.skip(i).take(75).toList();
+        final wait = const Duration(milliseconds: 110) - DateTime.now().difference(_lastRequest);
+        if (wait > Duration.zero) await Future<void>.delayed(wait);
+        _lastRequest = DateTime.now();
+        final req = await client.postUrl(Uri.https('api.scryfall.com', '/cards/collection'));
+        scryfallHeaders.forEach(req.headers.set);
+        req.headers.contentType = ContentType.json;
+        req.write(jsonEncode({
+          'identifiers': [
+            for (final e in batch) {'set': e.value.set, 'collector_number': e.value.number},
+          ],
+        }));
+        final res = await req.close().timeout(const Duration(seconds: 30));
+        final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
+        if (res.statusCode != 200) throw StateError('Scryfall ${res.statusCode}');
+        final found = [
+          for (final c in (body['data'] as List).cast<Map<String, dynamic>>()) PrintInfo.fromScryfall(c)
+        ];
+        remember(found);
+        for (final p in found) {
+          if (cards[p.oracleId] == null) continue;
+          store.setPreferredPrint(p.oracleId, p.printId);
+          applied++;
+        }
+        onProgress?.call((i + batch.length).clamp(0, ids.length), ids.length);
+      }
+    } finally {
+      client.close(force: true);
+      _preferred = store.preferredPrints();
+      notifyListeners();
+    }
+    return applied;
   }
 
   void cancelPack() => _cancelPack = true;

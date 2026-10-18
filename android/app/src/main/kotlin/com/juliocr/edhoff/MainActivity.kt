@@ -1,6 +1,7 @@
 package com.juliocr.edhoff
 
 import android.content.Context
+import android.content.Intent
 import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -25,6 +26,21 @@ class MainActivity : FlutterActivity() {
                     }
                     else -> result.notImplemented()
                 }
+            }
+        // Partilhar texto (listas de decks) pela folha de partilha do Android.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/share")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "text") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, call.argument<String>("text") ?: "")
+                    call.argument<String>("subject")?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
+                }
+                startActivity(Intent.createChooser(send, call.argument<String>("subject")))
+                result.success(null)
             }
     }
 

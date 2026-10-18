@@ -21,7 +21,19 @@ class CardSearchView extends ConsumerStatefulWidget {
     this.autofocus = false,
     this.hint = 'Nome ou filtros (t:dragon id:rg)',
     this.onlyOwned = false,
+    this.header,
+    this.defaultOrder = 'name',
+    this.listWhenEmpty = false,
   });
+
+  /// Sem texto, mostra tudo o que o filtro fixo deixa (ex.: comandantes).
+  final bool listWhenEmpty;
+
+  /// Por baixo do campo (por exemplo, os filtros ativos do deck).
+  final Widget? header;
+
+  /// Ordem inicial dos resultados: `name`, `edhrec` (popularidade) ou `mv`.
+  final String defaultOrder;
 
   /// Só as minhas cartas (a coleção); sem texto mostra-as todas.
   final bool onlyOwned;
@@ -46,11 +58,21 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
   int _total = 0;
   List<String> _errors = const [];
   bool _loadingMore = false;
+  late String _order = widget.defaultOrder;
+
+  @override
+  void didUpdateWidget(CardSearchView old) {
+    super.didUpdateWidget(old);
+    // Mudar os filtros do deck mantém o que se escreveu e volta a pesquisar.
+    if (old.fixedFilter != widget.fixedFilter || old.onlyOwned != widget.onlyOwned) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuery.isNotEmpty || widget.onlyOwned) {
+    if (widget.initialQuery.isNotEmpty || widget.onlyOwned || widget.listWhenEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _run());
     }
   }
@@ -66,8 +88,11 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
 
   String get _query {
     final q = _ctrl.text.trim();
-    if (q.isEmpty) return widget.onlyOwned ? widget.fixedFilter : '';
-    return widget.fixedFilter.isEmpty ? q : '$q ${widget.fixedFilter}';
+    final base = q.isEmpty
+        ? (widget.onlyOwned || widget.listWhenEmpty ? widget.fixedFilter : '')
+        : (widget.fixedFilter.isEmpty ? q : '$q ${widget.fixedFilter}');
+    if (base.isEmpty || base.contains('order:') || _order == 'name') return base;
+    return '$base order:$_order';
   }
 
   void _onChanged(String _) {
@@ -145,6 +170,10 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _ctrl.clear();
+                      if (widget.listWhenEmpty) {
+                        _run();
+                        return;
+                      }
                       setState(() {
                         _results = const [];
                         _total = 0;
@@ -167,14 +196,29 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
             child: Text('Filtro não reconhecido: ${_errors.join(', ')}',
                 style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
           ),
-        if (_query.isNotEmpty || widget.onlyOwned)
+        if (widget.header != null) widget.header!,
+        if (_query.isNotEmpty || widget.onlyOwned || widget.listWhenEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(_total == 1 ? '1 carta' : '$_total cartas',
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 2),
+            child: Row(children: [
+              Text(_total == 1 ? '1 carta' : '$_total cartas',
                   style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ),
+              const Spacer(),
+              // Ordenar sem saber a sintaxe "order:".
+              for (final (id, label) in const [('name', 'Nome'), ('edhrec', 'Popular'), ('mv', 'Custo')])
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: ChoiceChip(
+                    visualDensity: VisualDensity.compact,
+                    label: Text(label, style: const TextStyle(fontSize: 12)),
+                    selected: _order == id,
+                    onSelected: (_) {
+                      setState(() => _order = id);
+                      _run();
+                    },
+                  ),
+                ),
+            ]),
           ),
         Expanded(
           child: NotificationListener<ScrollNotification>(

@@ -6,12 +6,17 @@ import 'deck.dart';
 
 /// Uma linha de uma lista colada, antes de se saber que carta é.
 class ParsedLine {
-  const ParsedLine(this.qty, this.name, this.board, {this.category, this.line = 0});
+  const ParsedLine(this.qty, this.name, this.board,
+      {this.category, this.line = 0, this.setCode, this.collectorNumber});
   final int qty;
   final String name;
   final Board board;
   final String? category;
   final int line;
+
+  /// Coleção e número (quando o ficheiro os traz, como o CSV do ManaBox).
+  final String? setCode;
+  final String? collectorNumber;
 }
 
 class ImportResult {
@@ -205,6 +210,8 @@ List<ParsedLine> parseCollectionText(String text) {
   int col(List<String> names) => header.indexWhere(names.contains);
   final nameCol = col(const ['name', 'card name', 'card', 'card_name', 'cardname']);
   final qtyCol = col(const ['quantity', 'count', 'qty', 'amount', 'total quantity', 'quantidade']);
+  final setCol = col(const ['set code', 'set_code', 'setcode', 'edition code', 'set']);
+  final numCol = col(const ['collector number', 'collector_number', 'card number', 'number', 'cn']);
   if (header.length < 2 || nameCol < 0) {
     // Sem cabeçalho CSV: lista de texto como as de deck.
     return [for (final l in parseDeckText(text)) ParsedLine(l.qty, l.name, Board.main, line: l.line)];
@@ -217,7 +224,9 @@ List<ParsedLine> parseCollectionText(String text) {
     if (name.isEmpty) continue;
     final qty = qtyCol >= 0 && qtyCol < row.length ? int.tryParse(row[qtyCol].trim()) ?? 1 : 1;
     if (qty <= 0) continue;
-    out.add(ParsedLine(qty, name, Board.main, line: i + 1));
+    String? cell(int c) => c >= 0 && c < row.length && row[c].trim().isNotEmpty ? row[c].trim() : null;
+    out.add(ParsedLine(qty, name, Board.main,
+        line: i + 1, setCode: cell(setCol)?.toLowerCase(), collectorNumber: cell(numCol)));
   }
   return out;
 }

@@ -37,8 +37,7 @@ Future<List<String>> _rankedAddresses(bool preferHotspot) async {
   bool looksLikeHotspot(String iface, String ip) {
     if (ip == wifiIp) return false;
     final n = iface.toLowerCase();
-    return n.contains('ap') || n.startsWith('swlan') || n == 'wlan1' ||
-        n.contains('softap');
+    return n.contains('ap') || n.startsWith('swlan') || n == 'wlan1' || n.contains('softap');
   }
 
   int rank((String, String) e) {

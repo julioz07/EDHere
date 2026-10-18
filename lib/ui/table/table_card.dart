@@ -145,7 +145,11 @@ class TableCardView extends StatelessWidget {
       for (final k in own)
         if (!granted.contains(k))
           if (abilityIconFor(k) case final i?) (i, false),
-    ].take(6).toList();
+    ];
+    // Só os ícones que cabem na altura da carta (cartas pequenas levam menos).
+    final cardH = width / cardAspect;
+    final fit = ((cardH - width * 0.16 - iconSize * 1.8) / (iconSize * 0.9 + 6)).floor().clamp(0, 6);
+    final shownAbilities = abilityIcons.take(fit).toList();
 
     final pt = c.faceDown ? null : effectivePt(c, card);
 
@@ -171,14 +175,14 @@ class TableCardView extends StatelessWidget {
             left: -4,
             child: Icon(Icons.star_rounded, size: width * 0.22, color: Colors.amber),
           ),
-        if (showDetails && abilityIcons.isNotEmpty)
+        if (showDetails && shownAbilities.isNotEmpty)
           Positioned(
             top: width * 0.16,
             right: -2,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (final (icon, isGranted) in abilityIcons)
+                for (final (icon, isGranted) in shownAbilities)
                   Container(
                     margin: const EdgeInsets.only(bottom: 2),
                     padding: const EdgeInsets.all(2),

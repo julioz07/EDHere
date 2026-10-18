@@ -9,13 +9,26 @@ import '../table/tablet_table_screen.dart';
 
 /// Playtest local com os decks escolhidos, no mesmo núcleo do jogo em rede.
 class PlaytestScreen extends ConsumerStatefulWidget {
-  const PlaytestScreen({super.key, required this.deckIds, this.randomFirst = false, this.tablet = false});
+  const PlaytestScreen({
+    super.key,
+    required this.deckIds,
+    this.names,
+    this.randomFirst = false,
+    this.tablet = false,
+    this.openHands = false,
+  });
 
   final List<int> deckIds;
+
+  /// Nomes dos jogadores (no 1 contra 1); por defeito o meu nome.
+  final List<String>? names;
   final bool randomFirst;
 
-  /// Modo tablet: todos à volta do mesmo ecrã.
+  /// Mesa partilhada: os dois à volta do mesmo ecrã.
   final bool tablet;
+
+  /// Mãos à vista (para ensinar).
+  final bool openHands;
 
   @override
   ConsumerState<PlaytestScreen> createState() => _PlaytestScreenState();
@@ -41,9 +54,9 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
         for (var i = 0; i < decks.length; i++)
           SeatSetup(
             seat: i,
-            name: decks.length == 1
-                ? (player.isEmpty ? 'Eu' : player)
-                : '${decks[i].name.length > 12 ? decks[i].name.substring(0, 12) : decks[i].name} ${i + 1}',
+            name: widget.names != null && i < widget.names!.length
+                ? widget.names![i]
+                : (player.isEmpty ? 'Eu' : player),
             deck: decks[i],
           ),
       ],
@@ -58,5 +71,5 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
 
   @override
   Widget build(BuildContext context) =>
-      widget.tablet ? TabletTableScreen(ctrl: _ctrl) : TableScreen(ctrl: _ctrl);
+      widget.tablet ? TabletTableScreen(ctrl: _ctrl, openHands: widget.openHands) : TableScreen(ctrl: _ctrl);
 }

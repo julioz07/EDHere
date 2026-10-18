@@ -51,6 +51,11 @@ abstract final class Ev {
   static const undo = 'undo';
   static const emote = 'chat_emote';
 
+  // Estado global
+  static const storm = 'storm';
+  static const dayNight = 'day_night';
+  static const gameOver = 'game_over';
+
   /// Eventos que não entram no registo nem contam para "a última ação".
   static const silent = {highlight, position};
 }

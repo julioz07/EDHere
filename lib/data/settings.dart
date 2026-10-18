@@ -72,7 +72,7 @@ class Settings extends ChangeNotifier {
   double get cardScale => _prefs.getDouble(_kCardScale) ?? 1.0;
   set cardScale(double v) => _setDouble(_kCardScale, v);
 
-  bool get autoDraw => _prefs.getBool(_kAutoDraw) ?? false;
+  bool get autoDraw => _prefs.getBool(_kAutoDraw) ?? true;
   set autoDraw(bool v) => _setBool(_kAutoDraw, v);
 
   bool get doubleTapToTap => _prefs.getBool(_kDoubleTap) ?? true;
@@ -132,5 +132,5 @@ class Settings extends ChangeNotifier {
   }
 }
 
-final settingsProvider = ChangeNotifierProvider<Settings>(
-    (ref) => Settings(ref.watch(prefsProvider), ref.watch(pathsProvider)));
+final settingsProvider =
+    ChangeNotifierProvider<Settings>((ref) => Settings(ref.watch(prefsProvider), ref.watch(pathsProvider)));

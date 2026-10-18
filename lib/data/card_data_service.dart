@@ -36,17 +36,15 @@ class CardDataService extends ChangeNotifier {
 
   CardRepository? get repo => _repo;
   bool get hasData => _repo != null;
-  bool get busy => phase == DataPhase.checking ||
-      phase == DataPhase.downloading ||
-      phase == DataPhase.importing;
+  bool get busy =>
+      phase == DataPhase.checking || phase == DataPhase.downloading || phase == DataPhase.importing;
 
   Map<String, String> get meta => _repo?.meta ?? const {};
   String? get localDate => meta['bulk_updated_at'];
   int get cardCount => int.tryParse(meta['card_count'] ?? '') ?? 0;
   bool get hasRulings => meta['rulings'] == '1';
 
-  bool get updateAvailable =>
-      remoteOracle != null && remoteOracle!.updatedAt != localDate;
+  bool get updateAvailable => remoteOracle != null && remoteOracle!.updatedAt != localDate;
 
   void _set(DataPhase p, {double? progress, String? message}) {
     phase = p;
@@ -97,8 +95,8 @@ class CardDataService extends ChangeNotifier {
       if (rulings != null) {
         await downloadFile(rulings.url, rulingsPath,
             cancelled: () => _cancel,
-            onProgress: (r, _) => _progress(
-                (oracle.compressedSize + r) / totalBytes, 'A descarregar rulings… ${_mb(r)}'));
+            onProgress: (r, _) =>
+                _progress((oracle.compressedSize + r) / totalBytes, 'A descarregar rulings… ${_mb(r)}'));
       }
 
       _set(DataPhase.importing, progress: 0, message: 'A preparar a base offline…');
@@ -112,8 +110,7 @@ class CardDataService extends ChangeNotifier {
           'rulings': rulings == null ? '0' : '1',
           'imported_at': DateTime.now().toIso8601String(),
         },
-        onProgress: (n) => _progress(
-            (n / expected).clamp(0, 0.99), 'A preparar a base offline… $n cartas'),
+        onProgress: (n) => _progress((n / expected).clamp(0, 0.99), 'A preparar a base offline… $n cartas'),
       );
 
       // Troca a base antiga pela nova.
@@ -181,11 +178,8 @@ Future<void> _importEntry(List<Object?> args) async {
   final imp = CardImporter(outPath);
   try {
     imp.open();
-    Stream<String> lines(String path) => File(path)
-        .openRead()
-        .transform(gzip.decoder)
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
+    Stream<String> lines(String path) =>
+        File(path).openRead().transform(gzip.decoder).transform(utf8.decoder).transform(const LineSplitter());
     await imp.importLines(lines(oraclePath), onProgress: send.send);
     if (rulingsPath != null) await imp.importRulings(lines(rulingsPath));
     imp.finish(meta);

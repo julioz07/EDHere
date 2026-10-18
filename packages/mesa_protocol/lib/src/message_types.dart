@@ -12,6 +12,9 @@ abstract final class MsgType {
   static const reject = 'reject';
   static const heartbeatAck = 'heartbeat_ack';
 
+  /// O anfitrião fechou a sala: os clientes deixam de tentar voltar a ligar.
+  static const roomClosed = 'room_closed';
+
   /// Mensagem direta para um lugar, encaminhada pelo anfitrião sem `seq`
   /// e sem ficar no registo (por exemplo, imagens de cartas).
   /// Payload: `{to, type, payload}`.

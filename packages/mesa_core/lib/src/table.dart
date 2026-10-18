@@ -48,8 +48,8 @@ class Table {
   bool apply(int seq, String type, int actor, Map<String, dynamic> p) {
     if (type == Ev.undo) return _undo(seq, actor, (p['seq'] as num).toInt());
 
-    final snapshot = _Snapshot(seq, actor, type, state.clone(),
-        {for (final e in private.entries) e.key: e.value.clone()});
+    final snapshot =
+        _Snapshot(seq, actor, type, state.clone(), {for (final e in private.entries) e.key: e.value.clone()});
     state.seq = seq;
     String? text;
     try {
@@ -79,8 +79,7 @@ class Table {
 
   bool canUndo(int seat) {
     final last = _history.isEmpty ? null : _history.last;
-    return last != null && last.actor == seat && last.type != Ev.startGame &&
-        last.type != Ev.joinTable;
+    return last != null && last.actor == seat && last.type != Ev.startGame && last.type != Ev.joinTable;
   }
 
   int? get lastUndoableSeq => _history.isEmpty ? null : _history.last.seq;
@@ -101,8 +100,7 @@ class Table {
   }
 
   String _n(int seat) => state.players[seat]?.name ?? 'Jogador $seat';
-  String _cardName(CardInstance c) =>
-      c.oracleId == null ? (c.tokenName ?? 'token') : '[[${c.oracleId}]]';
+  String _cardName(CardInstance c) => c.oracleId == null ? (c.tokenName ?? 'token') : '[[${c.oracleId}]]';
 
   String? _applyInner(String type, int actor, Map<String, dynamic> p) {
     int i(String k) => (p[k] as num).toInt();
@@ -162,6 +160,7 @@ class Table {
         s.activeSeat = next;
         s.turn++;
         s.phase = 'upkeep';
+        s.storm = 0;
         s.targets.clear();
         s.highlight = null;
         for (final c in s.cards.values) {
@@ -341,9 +340,7 @@ class Table {
 
       case Ev.initiative:
         s.initiative = oi('seat');
-        return s.initiative == null
-            ? 'Ninguém tem a iniciativa'
-            : '${_n(s.initiative!)} tem a iniciativa';
+        return s.initiative == null ? 'Ninguém tem a iniciativa' : '${_n(s.initiative!)} tem a iniciativa';
 
       case Ev.defeated:
         final pl = s.players[i('seat')]!;
@@ -467,9 +464,15 @@ class Table {
           final rest = z.library.where((c) => !moved.contains(c.pid)).toList();
           z.library
             ..clear()
-            ..addAll([for (final pid in top) if (all[pid] != null) all[pid]!])
+            ..addAll([
+              for (final pid in top)
+                if (all[pid] != null) all[pid]!
+            ])
             ..addAll(rest)
-            ..addAll([for (final pid in bottom) if (all[pid] != null) all[pid]!]);
+            ..addAll([
+              for (final pid in bottom)
+                if (all[pid] != null) all[pid]!
+            ]);
         }
         final kind = p['kind'] as String? ?? 'scry';
         final n = top.length + bottom.length + grave.length;
@@ -492,9 +495,7 @@ class Table {
         }
         s.targets.add(TargetMark(actor: actor, from: from, card: card, seat: seat));
         final src = from == null ? null : s.cards[from];
-        final what = card != null
-            ? (s.cards[card] == null ? '?' : _cardName(s.cards[card]!))
-            : _n(seat!);
+        final what = card != null ? (s.cards[card] == null ? '?' : _cardName(s.cards[card]!)) : _n(seat!);
         return src == null
             ? '${_n(actor)} aponta para $what'
             : '${_n(actor)} aponta ${_cardName(src)} para $what';
@@ -510,6 +511,24 @@ class Table {
 
       case Ev.emote:
         return '${_n(actor)}: ${p['text']}';
+
+      case Ev.storm:
+        s.storm = oi('value') ?? max(0, s.storm + i('delta'));
+        return 'Storm: ${s.storm}';
+
+      case Ev.dayNight:
+        s.dayNight = p['value'] as String?;
+        return switch (s.dayNight) {
+          'day' => 'Passou a ser dia',
+          'night' => 'Passou a ser noite',
+          _ => 'Já não é dia nem noite',
+        };
+
+      case Ev.gameOver:
+        s
+          ..over = true
+          ..winner = oi('winner');
+        return s.winner == null ? 'Jogo terminado, sem vencedor' : 'Jogo terminado: ${_n(s.winner!)} venceu';
 
       default:
         return null;
@@ -556,8 +575,7 @@ class Table {
           pl.libraryCount++;
         }
         if (localSeats.contains(owner) && c.oracleId != null) {
-          final card =
-              PrivateCard(_newPid(), c.oracleId!, isCommander: c.isCommander, printId: c.printId);
+          final card = PrivateCard(_newPid(), c.oracleId!, isCommander: c.isCommander, printId: c.printId);
           final z = zonesOf(owner);
           if (to == Zone.hand) {
             z.hand.add(card);
@@ -570,8 +588,11 @@ class Table {
         return '${_n(actor)} pôs $name ${_where(to, pos, owner)}';
       }
       // Pública -> pública.
+      // Lançar o comandante: conta para o imposto (2 por cada vez anterior).
+      int? castTax;
       if (from == Zone.command && c.isCommander && to == Zone.battlefield) {
         final pl = s.players[owner]!;
+        castTax = pl.commanderTax(c.id);
         pl.commanderCasts[c.id] = (pl.commanderCasts[c.id] ?? 0) + 1;
       }
       final leavingField = from == Zone.battlefield && to != Zone.battlefield;
@@ -597,7 +618,10 @@ class Table {
       }
       c.order = s.maxOrder() + 1;
       if (from == to) return null;
-      return '${_n(actor)} moveu $name ${_where(to, pos, owner, from: from)}';
+      if (castTax != null) {
+        return '${_n(actor)} lançou o comandante $name${castTax > 0 ? ' (imposto +$castTax)' : ''}';
+      }
+      return '${_n(actor)} moveu $name ${_whereTo(to, pos)}';
     }
 
     // Origem oculta: carta do dono com pid.
@@ -661,12 +685,20 @@ class Table {
       (Zone.hand, Zone.graveyard) => 'descartou',
       _ => 'moveu',
     };
-    return verb == 'moveu'
-        ? '${pl.name} moveu $shown ${_where(to, pos, seat)}'
-        : '${pl.name} $verb $shown';
+    return verb == 'moveu' ? '${pl.name} moveu $shown ${_whereTo(to, pos)}' : '${pl.name} $verb $shown';
   }
 
-  String _where(Zone to, String pos, int owner, {Zone? from}) {
+  /// Destino de um movimento ("moveu X para o cemitério").
+  String _whereTo(Zone to, String pos) => switch (to) {
+        Zone.library => pos == 'bottom' ? 'para o fundo do grimório' : 'para o topo do grimório',
+        Zone.hand => 'para a mão',
+        Zone.battlefield => 'para o campo',
+        Zone.graveyard => 'para o cemitério',
+        Zone.exile => 'para o exílio',
+        Zone.command => 'para a zona de comando',
+      };
+
+  String _where(Zone to, String pos, int owner) {
     return switch (to) {
       Zone.library => pos == 'bottom' ? 'no fundo do grimório' : 'no topo do grimório',
       Zone.hand => 'na mão',
@@ -693,8 +725,7 @@ class Table {
       'seat': seat,
       'size': library.length,
       'commanders': [
-        for (final o in commanders)
-          {'id': newId(seat), 'o': o, if (prints[o] != null) 'p': prints[o]},
+        for (final o in commanders) {'id': newId(seat), 'o': o, if (prints[o] != null) 'p': prints[o]},
       ],
     });
   }
@@ -764,15 +795,21 @@ class Table {
     final byPid = {for (final c in list) c.pid: c};
     return Intent(Ev.reveal, {
       'seat': seat,
-      'os': [for (final p in pids) if (byPid[p] != null) byPid[p]!.oracleId],
+      'os': [
+        for (final p in pids)
+          if (byPid[p] != null) byPid[p]!.oracleId
+      ],
       'what': what ?? (from == Zone.hand ? 'da mão' : 'do grimório'),
       if (to != null) 'to': to,
     });
   }
 
   /// Resultado de scry/surveil: ordem final do topo, fundo e cemitério.
-  Intent scryDone(int seat, {required List<int> top, List<int> bottom = const [],
-      List<int> graveyard = const [], String kind = 'scry'}) {
+  Intent scryDone(int seat,
+      {required List<int> top,
+      List<int> bottom = const [],
+      List<int> graveyard = const [],
+      String kind = 'scry'}) {
     final z = zonesOf(seat);
     final byPid = {for (final c in z.library) c.pid: c};
     return Intent(Ev.scryDone, {
@@ -796,8 +833,15 @@ class Table {
 
   Intent bottom(int seat, List<int> pids) => Intent(Ev.bottom, {'seat': seat, 'pids': pids});
 
-  Intent createToken(int seat, {String? oracleId, String? name, String? pt, int qty = 1,
-      double x = 0.5, double y = 0.5, int? copyOf, String? printId}) =>
+  Intent createToken(int seat,
+          {String? oracleId,
+          String? name,
+          String? pt,
+          int qty = 1,
+          double x = 0.5,
+          double y = 0.5,
+          int? copyOf,
+          String? printId}) =>
       Intent(Ev.token, {
         'newId': newId(seat),
         'seat': seat,
@@ -812,6 +856,33 @@ class Table {
       });
 
   Intent undo() => Intent(Ev.undo, {'seq': lastUndoableSeq});
+
+  // ---------------------------------------------------------------------
+  // Guardar e repor as zonas ocultas (voltar a um jogo em rede)
+  // ---------------------------------------------------------------------
+
+  /// Mão e grimório de [seat] e os contadores de ids, para guardar no disco.
+  Map<String, dynamic> exportPrivate(int seat) {
+    final z = zonesOf(seat);
+    return {
+      'lib': [for (final c in z.library) c.toJson()],
+      'hand': [for (final c in z.hand) c.toJson()],
+      'ids': _idCounters[seat] ?? 0,
+      'pid': _pid,
+    };
+  }
+
+  /// Repõe o que [exportPrivate] guardou e passa a tratar [seat] como local.
+  void importPrivate(int seat, Map<String, dynamic> j) {
+    List<PrivateCard> list(String k) => [
+          for (final c in (j[k] as List? ?? const []).cast<Map>())
+            PrivateCard.fromJson(c.cast<String, dynamic>())
+        ];
+    private[seat] = PrivateZones(library: list('lib'), hand: list('hand'));
+    _idCounters[seat] = max(_idCounters[seat] ?? 0, (j['ids'] as num?)?.toInt() ?? 0);
+    _pid = max(_pid, (j['pid'] as num?)?.toInt() ?? 1);
+    localSeats.add(seat);
+  }
 }
 
 class _Snapshot {

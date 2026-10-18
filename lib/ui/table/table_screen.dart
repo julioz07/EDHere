@@ -22,10 +22,21 @@ const _phases = [
   ('end', 'Final'),
 ];
 
+/// Formatos em que o primeiro mulligan é grátis (multijogador de Commander).
+const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
+
+/// Layout da mesa conforme o espaço: no telemóvel ao alto, tudo em coluna;
+/// em ecrãs largos (tablet, ou telemóvel deitado) as zonas vão para o lado.
+({bool wide, bool short}) tableLayoutFor(Size size) {
+  final landscape = size.width > size.height;
+  final wide = size.width >= wideBreakpoint || (landscape && size.width >= 560);
+  return (wide: wide, short: size.height < 520);
+}
+
 /// A mesa: campo do jogador em vista, zonas, mão e barra de turno.
 /// Serve o playtest e o jogo em rede.
 class TableScreen extends ConsumerStatefulWidget {
-  const TableScreen({super.key, required this.ctrl, this.title, this.onLeave, this.banner});
+  const TableScreen({super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame});
 
   final GameController ctrl;
   final String? title;
@@ -36,6 +47,9 @@ class TableScreen extends ConsumerStatefulWidget {
   /// Aviso no topo (ligação perdida, etc.).
   final Widget? banner;
 
+  /// Só o anfitrião: volta todos ao lobby para outra partida.
+  final VoidCallback? onNewGame;
+
   @override
   ConsumerState<TableScreen> createState() => _TableScreenState();
 }
@@ -43,6 +57,13 @@ class TableScreen extends ConsumerStatefulWidget {
 class _TableScreenState extends ConsumerState<TableScreen> {
   GameController get ctrl => widget.ctrl;
   Reveal? _shownReveal;
+  late bool _wasOver = ctrl.state.over;
+  late int _lastLogSeq = ctrl.state.log.isEmpty ? 0 : ctrl.state.log.last.seq;
+  final Set<int> _mulliganAsked = {};
+
+  /// Resultado de dado/moeda/sorteio a mostrar em grande por cima da mesa.
+  (String, String)? _bigResult;
+  int _bigResultId = 0;
 
   @override
   void initState() {
@@ -51,6 +72,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     if (settings.keepScreenOn) WakelockPlus.enable();
     ctrl.autoDraw = settings.autoDraw;
     ctrl.addListener(_onChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onChange());
   }
 
   @override
@@ -61,7 +83,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 
   void _onChange() {
-    final r = ctrl.state.revealed;
+    if (!mounted) return;
+    final s = ctrl.state;
+    final r = s.revealed;
     if (r != null && !identical(r, _shownReveal)) {
       _shownReveal = r;
       final forMe = r.to == null || ctrl.mySeats.contains(r.to);
@@ -71,6 +95,115 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         });
       }
     }
+    _showNewResults();
+    if (s.over && !_wasOver) {
+      _wasOver = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onGameOver());
+    } else if (!s.over) {
+      _wasOver = false;
+    }
+    _maybeAskMulligan();
+  }
+
+  /// Dados, moeda e sorteio aparecem em grande para toda a gente ver.
+  void _showNewResults() {
+    final log = ctrl.state.log;
+    for (final e in log.where((e) => e.seq > _lastLogSeq)) {
+      if (e.type == Ev.rollDie || e.type == Ev.flipCoin || e.type == Ev.randomPlayer) {
+        final text = ctrl.logText(e);
+        final i = text.lastIndexOf(': ');
+        final value = i < 0 ? text : text.substring(i + 2);
+        final label = i < 0 ? '' : text.substring(0, i);
+        final id = ++_bigResultId;
+        setState(() => _bigResult = (value, label));
+        Future.delayed(const Duration(milliseconds: 2600), () {
+          if (mounted && _bigResultId == id) setState(() => _bigResult = null);
+        });
+      }
+    }
+    if (log.isNotEmpty) _lastLogSeq = log.last.seq;
+  }
+
+  /// No início do jogo, cada mão inicial pergunta "manter ou mulligan".
+  void _maybeAskMulligan() {
+    final s = ctrl.state;
+    if (!s.started || s.over || s.turn > 1) return;
+    for (final seat in ctrl.mySeats) {
+      if (_mulliganAsked.contains(seat)) continue;
+      final hand = ctrl.zones(seat).hand;
+      if (hand.length < 7 || (ctrl.mulligans[seat] ?? 0) > 0) continue;
+      _mulliganAsked.add(seat);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _askMulligan(seat);
+      });
+      return; // uma de cada vez (no hot-seat, a seguinte vem depois)
+    }
+  }
+
+  Future<void> _askMulligan(int seat) async {
+    while (true) {
+      if (!mounted) return;
+      final count = ctrl.mulligans[seat] ?? 0;
+      final free = _freeMulligan.contains(ctrl.state.format);
+      final toBottom = free ? count - 1 : count;
+      final name = ctrl.state.players[seat]?.name ?? '';
+      final keep = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => ListenableBuilder(
+          listenable: ctrl,
+          builder: (ctx, _) {
+            final hand = ctrl.zones(seat).hand;
+            final next = free ? count : count + 1;
+            return AlertDialog(
+              title: Text(ctrl.mySeats.length > 1 ? 'Mão inicial de $name' : 'A tua mão inicial'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  if (count > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text('Mulligan $count'
+                          '${toBottom > 0 ? ' · ao manter, pões $toBottom no fundo' : ' (grátis)'}'),
+                    ),
+                  GridView.count(
+                    shrinkWrap: true,
+                    crossAxisCount: 4,
+                    childAspectRatio: cardAspect,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    children: [
+                      for (final pc in hand)
+                        if (ctrl.card(pc.oracleId, printId: pc.printId) case final c?)
+                          CardImage(c, radius: 4)
+                        else
+                          const CardBack(),
+                    ],
+                  ),
+                ]),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: hand.length <= 1 ? null : () => Navigator.pop(ctx, false),
+                  child: Text(next == 0 ? 'Mulligan (grátis)' : 'Mulligan'),
+                ),
+                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Manter')),
+              ],
+            );
+          },
+        ),
+      );
+      if (!mounted || keep == null) return;
+      ctrl.actAs(seat);
+      if (keep) {
+        if (toBottom > 0) await showBottomPicker(context, ctrl, toBottom);
+        break;
+      }
+      ctrl.mulligan();
+      // Em rede a nova mão chega pelo anfitrião: espera um instante.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+    }
+    _maybeAskMulligan();
   }
 
   Future<bool> _confirmLeave() async {
@@ -89,6 +222,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     return ok == true;
   }
 
+  /// Escolher o vencedor; o fim do jogo chega a todos os dispositivos.
   Future<void> _finishGame() async {
     final players = ctrl.state.players.values.toList();
     final winner = await showDialog<int>(
@@ -99,7 +233,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           for (final p in players)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, p.seat),
-              child: Text(p.name, style: const TextStyle(fontSize: 16)),
+              child: Text(ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? '${p.name} (tu)' : p.name,
+                  style: const TextStyle(fontSize: 16)),
             ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, -1),
@@ -109,11 +244,42 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       ),
     );
     if (winner == null || !mounted) return;
-    ref.read(deckStoreProvider).saveGame(ctrl.record(winnerSeat: winner < 0 ? null : winner));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Jogo guardado no histórico.')),
+    ctrl.gameOver(winner < 0 ? null : winner);
+  }
+
+  /// Cada dispositivo guarda a partida no seu histórico e mostra o resultado.
+  Future<void> _onGameOver() async {
+    if (!mounted) return;
+    final s = ctrl.state;
+    ref.read(deckStoreProvider).saveGame(ctrl.record(winnerSeat: s.winner));
+    final winner = s.winner == null ? null : s.players[s.winner];
+    final iWon = s.winner != null && ctrl.mySeats.contains(s.winner) && ctrl.mySeats.length == 1;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : Colors.amber, size: 40),
+        title: Text(winner == null
+            ? 'Jogo terminado'
+            : iWon
+                ? 'Ganhaste!'
+                : '${winner.name} ganhou'),
+        content: Text('Turno ${s.turn} · guardado no histórico.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, 'view'), child: const Text('Ver a mesa')),
+          if (!ctrl.isNetwork)
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'close'), child: const Text('Fechar'))
+          else if (widget.onNewGame != null)
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'again'), child: const Text('Nova partida')),
+        ],
+      ),
     );
-    if (!ctrl.isNetwork) Navigator.of(context).pop();
+    if (!mounted) return;
+    switch (action) {
+      case 'close':
+        Navigator.of(context).pop();
+      case 'again':
+        widget.onNewGame?.call();
+    }
   }
 
   void _menu() {
@@ -127,72 +293,103 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         }
 
         return SafeArea(
-          child: Wrap(children: [
-            SwitchListTile(
-              title: const Text('Compra automática no início do turno'),
-              value: ctrl.autoDraw,
-              onChanged: (v) => set(() => ctrl.autoDraw = v),
+          child: ListenableBuilder(
+            listenable: ctrl,
+            builder: (ctx, _) => SingleChildScrollView(
+              child: Wrap(children: [
+                SwitchListTile(
+                  title: const Text('Compra automática no início do turno'),
+                  value: ctrl.autoDraw,
+                  onChanged: (v) => set(() => ctrl.autoDraw = v),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.bolt),
+                  title: Text('Storm neste turno: ${ctrl.state.storm}'),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                        onPressed: ctrl.state.storm > 0 ? () => ctrl.storm(-1) : null,
+                        icon: const Icon(Icons.remove_circle_outline)),
+                    IconButton(onPressed: () => ctrl.storm(1), icon: const Icon(Icons.add_circle_outline)),
+                  ]),
+                ),
+                ListTile(
+                  leading:
+                      Icon(ctrl.state.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny_outlined),
+                  title: const Text('Dia / noite'),
+                  trailing: SegmentedButton<String>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: '-', label: Text('—')),
+                      ButtonSegment(value: 'day', label: Text('Dia')),
+                      ButtonSegment(value: 'night', label: Text('Noite')),
+                    ],
+                    selected: {ctrl.state.dayNight ?? '-'},
+                    onSelectionChanged: (v) => ctrl.dayNight(v.first == '-' ? null : v.first),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.emoji_events_outlined),
+                  title: const Text('Terminar jogo'),
+                  subtitle: const Text('Escolhe o vencedor; fica no histórico de todos'),
+                  onTap: () => run(_finishGame),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.toll_outlined),
+                  title: const Text('Criar token'),
+                  onTap: () => run(() => showTokenSheet(context, ctrl)),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.gps_fixed, color: targetGlow),
+                  title: const Text('Apontar para… (carta ou jogador)'),
+                  onTap: () => run(() => showTargetPicker(context, ctrl)),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.undo),
+                  title: const Text('Desvirar tudo'),
+                  onTap: () => run(() => ctrl.send(Intent(Ev.untapAll, {'seat': ctrl.actor}))),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.casino_outlined),
+                  title: const Text('Lançar d6'),
+                  onTap: () => run(() => ctrl.rollDie(6)),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.casino),
+                  title: const Text('Lançar d20'),
+                  onTap: () => run(() => ctrl.rollDie(20)),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.toll),
+                  title: const Text('Lançar moeda'),
+                  onTap: () => run(ctrl.flipCoin),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.shuffle_on_outlined),
+                  title: const Text('Escolher jogador ao acaso'),
+                  onTap: () => run(ctrl.randomPlayer),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.clear_all),
+                  title: const Text('Limpar os meus alvos e o destaque'),
+                  onTap: () => run(() {
+                    ctrl.send(const Intent(Ev.arrow, {}));
+                    ctrl.highlight(null);
+                  }),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.visibility),
+                  title: const Text('Revelar a minha mão a todos'),
+                  onTap: () => run(() {
+                    final hand = ctrl.zones(ctrl.actor).hand;
+                    if (hand.isNotEmpty) {
+                      ctrl.send(ctrl.table
+                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
+                    }
+                  }),
+                ),
+              ]),
             ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events_outlined),
-              title: const Text('Terminar jogo e guardar no histórico'),
-              onTap: () => run(_finishGame),
-            ),
-            ListTile(
-              leading: const Icon(Icons.toll_outlined),
-              title: const Text('Criar token'),
-              onTap: () => run(() => showTokenSheet(context, ctrl)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.gps_fixed, color: targetGlow),
-              title: const Text('Apontar para… (carta ou jogador)'),
-              onTap: () => run(() => showTargetPicker(context, ctrl)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.undo),
-              title: const Text('Desvirar tudo'),
-              onTap: () => run(() => ctrl.send(Intent(Ev.untapAll, {'seat': ctrl.actor}))),
-            ),
-            ListTile(
-              leading: const Icon(Icons.casino_outlined),
-              title: const Text('Lançar d6'),
-              onTap: () => run(() => ctrl.rollDie(6)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.casino),
-              title: const Text('Lançar d20'),
-              onTap: () => run(() => ctrl.rollDie(20)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.toll),
-              title: const Text('Lançar moeda'),
-              onTap: () => run(ctrl.flipCoin),
-            ),
-            ListTile(
-              leading: const Icon(Icons.shuffle_on_outlined),
-              title: const Text('Escolher jogador ao acaso'),
-              onTap: () => run(ctrl.randomPlayer),
-            ),
-            ListTile(
-              leading: const Icon(Icons.clear_all),
-              title: const Text('Limpar os meus alvos e o destaque'),
-              onTap: () => run(() {
-                ctrl.send(const Intent(Ev.arrow, {}));
-                ctrl.highlight(null);
-              }),
-            ),
-            ListTile(
-              leading: const Icon(Icons.visibility),
-              title: const Text('Revelar a minha mão a todos'),
-              onTap: () => run(() {
-                final hand = ctrl.zones(ctrl.actor).hand;
-                if (hand.isNotEmpty) {
-                  ctrl.send(ctrl.table
-                      .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
-                }
-              }),
-            ),
-          ]),
+          ),
         );
       }),
     );
@@ -216,15 +413,37 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           final theme = Theme.of(context);
           final active = s.players[s.activeSeat];
           final phaseLabel = _phases.firstWhere((p) => p.$1 == s.phase, orElse: () => _phases[2]).$2;
+          final myTurn = ctrl.mySeats.contains(s.activeSeat) && ctrl.isNetwork;
+          final layout = tableLayoutFor(MediaQuery.sizeOf(context));
           return Scaffold(
             appBar: AppBar(
-              toolbarHeight: 48,
+              toolbarHeight: layout.short ? 44 : 48,
               titleSpacing: 0,
               title: Text(
-                'T${s.turn} · ${active?.name ?? ''}',
+                s.over
+                    ? 'Jogo terminado'
+                    : myTurn
+                        ? 'T${s.turn} · o teu turno'
+                        : 'T${s.turn} · ${active?.name ?? ''}',
                 style: theme.textTheme.titleMedium,
+                overflow: TextOverflow.ellipsis,
               ),
               actions: [
+                if (s.storm > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Chip(
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(Icons.bolt, size: 16),
+                      label: Text('${s.storm}'),
+                    ),
+                  ),
+                if (s.dayNight != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
+                        color: s.dayNight == 'night' ? Colors.indigo.shade200 : Colors.amber),
+                  ),
                 ActionChip(
                   label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
                   onPressed: () {
@@ -245,79 +464,87 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 IconButton(tooltip: 'Mais', onPressed: _menu, icon: const Icon(Icons.more_vert)),
               ],
             ),
-            body: LayoutBuilder(builder: (context, box) {
-              final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
-              if (box.maxWidth < wideBreakpoint) {
+            body: Stack(children: [
+              LayoutBuilder(builder: (context, box) {
+                final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
+                if (!layout.wide) {
+                  return Column(children: [
+                    if (widget.banner != null) widget.banner!,
+                    _PlayersStrip(ctrl: ctrl),
+                    Expanded(child: TableBattlefield(ctrl: ctrl)),
+                    TableZonesRow(ctrl: ctrl),
+                    TableHand(ctrl: ctrl),
+                    _BottomBar(ctrl: ctrl, lastLog: lastLog),
+                  ]);
+                }
+                // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
+                // turno" passam para uma coluna à direita. Num telemóvel deitado
+                // (pouca altura) a mão e a coluna encolhem.
+                final handH = (box.maxHeight * 0.24).clamp(84.0, 168.0);
+                final panelW = layout.short ? 96.0 : 128.0;
                 return Column(children: [
                   if (widget.banner != null) widget.banner!,
-                  _PlayersStrip(ctrl: ctrl),
-                  Expanded(child: TableBattlefield(ctrl: ctrl)),
-                  TableZonesRow(ctrl: ctrl),
-                  TableHand(ctrl: ctrl),
-                  _BottomBar(ctrl: ctrl, lastLog: lastLog),
-                ]);
-              }
-              // Tablet: o campo fica com a altura toda; zonas e "Passar turno"
-              // passam para uma coluna à direita.
-              return Column(children: [
-                if (widget.banner != null) widget.banner!,
-                Expanded(
-                  child: Row(children: [
-                    Expanded(
-                      child: Column(children: [
-                        _PlayersStrip(ctrl: ctrl),
-                        Expanded(child: TableBattlefield(ctrl: ctrl)),
-                        TableHand(ctrl: ctrl, height: 168),
-                      ]),
-                    ),
-                    Container(
-                      width: 128,
-                      decoration: BoxDecoration(
-                        border: Border(left: BorderSide(color: theme.colorScheme.outline)),
-                      ),
-                      child: SafeArea(
-                        left: false,
+                  Expanded(
+                    child: Row(children: [
+                      Expanded(
                         child: Column(children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: TableZonesRow(ctrl: ctrl, vertical: true, pileWidth: 72),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: GestureDetector(
-                              onTap: () => showLogSheet(context, ctrl),
-                              child: Text(lastLog,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.bodySmall
-                                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(64),
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                              ),
-                              onPressed: ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork
-                                  ? ctrl.passTurn
-                                  : null,
-                              child: const Column(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.skip_next),
-                                Text('Passar turno', textAlign: TextAlign.center),
-                              ]),
-                            ),
-                          ),
+                          _PlayersStrip(ctrl: ctrl, compact: layout.short),
+                          Expanded(child: TableBattlefield(ctrl: ctrl)),
+                          TableHand(ctrl: ctrl, height: handH),
                         ]),
                       ),
-                    ),
-                  ]),
-                ),
-              ]);
-            }),
+                      Container(
+                        width: panelW,
+                        decoration: BoxDecoration(
+                          border: Border(left: BorderSide(color: theme.colorScheme.outline)),
+                        ),
+                        child: SafeArea(
+                          left: false,
+                          child: Column(children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: TableZonesRow(
+                                    ctrl: ctrl, vertical: true, pileWidth: layout.short ? 42 : 72),
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                              child: GestureDetector(
+                                onTap: () => showLogSheet(context, ctrl),
+                                child: Text(lastLog,
+                                    maxLines: layout.short ? 2 : 4,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodySmall
+                                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: Size.fromHeight(layout.short ? 44 : 64),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                ),
+                                onPressed: ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork
+                                    ? ctrl.passTurn
+                                    : null,
+                                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                  const Icon(Icons.skip_next),
+                                  if (!layout.short) const Text('Passar turno', textAlign: TextAlign.center),
+                                ]),
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ]);
+              }),
+              if (_bigResult case final r?) BigResult(value: r.$1, label: r.$2),
+            ]),
           );
         },
       ),
@@ -325,9 +552,49 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 }
 
+/// Resultado de um dado, moeda ou sorteio, em grande no meio da mesa.
+class BigResult extends StatelessWidget {
+  const BigResult({super.key, required this.value, required this.label});
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IgnorePointer(
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.6, end: 1),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutBack,
+          builder: (context, t, child) => Transform.scale(scale: t, child: child),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withOpacity(0.94),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: theme.colorScheme.primary, width: 2),
+              boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 18)],
+            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(value,
+                  style: theme.textTheme.displayMedium
+                      ?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+              if (label.isNotEmpty) Text(label, style: theme.textTheme.bodyMedium),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PlayersStrip extends StatelessWidget {
-  const _PlayersStrip({required this.ctrl});
+  const _PlayersStrip({required this.ctrl, this.compact = false});
   final GameController ctrl;
+
+  /// Telemóvel deitado: menos altura.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -335,10 +602,10 @@ class _PlayersStrip extends StatelessWidget {
     final seats = s.players.keys.toList()..sort();
     final theme = Theme.of(context);
     return SizedBox(
-      height: 64,
+      height: compact ? 52 : 64,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 3 : 6),
         children: [
           for (final seat in seats)
             Builder(builder: (context) {
@@ -384,6 +651,13 @@ class _PlayersStrip extends StatelessWidget {
                             if (s.monarch == seat)
                               const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
                             if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
+                            if (ctrl.offline.contains(seat))
+                              const Padding(
+                                padding: EdgeInsets.only(right: 3),
+                                child: Tooltip(
+                                    message: 'Sem ligação',
+                                    child: Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
+                              ),
                             Text(p.name,
                                 style: theme.textTheme.labelMedium
                                     ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
@@ -420,9 +694,12 @@ class _PlayersStrip extends StatelessWidget {
 
 /// Campo de batalha de um lugar (o que está em vista, se [seat] for null).
 class TableBattlefield extends ConsumerStatefulWidget {
-  const TableBattlefield({super.key, required this.ctrl, this.seat});
+  const TableBattlefield({super.key, required this.ctrl, this.seat, this.rows = 3.3});
   final GameController ctrl;
   final int? seat;
+
+  /// Quantas filas de cartas cabem na altura (menos filas = cartas maiores).
+  final double rows;
 
   @override
   ConsumerState<TableBattlefield> createState() => _BattlefieldState();
@@ -454,7 +731,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
       const pad = 10.0;
       // Cabem ~6 cartas na largura e ~3 filas na altura (paisagem).
       final byWidth = box.maxWidth / 6.4;
-      final byHeight = box.maxHeight / 3.3 * cardAspect;
+      final byHeight = box.maxHeight / widget.rows * cardAspect;
       final cw = ((byWidth < byHeight ? byWidth : byHeight) * settings.cardScale).clamp(40.0, 220.0);
       final ch = cw / cardAspect;
       final spanX = (box.maxWidth - cw - 2 * pad).clamp(1.0, double.infinity);
@@ -483,86 +760,101 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
 
       final centers = {for (final c in cards) c.id: topLeft(c) + Offset(cw / 2, ch / 2)};
 
-      return Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
-          image: bg == null
+      // Arrastar uma carta da mão para o campo: fica onde for largada.
+      return DragTarget<PrivateCard>(
+        onWillAcceptWithDetails: (d) => canAct && ctrl.zones(seat).hand.any((c) => c.pid == d.data.pid),
+        onAcceptWithDetails: (d) {
+          final box = context.findRenderObject() as RenderBox?;
+          if (box == null) return;
+          final local = box.globalToLocal(d.offset);
+          ctrl.actAs(seat);
+          ctrl.playFromHand(d.data,
+              x: ((local.dx - pad) / spanX).clamp(0.0, 1.0), y: ((local.dy - pad) / spanY).clamp(0.0, 1.0));
+        },
+        builder: (context, candidates, _) => Container(
+          foregroundDecoration: candidates.isEmpty
               ? null
-              : DecorationImage(
-                  image: bg,
-                  fit: BoxFit.cover,
-                  colorFilter:
-                      ColorFilter.mode(Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
-                ),
-        ),
-        child: Stack(clipBehavior: Clip.hardEdge, children: [
-          if (cards.isEmpty && bg == null)
-            Center(
-              child: Text('Campo de ${s.players[seat]?.name ?? ''}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            ),
-          for (final c in cards)
-            Positioned(
-              left: topLeft(c).dx,
-              top: topLeft(c).dy,
-              child: GestureDetector(
-                onTap: () {
-                  ctrl.actAs(seat);
-                  showCardActions(context, ctrl, c);
-                },
-                onDoubleTap: canAct && settings.doubleTapToTap
-                    ? () {
-                        ctrl.actAs(seat);
-                        ctrl.toggleTap(c);
-                      }
-                    : null,
-                onPanStart: canAct
-                    ? (_) => setState(() {
-                          ctrl.actAs(seat);
-                          _dragId = c.id;
-                          _drag = Offset.zero;
-                        })
-                    : null,
-                onPanUpdate: canAct ? (d) => setState(() => _drag += d.delta) : null,
-                onPanEnd: canAct
-                    ? (_) {
-                        final p = topLeft(c);
-                        setState(() {
-                          _dragId = null;
-                          _drag = Offset.zero;
-                        });
-                        final nx = ((p.dx - pad) / spanX).clamp(0.0, 1.0);
-                        final ny = ((p.dy - pad) / spanY).clamp(0.0, 1.0);
-                        ctrl.setPosition(c, nx, ny);
-                      }
-                    : null,
-                child: TableCardView(
-                  instance: c,
-                  card: ctrl.card(c.oracleId, printId: c.printId),
-                  width: cw,
-                  highlighted: s.highlight == c.id,
-                  targeted: s.targets.any((t) => t.card == c.id),
-                  targeting: s.targets.any((t) => t.from == c.id),
-                ),
-              ),
-            ),
-          IgnorePointer(
-            child: CustomPaint(
-              size: Size(box.maxWidth, box.maxHeight),
-              painter: _ArrowPainter(
-                [
-                  for (final t in s.targets)
-                    if (t.from != null &&
-                        t.card != null &&
-                        centers[t.from] != null &&
-                        centers[t.card] != null)
-                      (centers[t.from]!, centers[t.card]!),
-                ],
-                targetGlow,
-              ),
-            ),
+              : BoxDecoration(border: Border.all(color: theme.colorScheme.primary, width: 3)),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
+            image: bg == null
+                ? null
+                : DecorationImage(
+                    image: bg,
+                    fit: BoxFit.cover,
+                    colorFilter:
+                        ColorFilter.mode(Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
+                  ),
           ),
-        ]),
+          child: Stack(clipBehavior: Clip.hardEdge, children: [
+            if (cards.isEmpty && bg == null)
+              Center(
+                child: Text('Campo de ${s.players[seat]?.name ?? ''}',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+            for (final c in cards)
+              Positioned(
+                left: topLeft(c).dx,
+                top: topLeft(c).dy,
+                child: GestureDetector(
+                  onTap: () {
+                    ctrl.actAs(seat);
+                    showCardActions(context, ctrl, c);
+                  },
+                  onDoubleTap: canAct && settings.doubleTapToTap
+                      ? () {
+                          ctrl.actAs(seat);
+                          ctrl.toggleTap(c);
+                        }
+                      : null,
+                  onPanStart: canAct
+                      ? (_) => setState(() {
+                            ctrl.actAs(seat);
+                            _dragId = c.id;
+                            _drag = Offset.zero;
+                          })
+                      : null,
+                  onPanUpdate: canAct ? (d) => setState(() => _drag += d.delta) : null,
+                  onPanEnd: canAct
+                      ? (_) {
+                          final p = topLeft(c);
+                          setState(() {
+                            _dragId = null;
+                            _drag = Offset.zero;
+                          });
+                          final nx = ((p.dx - pad) / spanX).clamp(0.0, 1.0);
+                          final ny = ((p.dy - pad) / spanY).clamp(0.0, 1.0);
+                          ctrl.setPosition(c, nx, ny);
+                        }
+                      : null,
+                  child: TableCardView(
+                    instance: c,
+                    card: ctrl.card(c.oracleId, printId: c.printId),
+                    width: cw,
+                    highlighted: s.highlight == c.id,
+                    targeted: s.targets.any((t) => t.card == c.id),
+                    targeting: s.targets.any((t) => t.from == c.id),
+                  ),
+                ),
+              ),
+            IgnorePointer(
+              child: CustomPaint(
+                size: Size(box.maxWidth, box.maxHeight),
+                painter: _ArrowPainter(
+                  [
+                    for (final t in s.targets)
+                      if (t.from != null &&
+                          t.card != null &&
+                          centers[t.from] != null &&
+                          centers[t.card] != null)
+                        (centers[t.from]!, centers[t.card]!),
+                  ],
+                  targetGlow,
+                ),
+              ),
+            ),
+          ]),
+        ),
       );
     });
   }
@@ -676,6 +968,12 @@ class TableZonesRow extends StatelessWidget {
                     const Text('Comando', style: TextStyle(fontSize: 10)),
                   ]),
                 ),
+              ),
+            // Comandante fora da zona de comando: o lugar fica marcado.
+            if (command.isEmpty && s.cards.values.any((c) => c.isCommander && c.owner == seat))
+              Padding(
+                padding: vertical ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(right: 6),
+                child: pile('Comando', 0, null, () {}),
               ),
             if (vertical) const SizedBox(height: 6) else const Spacer(),
             pile(
@@ -794,7 +1092,7 @@ class _TableHandState extends ConsumerState<TableHand> {
             itemBuilder: (context, i) {
               final pc = hand[i];
               final card = ctrl.card(pc.oracleId, printId: pc.printId);
-              return GestureDetector(
+              final item = GestureDetector(
                 onTap: covered
                     ? () => setState(() => _peek = true)
                     : () {
@@ -827,6 +1125,22 @@ class _TableHandState extends ConsumerState<TableHand> {
                     covered || card == null ? const CardBack() : CardImage(card, radius: 5),
                   ]),
                 ),
+              );
+              if (covered) return item;
+              // Tocar e manter, e arrastar para o campo.
+              return LongPressDraggable<PrivateCard>(
+                data: pc,
+                delay: const Duration(milliseconds: 250),
+                onDragStarted: () => ctrl.actAs(seat),
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: cardW * 1.15,
+                    child: card == null ? const CardBack() : CardImage(card, radius: 6),
+                  ),
+                ),
+                childWhenDragging: Opacity(opacity: 0.3, child: item),
+                child: item,
               );
             },
           );

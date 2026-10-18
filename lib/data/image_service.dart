@@ -18,8 +18,7 @@ class ImagePack {
   /// Condição SQL sobre `cards`; null = cartas dos meus decks.
   final String? where;
 
-  static String _legal(String f) =>
-      "EXISTS (SELECT 1 FROM legalities l WHERE l.oracle_id = cards.oracle_id "
+  static String _legal(String f) => "EXISTS (SELECT 1 FROM legalities l WHERE l.oracle_id = cards.oracle_id "
       "AND l.format = '$f' AND l.status IN ('legal','restricted'))";
   static const _base = 'is_extra = 0 AND is_paper = 1';
 
@@ -85,13 +84,11 @@ class ImageService extends ChangeNotifier {
   bool has(String size, String key) => _have[size]!.contains(key);
 
   /// Ficheiro da imagem, ou null se não estiver descarregada.
-  File? file(String size, String key) =>
-      has(size, key) ? File(paths.image(size, key)) : null;
+  File? file(String size, String key) => has(size, key) ? File(paths.image(size, key)) : null;
 
   /// A melhor imagem disponível: a do tamanho pedido ou a outra.
-  File? best(String key, {bool preferNormal = false}) => preferNormal
-      ? file('normal', key) ?? file('small', key)
-      : file('small', key) ?? file('normal', key);
+  File? best(String key, {bool preferNormal = false}) =>
+      preferNormal ? file('normal', key) ?? file('small', key) : file('small', key) ?? file('normal', key);
 
   final Map<String, List<ImageRef>> _refCache = {};
   CardRepository? _refRepo;
@@ -114,8 +111,7 @@ class ImageService extends ChangeNotifier {
 
   /// Descarrega as imagens em falta. Corre até ao fim, a não ser que se
   /// cancele; falhas individuais são contadas e saltadas.
-  Future<void> download(ImagePack pack, String size, List<ImageRef> refs,
-      {void Function()? onDone}) async {
+  Future<void> download(ImagePack pack, String size, List<ImageRef> refs, {void Function()? onDone}) async {
     if (job != null) return;
     final todo = refs.where((r) => !has(size, r.key)).toList();
     final j = job = PackJob(pack, size, todo.length);

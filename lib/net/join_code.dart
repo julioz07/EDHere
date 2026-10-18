@@ -42,7 +42,6 @@ class JoinCode {
 /// QR Wi-Fi standard, que a câmara do Android 10+ e do iOS usa para ligar
 /// à rede sem escrever a password.
 String wifiQr({required String ssid, required String password}) {
-  String esc(String s) => s.replaceAllMapped(
-      RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
+  String esc(String s) => s.replaceAllMapped(RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
   return 'WIFI:T:WPA;S:${esc(ssid)};P:${esc(password)};;';
 }

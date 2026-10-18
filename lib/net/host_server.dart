@@ -55,8 +55,8 @@ class HostServer implements RoomLink {
       _route(from: 0, to: to, type: type, payload: payload);
 
   /// Entrega uma mensagem direta: ao anfitrião (lugar 0) ou a um cliente.
-  void _route({required int from, required int to, required String type,
-      required Map<String, dynamic> payload}) {
+  void _route(
+      {required int from, required int to, required String type, required Map<String, dynamic> payload}) {
     final env = Envelope(
       type: type,
       actor: from,
@@ -70,6 +70,7 @@ class HostServer implements RoomLink {
     final peer = _peers[to];
     if (peer != null) _send(peer, env);
   }
+
   @override
   Stream<LinkStatus> get statusChanges => _status.stream;
   @override
@@ -90,8 +91,7 @@ class HostServer implements RoomLink {
     _server!.listen(_onConnection, onError: (Object e) => lastError = '$e');
     _watchdog = Timer.periodic(heartbeatInterval, (_) => _checkTimeouts());
     _setStatus(LinkStatus.connected);
-    _sequence(Envelope.intent(MsgType.join,
-        actor: 0, payload: {'seat': 0, 'name': hostName, 'host': true}));
+    _sequence(Envelope.intent(MsgType.join, actor: 0, payload: {'seat': 0, 'name': hostName, 'host': true}));
   }
 
   @override
@@ -103,8 +103,18 @@ class HostServer implements RoomLink {
   @override
   Future<void> close() async {
     if (_currentStatus == LinkStatus.closed) return;
-    _setStatus(LinkStatus.closed);
     _watchdog?.cancel();
+    // Avisa os clientes antes de cortar, para não ficarem a tentar voltar.
+    final bye = Envelope(type: MsgType.roomClosed, actor: 0, ts: DateTime.now().millisecondsSinceEpoch);
+    final flushing = <Future<void>>[];
+    for (final peer in _peers.values) {
+      final socket = peer.socket;
+      if (socket == null) continue;
+      _send(peer, bye);
+      flushing.add(socket.flush().catchError((_) {}));
+    }
+    await Future.wait(flushing).timeout(const Duration(milliseconds: 600), onTimeout: () => const []);
+    _setStatus(LinkStatus.closed);
     for (final peer in [..._peers.values, ..._pending]) {
       peer.socket?.destroy();
     }
@@ -155,12 +165,14 @@ class HostServer implements RoomLink {
     }
     switch (env.type) {
       case MsgType.heartbeat:
-        _send(peer, Envelope(
-          type: MsgType.heartbeatAck,
-          actor: 0,
-          ts: DateTime.now().millisecondsSinceEpoch,
-          payload: {'echo': env.ts},
-        ));
+        _send(
+            peer,
+            Envelope(
+              type: MsgType.heartbeatAck,
+              actor: 0,
+              ts: DateTime.now().millisecondsSinceEpoch,
+              payload: {'echo': env.ts},
+            ));
       case MsgType.hello:
         break;
       case MsgType.relay:
@@ -179,8 +191,7 @@ class HostServer implements RoomLink {
         peer.socket = null;
         peer.subscription?.cancel();
         socket?.destroy();
-        _sequence(Envelope.intent(MsgType.leave,
-            actor: seat, payload: {'seat': seat}));
+        _sequence(Envelope.intent(MsgType.leave, actor: seat, payload: {'seat': seat}));
       default:
         // O anfitrião é a autoridade sobre quem é o autor de cada intenção.
         _sequence(Envelope(
@@ -219,8 +230,8 @@ class HostServer implements RoomLink {
         ..name = old?.name ?? p['name'] as String? ?? 'Jogador';
       _peers[knownSeat] = peer;
       _sendWelcome(peer, since: lastSeq);
-      _sequence(Envelope.intent(MsgType.playerStatus,
-          actor: -1, payload: {'seat': knownSeat, 'connected': true}));
+      _sequence(
+          Envelope.intent(MsgType.playerStatus, actor: -1, payload: {'seat': knownSeat, 'connected': true}));
       return;
     }
 
@@ -231,40 +242,42 @@ class HostServer implements RoomLink {
     peer
       ..seat = seat
       ..token = newToken
-      ..name = (p['name'] as String?)?.trim().isNotEmpty == true
-          ? (p['name'] as String).trim()
-          : 'Jogador $seat';
+      ..name = _uniqueName(
+          (p['name'] as String?)?.trim().isNotEmpty == true ? (p['name'] as String).trim() : 'Jogador $seat');
     _peers[seat] = peer;
     _tokens[newToken] = seat;
     _sendWelcome(peer, since: 0);
-    _sequence(Envelope.intent(MsgType.join,
-        actor: -1, payload: {'seat': seat, 'name': peer.name}));
+    _sequence(Envelope.intent(MsgType.join, actor: -1, payload: {'seat': seat, 'name': peer.name}));
   }
 
   void _sendWelcome(_Peer peer, {required int since}) {
-    _send(peer, Envelope(
-      type: MsgType.welcome,
-      actor: 0,
-      ts: DateTime.now().millisecondsSinceEpoch,
-      payload: {
-        'seat': peer.seat,
-        'token': peer.token,
-        'room': roomName,
-        'events': [
-          for (final e in _log)
-            if (e.seq > since) e.toJson(),
-        ],
-      },
-    ));
+    _send(
+        peer,
+        Envelope(
+          type: MsgType.welcome,
+          actor: 0,
+          ts: DateTime.now().millisecondsSinceEpoch,
+          payload: {
+            'seat': peer.seat,
+            'token': peer.token,
+            'room': roomName,
+            'events': [
+              for (final e in _log)
+                if (e.seq > since) e.toJson(),
+            ],
+          },
+        ));
   }
 
   void _reject(_Peer peer, String reason) {
-    _send(peer, Envelope(
-      type: MsgType.reject,
-      actor: 0,
-      ts: DateTime.now().millisecondsSinceEpoch,
-      payload: {'reason': reason},
-    ));
+    _send(
+        peer,
+        Envelope(
+          type: MsgType.reject,
+          actor: 0,
+          ts: DateTime.now().millisecondsSinceEpoch,
+          payload: {'reason': reason},
+        ));
     _pending.remove(peer);
     peer.socket?.flush().whenComplete(() => peer.socket?.destroy());
   }
@@ -277,9 +290,18 @@ class HostServer implements RoomLink {
     return null;
   }
 
+  /// Dois jogadores com o mesmo nome confundem tudo (alvos, vencedor,
+  /// registo): o segundo fica com um número.
+  String _uniqueName(String name) {
+    final taken = {hostName, for (final p in _peers.values) p.name};
+    if (!taken.contains(name)) return name;
+    for (var n = 2;; n++) {
+      if (!taken.contains('$name $n')) return '$name $n';
+    }
+  }
+
   String _newToken() =>
-      List.generate(16, (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'))
-          .join();
+      List.generate(16, (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
 
   void _sequence(Envelope intent) {
     if (_currentStatus == LinkStatus.closed) return;
@@ -311,8 +333,8 @@ class HostServer implements RoomLink {
     socket.destroy();
     final seat = peer.seat;
     if (seat != null && _peers[seat] == peer) {
-      _sequence(Envelope.intent(MsgType.playerStatus,
-          actor: -1, payload: {'seat': seat, 'connected': false}));
+      _sequence(
+          Envelope.intent(MsgType.playerStatus, actor: -1, payload: {'seat': seat, 'connected': false}));
     }
   }
 

@@ -15,7 +15,9 @@ class RoomClient implements RoomLink {
     required this.playerName,
     this.pin,
     this.connectTimeout = const Duration(seconds: 4),
-  }) : assert(hosts.isNotEmpty);
+    String? token,
+  })  : _token = token,
+        assert(hosts.isNotEmpty);
 
   /// Endereços candidatos do anfitrião, tentados por ordem.
   final List<String> hosts;
@@ -47,6 +49,12 @@ class RoomClient implements RoomLink {
   int reconnects = 0;
 
   String? get connectedHost => _connectedHost;
+
+  /// Identifica este jogador no anfitrião; serve para voltar ao mesmo lugar.
+  String? get token => _token;
+
+  /// O anfitrião fechou a sala (não foi a rede que caiu).
+  bool hostClosed = false;
   String? get roomName => _roomName;
   String? _roomName;
   int get lastSeq => _lastSeq;
@@ -66,9 +74,10 @@ class RoomClient implements RoomLink {
       _direct.add(Envelope(type: type, actor: _seat, ts: 0, payload: payload));
       return;
     }
-    _sendRaw(Envelope.intent(MsgType.relay,
-        actor: _seat, payload: {'to': to, 'type': type, 'payload': payload}));
+    _sendRaw(
+        Envelope.intent(MsgType.relay, actor: _seat, payload: {'to': to, 'type': type, 'payload': payload}));
   }
+
   @override
   Stream<LinkStatus> get statusChanges => _status.stream;
   @override
@@ -207,6 +216,10 @@ class RoomClient implements RoomLink {
         if (_handshake?.isCompleted == false) {
           _handshake!.completeError(RoomJoinException(_describeReject(reason)));
         }
+      case MsgType.roomClosed:
+        hostClosed = true;
+        lastError = 'O anfitrião fechou a sala.';
+        close();
       case MsgType.heartbeatAck:
         final echo = (env.payload['echo'] as num?)?.toInt();
         if (echo != null) _rtt = DateTime.now().millisecondsSinceEpoch - echo;
@@ -259,8 +272,7 @@ class RoomClient implements RoomLink {
       _handshake!.completeError(const RoomJoinException('Ligação recusada'));
       return;
     }
-    if (_currentStatus == LinkStatus.closed ||
-        _currentStatus == LinkStatus.rejected) {
+    if (_currentStatus == LinkStatus.closed || _currentStatus == LinkStatus.rejected) {
       return;
     }
     _setStatus(LinkStatus.reconnecting);
@@ -282,8 +294,7 @@ class RoomClient implements RoomLink {
   static String _describeReject(String reason) => switch (reason) {
         RejectReason.badPin => 'PIN errado',
         RejectReason.roomFull => 'A sala está cheia',
-        RejectReason.versionMismatch =>
-          'Versão da app diferente da do anfitrião',
+        RejectReason.versionMismatch => 'Versão da app diferente da do anfitrião',
         _ => 'Recusado pelo anfitrião ($reason)',
       };
 }

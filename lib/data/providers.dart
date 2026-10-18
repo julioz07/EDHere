@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../game/resume_store.dart';
 import 'app_paths.dart';
 import 'card_data_service.dart';
 import 'image_service.dart';
@@ -13,11 +14,10 @@ final pathsProvider = Provider<AppPaths>((_) => throw UnimplementedError());
 final prefsProvider = Provider<SharedPreferences>((_) => throw UnimplementedError());
 final deckStoreProvider = Provider<DeckStore>((_) => throw UnimplementedError());
 
-final cardDataProvider = ChangeNotifierProvider<CardDataService>(
-    (ref) => CardDataService(ref.watch(pathsProvider)));
+final cardDataProvider =
+    ChangeNotifierProvider<CardDataService>((ref) => CardDataService(ref.watch(pathsProvider)));
 
-final imagesProvider =
-    ChangeNotifierProvider<ImageService>((ref) => ImageService(ref.watch(pathsProvider)));
+final imagesProvider = ChangeNotifierProvider<ImageService>((ref) => ImageService(ref.watch(pathsProvider)));
 
 final printsProvider = ChangeNotifierProvider<PrintService>(
     (ref) => PrintService(ref.watch(deckStoreProvider), ref.read(imagesProvider)));
@@ -49,5 +49,8 @@ class DeckList extends ChangeNotifier {
 }
 
 /// Nome do jogador, guardado entre sessões.
-final playerNameProvider = StateProvider<String>(
-    (ref) => ref.watch(prefsProvider).getString('player_name') ?? '');
+final playerNameProvider =
+    StateProvider<String>((ref) => ref.watch(prefsProvider).getString('player_name') ?? '');
+
+/// Jogo em rede a que se pode voltar (se a app fechou a meio).
+final resumeProvider = ChangeNotifierProvider<ResumeStore>((ref) => ResumeStore(ref.watch(prefsProvider)));

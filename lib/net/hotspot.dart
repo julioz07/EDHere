@@ -60,16 +60,14 @@ class Hotspot {
     final location = statuses[Permission.locationWhenInUse];
     final granted = (nearby?.isGranted ?? false) || (location?.isGranted ?? false);
     if (!granted) {
-      throw const HotspotException(
-          'Sem permissão para criar o hotspot. Autoriza "Dispositivos próximos" '
+      throw const HotspotException('Sem permissão para criar o hotspot. Autoriza "Dispositivos próximos" '
           'ou "Localização" nas definições da app.');
     }
   }
 
   static String _describe(PlatformException e) => switch (e.code) {
-        'incompatible_mode' =>
-          'O hotspot normal do telemóvel está ligado. Desliga-o e tenta outra vez, '
-              'ou usa-o diretamente: os outros ligam-se a ele.',
+        'incompatible_mode' => 'O hotspot normal do telemóvel está ligado. Desliga-o e tenta outra vez, '
+            'ou usa-o diretamente: os outros ligam-se a ele.',
         'no_channel' => 'Sem canal Wi-Fi livre para o hotspot.',
         'tethering_disallowed' => 'O sistema não permite criar hotspots.',
         'location_off' => 'Liga a Localização do telemóvel para criar o hotspot.',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/providers.dart';
@@ -7,6 +8,7 @@ import 'data/data_tab.dart';
 import 'settings/settings_tab.dart';
 import 'decks/decks_tab.dart';
 import 'play/play_tab.dart';
+import 'resume_game.dart';
 import 'widgets/responsive.dart';
 
 /// Estrutura principal: Cartas, Decks, Jogar e Definições.
@@ -18,7 +20,11 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  late int _tab = ref.read(cardDataProvider).hasData ? 1 : 0;
+  late int _tab = _home;
+  DateTime? _backPressed;
+
+  /// Separador de partida: Decks quando já há cartas, senão Cartas.
+  int get _home => ref.read(cardDataProvider).hasData ? 1 : 0;
 
   @override
   void initState() {
@@ -32,12 +38,32 @@ class _AppShellState extends ConsumerState<AppShell> {
         store.setSetting('last_bulk_check', '$now');
         ref.read(cardDataProvider).checkRemote();
       }
+      // A app fechou a meio de um jogo em rede: oferece voltar.
+      offerResume(context, ref);
     });
   }
 
   void _go(int i) {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _tab = i);
+  }
+
+  /// Retroceder: primeiro volta ao separador inicial; aí, só sai com dois toques.
+  void _onBack() {
+    if (_tab != _home) {
+      _go(_home);
+      return;
+    }
+    final now = DateTime.now();
+    if (_backPressed != null && now.difference(_backPressed!) < const Duration(seconds: 2)) {
+      SystemNavigator.pop();
+      return;
+    }
+    _backPressed = now;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Toca outra vez em retroceder para sair.'),
+      duration: Duration(seconds: 2),
+    ));
   }
 
   void _openData() => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const DataTab()));
@@ -59,8 +85,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       ],
     );
     // Em tablet a navegação passa para uma barra lateral, para não roubar altura.
+    final Widget page;
     if (isWide(context)) {
-      return Scaffold(
+      page = Scaffold(
         body: Row(children: [
           SafeArea(
             right: false,
@@ -82,19 +109,27 @@ class _AppShellState extends ConsumerState<AppShell> {
           Expanded(child: body),
         ]),
       );
+    } else {
+      page = Scaffold(
+        body: body,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: _go,
+          destinations: [
+            const NavigationDestination(icon: Icon(Icons.search), label: 'Cartas'),
+            const NavigationDestination(icon: Icon(Icons.style_outlined), label: 'Decks'),
+            const NavigationDestination(icon: Icon(Icons.table_restaurant_outlined), label: 'Jogar'),
+            NavigationDestination(icon: settingsIcon, label: 'Definições'),
+          ],
+        ),
+      );
     }
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: _go,
-        destinations: [
-          const NavigationDestination(icon: Icon(Icons.search), label: 'Cartas'),
-          const NavigationDestination(icon: Icon(Icons.style_outlined), label: 'Decks'),
-          const NavigationDestination(icon: Icon(Icons.table_restaurant_outlined), label: 'Jogar'),
-          NavigationDestination(icon: settingsIcon, label: 'Definições'),
-        ],
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBack();
+      },
+      child: page,
     );
   }
 }

@@ -40,8 +40,7 @@ ThemeData buildTheme(Brightness brightness) {
     primaryContainer: dark ? EdhColors.darkPrimarySoft : EdhColors.lightPrimarySoft,
     onPrimaryContainer: dark ? EdhColors.darkPrimary : EdhColors.lightPrimaryStrong,
     surface: dark ? EdhColors.darkSurface : EdhColors.lightSurface,
-    surfaceContainerHighest:
-        dark ? EdhColors.darkSurfaceHigh : EdhColors.lightSurfaceHigh,
+    surfaceContainerHighest: dark ? EdhColors.darkSurfaceHigh : EdhColors.lightSurfaceHigh,
     surfaceContainerHigh: dark ? EdhColors.darkSurfaceHigh : EdhColors.lightSurfaceHigh,
     surfaceContainer: dark ? EdhColors.darkSurface : EdhColors.lightSurface,
     onSurface: dark ? EdhColors.darkText : EdhColors.lightText,
@@ -54,8 +53,7 @@ ThemeData buildTheme(Brightness brightness) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor:
-        dark ? EdhColors.darkBackground : EdhColors.lightBackground,
+    scaffoldBackgroundColor: dark ? EdhColors.darkBackground : EdhColors.lightBackground,
     appBarTheme: AppBarTheme(
       backgroundColor: dark ? EdhColors.darkBackground : EdhColors.lightBackground,
       surfaceTintColor: Colors.transparent,

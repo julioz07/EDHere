@@ -45,9 +45,8 @@ class GameController extends ChangeNotifier {
     )
       ..resolvePrint = resolvePrint
       ..effectivePrint = effectivePrint;
-    final life = seats.length > 2 && format.multiplayerLife != null
-        ? format.multiplayerLife!
-        : format.startingLife;
+    final life =
+        seats.length > 2 && format.multiplayerLife != null ? format.multiplayerLife! : format.startingLife;
     for (final s in seats) {
       c.sendAs(s.seat, Intent(Ev.joinTable, {'seat': s.seat, 'name': s.name, 'life': life}));
     }
@@ -109,6 +108,9 @@ class GameController extends ChangeNotifier {
   /// Compra automática no início do turno.
   bool autoDraw = false;
 
+  /// Lugares de jogadores que perderam a ligação (só em rede).
+  final Set<int> offline = {};
+
   /// Mulligans feitos por lugar (para saber quantas pôr no fundo).
   final Map<int, int> mulligans = {};
   int _seq = 0;
@@ -148,7 +150,8 @@ class GameController extends ChangeNotifier {
   void _afterApply(String type, int actor) {
     if (type == Ev.passTurn) {
       final next = state.activeSeat;
-      if (!isNetwork && mySeats.contains(next)) viewSeat = next;
+      // Quando chega o meu turno, a mesa volta para o meu campo.
+      if (mySeats.contains(next)) viewSeat = next;
       if (autoDraw && mySeats.contains(next)) {
         Future.microtask(() => sendAs(next, table.draw(next, 1)));
       }
@@ -201,17 +204,20 @@ class GameController extends ChangeNotifier {
   String cardName(String? oracleId) => card(oracleId)?.name ?? 'carta';
 
   /// Substitui [[oracleId]] pelos nomes das cartas.
-  String logText(LogEntry e) => e.text.replaceAllMapped(
-      RegExp(r'\[\[([^\]]+)\]\]'), (m) => card(m.group(1))?.frontName ?? '?');
+  String logText(LogEntry e) =>
+      e.text.replaceAllMapped(RegExp(r'\[\[([^\]]+)\]\]'), (m) => card(m.group(1))?.frontName ?? '?');
 
   PrivateZones zones(int seat) => table.zonesOf(seat);
 
   void draw([int n = 1]) => send(table.draw(actor, n));
 
-  void toggleTap(CardInstance c) => send(Intent(Ev.tap, {'ids': [c.id], 'value': !c.tapped}));
+  void toggleTap(CardInstance c) => send(Intent(Ev.tap, {
+        'ids': [c.id],
+        'value': !c.tapped
+      }));
 
-  void playFromHand(PrivateCard pc, {Zone to = Zone.battlefield, double? x, double? y,
-      bool faceDown = false, String pos = 'top'}) {
+  void playFromHand(PrivateCard pc,
+      {Zone to = Zone.battlefield, double? x, double? y, bool faceDown = false, String pos = 'top'}) {
     final placed = nextSpot(isLand: card(pc.oracleId)?.isLand ?? false);
     send(table.moveHidden(actor, Zone.hand, pc.pid, to,
         x: x ?? placed.$1, y: y ?? placed.$2, faceDown: faceDown, pos: pos));
@@ -238,8 +244,7 @@ class GameController extends ChangeNotifier {
         .where((c) => c.zone == Zone.battlefield && c.controller == actor && c.attachedTo == null)
         .map((c) => (c.x, c.y))
         .toList();
-    bool free(double x, double y) =>
-        !taken.any((t) => (t.$1 - x).abs() < 0.1 && (t.$2 - y).abs() < 0.15);
+    bool free(double x, double y) => !taken.any((t) => (t.$1 - x).abs() < 0.1 && (t.$2 - y).abs() < 0.15);
     final rows = isLand ? const [1.0, 0.68] : const [0.0, 0.34, 0.5, 0.17];
     for (final y in rows) {
       for (var col = 0; col < 6; col++) {
@@ -278,8 +283,7 @@ class GameController extends ChangeNotifier {
     send(table.mulligan(actor));
   }
 
-  void rollDie(int sides) =>
-      send(Intent(Ev.rollDie, {'sides': sides, 'value': 1 + Random().nextInt(sides)}));
+  void rollDie(int sides) => send(Intent(Ev.rollDie, {'sides': sides, 'value': 1 + Random().nextInt(sides)}));
 
   void flipCoin() => send(Intent(Ev.flipCoin, {'heads': Random().nextBool()}));
 
@@ -289,4 +293,34 @@ class GameController extends ChangeNotifier {
   }
 
   void highlight(CardInstance? c) => send(Intent(Ev.highlight, {'id': c?.id}));
+
+  /// Separa [n] tokens de uma pilha numa pilha nova, ao lado (para atacar
+  /// só com alguns, por exemplo).
+  void splitStack(CardInstance c, int n) {
+    if (!c.isToken || n <= 0 || n >= c.stackQty) return;
+    send(Intent(Ev.tokenQty, {'id': c.id, 'qty': c.stackQty - n}));
+    send(table.createToken(actor,
+        oracleId: c.oracleId,
+        name: c.tokenName,
+        pt: c.tokenPt,
+        printId: c.printId,
+        qty: n,
+        x: (c.x + 0.12).clamp(0.0, 1.0),
+        y: c.y));
+  }
+
+  void storm(int delta) => send(Intent(Ev.storm, {'delta': delta}));
+
+  void dayNight(String? value) => send(Intent(Ev.dayNight, {'value': value}));
+
+  /// Fim do jogo: todos os dispositivos guardam a partida no histórico.
+  void gameOver(int? winner) => send(Intent(Ev.gameOver, {'winner': winner}));
+
+  /// Tokens que as cartas do deck de [seat] criam.
+  List<db.Card> deckTokens(int seat) {
+    final deck = decks[seat];
+    if (deck == null) return const [];
+    final cards = repo.getMany(deck.entries.map((e) => e.oracleId)).values;
+    return repo.tokensFor(cards);
+  }
 }

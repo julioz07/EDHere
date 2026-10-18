@@ -77,7 +77,17 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
       });
       return;
     }
-    final name = _name.text.trim().isEmpty ? 'Deck importado' : _name.text.trim();
+    // Sem nome: usa o do comandante (é assim que os jogadores chamam aos decks).
+    final repo = ref.read(cardRepoProvider)!;
+    final commanders = [
+      for (final e in r.entries.where((e) => e.board == Board.command))
+        if (repo.get(e.oracleId) case final c?) c.frontName.split(',').first,
+    ];
+    final name = _name.text.trim().isNotEmpty
+        ? _name.text.trim()
+        : commanders.isNotEmpty
+            ? commanders.join(' + ')
+            : 'Deck importado';
     final deck = ref.read(decksProvider).save(Deck(
           name: name,
           format: _format,

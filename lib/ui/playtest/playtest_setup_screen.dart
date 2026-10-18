@@ -1,95 +1,161 @@
-import 'package:card_db/card_db.dart';
+import 'package:card_db/card_db.dart' hide Card;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers.dart';
-import 'playtest_screen.dart';
 import '../widgets/responsive.dart';
+import 'playtest_screen.dart';
 
-/// Escolher os decks do playtest: 1 deck = goldfish; 2 a 4 = hot-seat
-/// (vários lugares controlados por mim no mesmo dispositivo).
-class PlaytestSetupScreen extends ConsumerStatefulWidget {
-  const PlaytestSetupScreen({super.key});
-
-  @override
-  ConsumerState<PlaytestSetupScreen> createState() => _PlaytestSetupScreenState();
-}
-
-class _PlaytestSetupScreenState extends ConsumerState<PlaytestSetupScreen> {
-  final List<int> _chosen = [];
-  bool _randomFirst = false;
-  bool _tablet = false;
+/// Testar um deck sozinho (goldfish): tocar num deck começa logo.
+class GoldfishSetupScreen extends ConsumerWidget {
+  const GoldfishSetupScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final decks = ref.watch(decksProvider).decks;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Playtest')),
+      appBar: AppBar(title: const Text('Goldfish')),
       body: MaxWidth(
-          child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          Text('Joga sozinho com um deck para ver como abre e como corre.',
+              style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+          for (final d in decks)
+            Card(
+              child: ListTile(
+                title: Text(d.name),
+                subtitle: Text('${GameFormat.byId(d.format).label} · ${d.playableCount} cartas'),
+                trailing: const Icon(Icons.play_arrow_rounded),
+                enabled: d.playableCount > 0,
+                onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+                  builder: (_) => PlaytestScreen(deckIds: [d.id!]),
+                )),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Dois jogadores no mesmo dispositivo: para ensinar alguém ou testar um
+/// deck contra outro.
+class DuelSetupScreen extends ConsumerStatefulWidget {
+  const DuelSetupScreen({super.key});
+
+  @override
+  ConsumerState<DuelSetupScreen> createState() => _DuelSetupScreenState();
+}
+
+class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
+  late final _names = [
+    TextEditingController(
+        text: ref.read(playerNameProvider).isEmpty ? 'Jogador 1' : ref.read(playerNameProvider)),
+    TextEditingController(text: 'Jogador 2'),
+  ];
+  final List<int?> _decks = [null, null];
+  bool _randomFirst = true;
+  late bool _shared = true;
+  bool _openHands = false;
+
+  @override
+  void dispose() {
+    for (final c in _names) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  String _name(int i) => _names[i].text.trim().isEmpty ? 'Jogador ${i + 1}' : _names[i].text.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    final decks = ref.watch(decksProvider).decks.where((d) => d.playableCount > 0).toList();
+    final theme = Theme.of(context);
+    final ready = _decks.every((d) => d != null);
+    return Scaffold(
+      appBar: AppBar(title: const Text('1 contra 1 neste dispositivo')),
+      body: MaxWidth(
+        child: ListView(padding: const EdgeInsets.all(16), children: [
           Text(
-            'Escolhe 1 deck para jogar sozinho (goldfish) ou até 4 para controlares '
-            'vários lugares neste dispositivo (hot-seat). Podes escolher o mesmo deck mais '
-            'de uma vez.',
+            'Para ensinar alguém a jogar ou testar um deck contra outro, com um só dispositivo. '
+            'Para jogar a sério, cada um com o seu telemóvel, usa "Criar sala".',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
-          if (_chosen.isNotEmpty) ...[
-            Text('Lugares', style: theme.textTheme.titleSmall),
-            for (var i = 0; i < _chosen.length; i++)
-              ListTile(
-                dense: true,
-                leading: CircleAvatar(radius: 14, child: Text('${i + 1}')),
-                title: Text(decks.firstWhere((d) => d.id == _chosen[i]).name),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => setState(() => _chosen.removeAt(i)),
+          for (var i = 0; i < 2; i++) ...[
+            Text('Jogador ${i + 1}', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 6),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _names[i],
+                  textCapitalization: TextCapitalization.words,
+                  maxLength: 20,
+                  decoration: const InputDecoration(labelText: 'Nome', counterText: ''),
                 ),
               ),
-            const Divider(),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<int>(
+                  value: _decks[i],
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Deck'),
+                  items: [
+                    for (final d in decks)
+                      DropdownMenuItem(value: d.id, child: Text(d.name, overflow: TextOverflow.ellipsis)),
+                  ],
+                  onChanged: (v) => setState(() => _decks[i] = v),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 16),
           ],
-          Text('Os meus decks', style: theme.textTheme.titleSmall),
-          for (final d in decks)
-            ListTile(
-              title: Text(d.name),
-              subtitle: Text('${GameFormat.byId(d.format).label} · ${d.playableCount} cartas'),
-              trailing: const Icon(Icons.add),
-              enabled: _chosen.length < 4 && d.playableCount > 0,
-              onTap: () => setState(() => _chosen.add(d.id!)),
-            ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Mesa partilhada (frente a frente)'),
+            subtitle: const Text('O ecrã fica dividido: cada um vê a sua metade virada para si.'),
+            value: _shared,
+            onChanged: (v) => setState(() => _shared = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Mãos abertas'),
+            subtitle: const Text('As duas mãos ficam à vista: bom para ensinar.'),
+            value: _openHands,
+            onChanged: _shared ? (v) => setState(() => _openHands = v) : null,
+          ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Primeiro jogador ao acaso'),
             value: _randomFirst,
             onChanged: (v) => setState(() => _randomFirst = v),
           ),
-          if (_chosen.length >= 2)
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Modo tablet (mesa partilhada)'),
-              subtitle: const Text(
-                  'Cada jogador fica com a sua área virada para si. Ideal para um tablet no meio da mesa.'),
-              value: _tablet,
-              onChanged: (v) => setState(() => _tablet = v),
-            ),
           const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _chosen.isEmpty
+          FilledButton.icon(
+            onPressed: !ready
                 ? null
                 : () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
                       builder: (_) => PlaytestScreen(
-                        deckIds: [..._chosen],
+                        deckIds: [_decks[0]!, _decks[1]!],
+                        names: [_name(0), _name(1)],
                         randomFirst: _randomFirst,
-                        tablet: _tablet && _chosen.length >= 2,
+                        tablet: _shared,
+                        openHands: _openHands,
                       ),
                     )),
-            child: Text(_chosen.length <= 1 ? 'Começar goldfish' : 'Começar hot-seat (${_chosen.length})'),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Começar'),
           ),
-        ],
-      )),
+          if (decks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('Cria primeiro um deck.', style: theme.textTheme.bodySmall),
+            ),
+        ]),
+      ),
     );
   }
 }

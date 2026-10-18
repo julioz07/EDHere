@@ -181,18 +181,58 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
               final n = await pickNumber(context, 'Quantidade', initial: c.stackQty, max: 999);
               if (n != null) ctrl.send(Intent(Ev.tokenQty, {'id': c.id, 'qty': n}));
             }),
+          if (c.isToken && c.stackQty > 1)
+            _tile(Icons.call_split, 'Separar da pilha…', () async {
+              Navigator.pop(ctx);
+              final n = await pickNumber(context, 'Quantos separar?', initial: 1, max: c.stackQty - 1);
+              if (n != null) ctrl.splitStack(c, n);
+            }, subtitle: 'Por exemplo, para atacar só com alguns'),
         ],
         const Divider(),
         for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
           if (z != c.zone && (z != Zone.command || c.isCommander || ctrl.state.format == 'free'))
-            _tile(_zoneIcon(z), 'Para ${_zoneWithArticle(z)}', () => done(() => ctrl.moveCard(c, z))),
-        _tile(Icons.vertical_align_top, 'Para o topo do grimório',
-            () => done(() => ctrl.moveCard(c, Zone.library))),
-        _tile(Icons.vertical_align_bottom, 'Para o fundo do grimório',
-            () => done(() => ctrl.moveCard(c, Zone.library, pos: 'bottom'))),
+            _tile(_zoneIcon(z), 'Para ${_zoneWithArticle(z)}', () {
+              Navigator.pop(ctx);
+              moveMaybeToCommand(context, ctrl, c, z);
+            }),
+        _tile(Icons.vertical_align_top, 'Para o topo do grimório', () {
+          Navigator.pop(ctx);
+          moveMaybeToCommand(context, ctrl, c, Zone.library);
+        }),
+        _tile(Icons.vertical_align_bottom, 'Para o fundo do grimório', () {
+          Navigator.pop(ctx);
+          moveMaybeToCommand(context, ctrl, c, Zone.library, pos: 'bottom');
+        }),
       ],
     ]);
   });
+}
+
+/// Move uma carta pública. Se for um comandante a ir para o cemitério,
+/// exílio, mão ou grimório, pergunta se vai antes para a zona de comando
+/// (regra do Commander).
+Future<void> moveMaybeToCommand(BuildContext context, GameController ctrl, CardInstance c, Zone to,
+    {String pos = 'top'}) async {
+  const leaving = {Zone.graveyard, Zone.exile, Zone.hand, Zone.library};
+  if (!c.isCommander || !leaving.contains(to)) {
+    ctrl.moveCard(c, to, pos: pos);
+    return;
+  }
+  final name = ctrl.card(c.oracleId, printId: c.printId)?.frontName ?? 'O comandante';
+  final command = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      icon: const Icon(Icons.star_rounded, color: Colors.amber),
+      title: Text('$name vai para ${_zoneWithArticle(to)}'),
+      content: const Text('Na regra do Commander, o dono pode pô-lo na zona de comando em vez disso.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Para ${_zoneWithArticle(to)}')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Zona de comando')),
+      ],
+    ),
+  );
+  if (command == null) return;
+  ctrl.moveCard(c, command ? Zone.command : to, pos: pos);
 }
 
 String _zoneWithArticle(Zone z) => switch (z) {
@@ -822,12 +862,20 @@ Future<void> showLibrarySearch(BuildContext context, GameController ctrl) {
 
 /// Lista de uma zona pública (cemitério, exílio, comando) de um jogador.
 Future<void> showZoneList(BuildContext context, GameController ctrl, int seat, Zone zone) {
+  var hadCards = ctrl.state.zoneCards(seat, zone).isNotEmpty;
   return _sheet<void>(
       context,
       (ctx) => ListenableBuilder(
             listenable: ctrl,
             builder: (ctx, _) {
               final cards = ctrl.state.zoneCards(seat, zone).toList().reversed.toList();
+              if (cards.isEmpty && hadCards) {
+                // Saiu a última carta: a lista vazia já não serve para nada.
+                hadCards = false;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (ctx.mounted) Navigator.of(ctx).maybePop();
+                });
+              }
               return SizedBox(
                 height: MediaQuery.of(ctx).size.height * 0.6,
                 child: Column(children: [
@@ -963,6 +1011,12 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                 ),
                 SwitchListTile(
                   dense: true,
+                  title: const Text("Bênção da cidade (City's Blessing)"),
+                  value: (p.counters[PlayerCounter.blessing] ?? 0) > 0,
+                  onChanged: (v) => ctrl.playerCounter(seat, PlayerCounter.blessing, v ? 1 : -1),
+                ),
+                SwitchListTile(
+                  dense: true,
                   title: const Text('Derrotado'),
                   value: p.defeated,
                   onChanged: (v) => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v})),
@@ -972,50 +1026,85 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
           ));
 }
 
-/// Criar tokens: oficiais (da base) ou personalizados.
+/// Criar tokens: os que o deck cria, os mais comuns, da base ou personalizados.
 Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
   final name = TextEditingController();
   final pt = TextEditingController();
   var qty = 1;
   var query = '';
+  final fromDeck = ctrl.deckTokens(ctrl.actor);
+  final common = [
+    for (final h in db.commonTokens)
+      if (ctrl.repo.tokenNamed(h) case final t?)
+        if (!fromDeck.any((d) => d.oracleId == t.oracleId)) t,
+  ];
+  String ptOf(db.Card c) => c.power == null ? '' : ' ${c.power}/${c.toughness}';
   return _sheet<void>(
       context,
       (ctx) => StatefulBuilder(builder: (ctx, set) {
-            final results = query.trim().isEmpty
-                ? const <db.Card>[]
-                : ctrl.repo.search('$query is:token', limit: 40).cards;
+            final theme = Theme.of(ctx);
+            // Há muitas versões do mesmo token: mostra uma por nome, tipo, P/R e texto.
+            final results = <String, db.Card>{};
+            if (query.trim().isNotEmpty) {
+              for (final c in ctrl.repo.search('$query is:token', limit: 80).cards) {
+                results.putIfAbsent('${c.name}|${c.typeLine}|${ptOf(c)}|${c.oracleText}', () => c);
+              }
+            }
             void create({String? oracleId, String? n, String? p}) {
               Navigator.pop(ctx);
               ctrl.send(ctrl.table
                   .createToken(ctrl.actor, oracleId: oracleId, name: n, pt: p, qty: qty, x: 0.5, y: 0.5));
             }
 
+            Widget chips(String title, List<db.Card> tokens) => Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(title, style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 4),
+                    Wrap(spacing: 6, runSpacing: 6, children: [
+                      for (final t in tokens)
+                        ActionChip(
+                          avatar: const Icon(Icons.add, size: 16),
+                          label: Text('${t.name}${ptOf(t)}'),
+                          tooltip: t.oracleText.isEmpty ? null : t.oracleText,
+                          onPressed: () => create(oracleId: t.oracleId),
+                        ),
+                    ]),
+                  ]),
+                );
+
             return SizedBox(
-              height: MediaQuery.of(ctx).size.height * 0.8,
+              height: MediaQuery.of(ctx).size.height * 0.85,
               child: Column(children: [
-                Text('Criar token', style: Theme.of(ctx).textTheme.titleMedium),
+                Text('Criar token', style: theme.textTheme.titleMedium),
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const Text('Quantidade'),
                   IconButton(
                       onPressed: qty > 1 ? () => set(() => qty--) : null, icon: const Icon(Icons.remove)),
-                  Text('$qty', style: Theme.of(ctx).textTheme.titleMedium),
+                  Text('$qty', style: theme.textTheme.titleMedium),
                   IconButton(onPressed: () => set(() => qty++), icon: const Icon(Icons.add)),
                 ]),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
                     decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search), hintText: 'Token oficial (ex.: treasure, soldier)'),
+                        prefixIcon: Icon(Icons.search), hintText: 'Procurar token (ex.: treasure, soldier)'),
                     onChanged: (v) => set(() => query = v),
                   ),
                 ),
                 Expanded(
                   child: ListView(children: [
-                    for (final c in results)
+                    if (query.trim().isEmpty) ...[
+                      if (fromDeck.isNotEmpty) chips('Do teu deck', fromDeck),
+                      if (common.isNotEmpty) chips('Comuns', common),
+                    ],
+                    for (final c in results.values)
                       CardTile(c,
                           onTap: () => create(oracleId: c.oracleId),
-                          subtitle:
-                              '${c.typeLine} ${c.power ?? ''}${c.power == null ? '' : '/${c.toughness}'}'),
+                          subtitle: [
+                            '${c.typeLine}${ptOf(c)}',
+                            if (c.oracleText.isNotEmpty) c.oracleText.replaceAll('\n', ' '),
+                          ].join(' · ')),
                   ]),
                 ),
                 const Divider(),

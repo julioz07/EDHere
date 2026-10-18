@@ -57,8 +57,7 @@ class RoomModel extends ChangeNotifier {
   int get lastSeq => log.isEmpty ? 0 : log.last.seq;
   int get mySeat => link.mySeat;
 
-  String nameOf(int seat) =>
-      seat < 0 ? 'Sala' : players[seat]?.name ?? 'Jogador $seat';
+  String nameOf(int seat) => seat < 0 ? 'Sala' : players[seat]?.name ?? 'Jogador $seat';
 
   void _apply(Envelope e) {
     log.add(e);
@@ -79,8 +78,7 @@ class RoomModel extends ChangeNotifier {
         final run = (p['run'] as num?)?.toInt() ?? 0;
         final key = '${e.actor}:$run';
         final r = bursts.putIfAbsent(
-            key, () => BurstResult(e.actor, run, (p['n'] as num?)?.toInt() ?? 0)
-              ..firstSeq = e.seq);
+            key, () => BurstResult(e.actor, run, (p['n'] as num?)?.toInt() ?? 0)..firstSeq = e.seq);
         final i = (p['i'] as num?)?.toInt() ?? -1;
         if (i != r.received) r.inOrder = false;
         r.received++;
@@ -95,8 +93,7 @@ class RoomModel extends ChangeNotifier {
     link.submit(MsgType.rollDie, {'sides': sides, 'value': value});
   }
 
-  void flipCoin() => link.submit(MsgType.flipCoin,
-      {'heads': DateTime.now().microsecondsSinceEpoch.isEven});
+  void flipCoin() => link.submit(MsgType.flipCoin, {'heads': DateTime.now().microsecondsSinceEpoch.isEven});
 
   /// Envia [n] eventos seguidos para medir ordem e débito.
   void sendBurst(int n) {
@@ -111,9 +108,8 @@ class RoomModel extends ChangeNotifier {
     final p = e.payload;
     final who = nameOf(e.actor);
     return switch (e.type) {
-      MsgType.join => p['host'] == true
-          ? '${p['name']} criou a sala'
-          : '${p['name']} entrou (lugar ${p['seat']})',
+      MsgType.join =>
+        p['host'] == true ? '${p['name']} criou a sala' : '${p['name']} entrou (lugar ${p['seat']})',
       MsgType.leave => '${nameOf((p['seat'] as num).toInt())} saiu',
       MsgType.playerStatus => p['connected'] == true
           ? '${nameOf((p['seat'] as num).toInt())} voltou a ligar-se'

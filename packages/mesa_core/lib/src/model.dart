@@ -22,6 +22,9 @@ abstract final class PlayerCounter {
   static const experience = 'experience';
   static const rad = 'rad';
   static const tickets = 'tickets';
+
+  /// City's Blessing (1 = tem; não se perde).
+  static const blessing = 'blessing';
 }
 
 /// Uma carta numa zona pública. O `id` é único na partida; o dono gera-o
@@ -205,10 +208,8 @@ class PlayerState {
         seat: j['seat'] as int,
         name: j['name'] as String,
         life: j['life'] as int,
-        commanderDamage:
-            (j['cd'] as Map).map((k, v) => MapEntry(int.parse(k as String), (v as num).toInt())),
-        commanderCasts:
-            (j['cc'] as Map).map((k, v) => MapEntry(int.parse(k as String), (v as num).toInt())),
+        commanderDamage: (j['cd'] as Map).map((k, v) => MapEntry(int.parse(k as String), (v as num).toInt())),
+        commanderCasts: (j['cc'] as Map).map((k, v) => MapEntry(int.parse(k as String), (v as num).toInt())),
         counters: (j['cn'] as Map).map((k, v) => MapEntry(k as String, (v as num).toInt())),
         handCount: j['hc'] as int,
         libraryCount: j['lc'] as int,
@@ -224,6 +225,13 @@ class PrivateCard {
   final String oracleId;
   final bool isCommander;
   final String? printId;
+
+  Map<String, dynamic> toJson() =>
+      {'p': pid, 'o': oracleId, if (isCommander) 'c': true, if (printId != null) 'r': printId};
+
+  static PrivateCard fromJson(Map<String, dynamic> j) =>
+      PrivateCard((j['p'] as num).toInt(), j['o'] as String,
+          isCommander: j['c'] == true, printId: j['r'] as String?);
 }
 
 /// Mão e grimório de um jogador (só existem no dispositivo do dono).
@@ -267,6 +275,10 @@ class GameState {
     List<TargetMark>? targets,
     this.revealed,
     this.started = false,
+    this.storm = 0,
+    this.dayNight,
+    this.over = false,
+    this.winner,
   })  : cards = cards ?? {},
         log = log ?? [],
         targets = targets ?? [];
@@ -284,12 +296,23 @@ class GameState {
 
   /// Carta destacada por alguém (id) — por exemplo para apontar um alvo.
   int? highlight;
+
   /// Alvos apontados (setas): para uma carta ou para um jogador.
   final List<TargetMark> targets;
 
   /// Cartas reveladas no último evento de revelação.
   Reveal? revealed;
   bool started;
+
+  /// Feitiços lançados neste turno (storm); volta a 0 ao passar o turno.
+  int storm;
+
+  /// 'day', 'night' ou null (ainda não é dia nem noite).
+  String? dayNight;
+
+  /// O jogo terminou (com [winner], ou sem vencedor).
+  bool over;
+  int? winner;
 
   Iterable<CardInstance> zoneCards(int seat, Zone zone) {
     final list = cards.values
@@ -316,6 +339,10 @@ class GameState {
         targets: [...targets],
         revealed: revealed,
         started: started,
+        storm: storm,
+        dayNight: dayNight,
+        over: over,
+        winner: winner,
       );
 
   /// Estado público serializado (para reconexão).
@@ -330,6 +357,10 @@ class GameState {
         'monarch': monarch,
         'initiative': initiative,
         'started': started,
+        'storm': storm,
+        'dayNight': dayNight,
+        'over': over,
+        'winner': winner,
       };
 
   static GameState fromJson(Map<String, dynamic> j) => GameState(
@@ -349,6 +380,10 @@ class GameState {
         monarch: j['monarch'] as int?,
         initiative: j['initiative'] as int?,
         started: j['started'] == true,
+        storm: j['storm'] as int? ?? 0,
+        dayNight: j['dayNight'] as String?,
+        over: j['over'] == true,
+        winner: j['winner'] as int?,
       );
 }
 

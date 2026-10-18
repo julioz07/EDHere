@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/card_data_service.dart';
 import '../../data/collection.dart';
 import '../../data/providers.dart';
 import 'card_detail_screen.dart';
@@ -96,31 +97,60 @@ class _EmptyCollection extends StatelessWidget {
   }
 }
 
-/// Mostrado quando ainda não há base de cartas no telemóvel.
-class NoDataMessage extends StatelessWidget {
+/// Mostrado quando ainda não há base de cartas no telemóvel. O botão começa
+/// logo a descarga (com rulings) e mostra o progresso aqui mesmo.
+class NoDataMessage extends ConsumerWidget {
   const NoDataMessage({super.key, required this.onOpenData});
 
+  /// Opções avançadas (pacotes de imagens, rulings...).
   final VoidCallback onOpenData;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final data = ref.watch(cardDataProvider);
+    final busy = data.busy;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.cloud_download_outlined, size: 56, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          Text('Ainda não há cartas offline', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
-          const Text(
-            'Descarrega a base de cartas uma vez (cerca de 25 MB). Depois a pesquisa e '
-            'os decks funcionam sem internet.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          FilledButton(onPressed: onOpenData, child: const Text('Descarregar cartas')),
-        ]),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.cloud_download_outlined, size: 56, color: theme.colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(busy ? 'A preparar as cartas…' : 'Ainda não há cartas offline',
+                style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              busy
+                  ? 'Podes continuar a usar a app: a descarga continua sozinha.'
+                  : 'Descarrega a base de cartas uma vez (cerca de 30 MB). Depois a pesquisa, os '
+                      'decks e os jogos funcionam sem internet.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            if (busy) ...[
+              LinearProgressIndicator(
+                  value: data.progress, minHeight: 6, borderRadius: BorderRadius.circular(3)),
+              const SizedBox(height: 8),
+              Text(data.message, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+              TextButton(onPressed: data.cancel, child: const Text('Cancelar')),
+            ] else ...[
+              if (data.phase == DataPhase.error)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(data.message,
+                      style: TextStyle(color: theme.colorScheme.error), textAlign: TextAlign.center),
+                ),
+              FilledButton.icon(
+                onPressed: () => data.update(includeRulings: true),
+                icon: const Icon(Icons.download),
+                label: const Text('Descarregar cartas'),
+              ),
+              TextButton(onPressed: onOpenData, child: const Text('Opções de dados')),
+            ],
+          ]),
+        ),
       ),
     );
   }

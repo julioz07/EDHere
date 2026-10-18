@@ -75,8 +75,29 @@ class DecksTab extends ConsumerWidget {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
-                    child: Text('Ainda não tens decks. Cria um ou importa uma lista.',
-                        textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.style_outlined, size: 56, color: theme.colorScheme.primary),
+                      const SizedBox(height: 12),
+                      Text('Ainda não tens decks', style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 6),
+                      const Text(
+                          'Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.',
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => const DeckImportScreen(),
+                        )),
+                        icon: const Icon(Icons.content_paste),
+                        label: const Text('Importar lista'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _newDeck(context, ref),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Novo deck'),
+                      ),
+                    ]),
                   ),
                 )
               : GridView.builder(

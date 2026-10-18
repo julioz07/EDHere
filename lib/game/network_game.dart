@@ -10,9 +10,11 @@ import 'package:mesa_protocol/mesa_protocol.dart';
 import '../data/image_service.dart';
 import '../data/print_service.dart';
 import '../net/host_server.dart';
+import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'game_controller.dart';
+import 'resume_store.dart';
 
 /// Eventos do lobby (antes do jogo começar).
 abstract final class LobbyEv {
@@ -22,12 +24,22 @@ abstract final class LobbyEv {
   /// Jogador: deck escolhido (só nome, tamanho e legalidade).
   static const deckSelected = 'deck_selected';
   static const ready = 'ready';
+
+  /// Anfitrião: volta todos ao lobby para outra partida.
+  static const newGame = 'new_game';
 }
 
 /// Eventos da camada de sala que não são da mesa.
 const _roomOnly = {
-  MsgType.join, MsgType.leave, MsgType.playerStatus, MsgType.ping, MsgType.burst,
-  LobbyEv.config, LobbyEv.deckSelected, LobbyEv.ready,
+  MsgType.join,
+  MsgType.leave,
+  MsgType.playerStatus,
+  MsgType.ping,
+  MsgType.burst,
+  LobbyEv.config,
+  LobbyEv.deckSelected,
+  LobbyEv.ready,
+  LobbyEv.newGame,
 };
 
 class LobbyPlayer {
@@ -41,6 +53,9 @@ class LobbyPlayer {
   bool deckLegal = false;
   List<String> commanders = const [];
   bool ready = false;
+
+  /// Game Changers no deck (para o bracket, na conversa da regra zero).
+  int? gameChangers;
 
   /// Imagens (pequenas) das cartas do deck deste jogador, com as versões
   /// que ele escolheu.
@@ -71,7 +86,16 @@ const smallImageBytes = 15 * 1024;
 /// dispositivo aplica-os pela mesma ordem; a mão e o grimório de cada
 /// jogador só existem no dispositivo dele.
 class NetworkGame extends ChangeNotifier {
-  NetworkGame({required this.session, required this.repo, this.prints, this.images}) {
+  NetworkGame({
+    required this.session,
+    required this.repo,
+    this.prints,
+    this.images,
+    this.resume,
+    this.resumeStore,
+    db.Deck? resumeDeck,
+  }) {
+    if (resume != null) myDeck = resumeDeck;
     for (final e in session.link.history) {
       _onEvent(e);
     }
@@ -89,6 +113,15 @@ class NetworkGame extends ChangeNotifier {
   /// Versões e imagens (para mostrar as artes escolhidas e partilhá-las).
   final PrintService? prints;
   final ImageService? images;
+
+  /// Ao voltar a um jogo depois de a app fechar: o que ficou guardado.
+  final ResumeInfo? resume;
+  final ResumeStore? resumeStore;
+  bool _restored = false;
+
+  /// Os eventos até [ResumeInfo.seq] já foram aplicados antes da app fechar:
+  /// ao repeti-los não se volta a comprar, a carregar o deck, etc.
+  bool _replaying(Envelope e) => resume != null && e.seq <= resume!.seq;
   late final StreamSubscription<Envelope> _sub;
   late final StreamSubscription<LinkStatus> _statusSub;
   late final StreamSubscription<Envelope> _directSub;
@@ -114,8 +147,7 @@ class NetworkGame extends ChangeNotifier {
   bool get isHost => session.isHost;
   LobbyPlayer? get me => players[mySeat];
 
-  bool get allReady =>
-      players.values.where((p) => p.connected).every((p) => p.ready) && players.isNotEmpty;
+  bool get allReady => players.values.where((p) => p.connected).every((p) => p.ready) && players.isNotEmpty;
 
   void _onEvent(Envelope e) {
     final p = e.payload;
@@ -127,6 +159,7 @@ class NetworkGame extends ChangeNotifier {
         players.remove(seat());
       case MsgType.playerStatus:
         players[seat()]?.connected = p['connected'] == true;
+        _syncOffline();
       case LobbyEv.config:
         format = p['format'] as String;
         startingLife = (p['life'] as num).toInt();
@@ -143,6 +176,7 @@ class NetworkGame extends ChangeNotifier {
             ..deckSize = (p['size'] as num?)?.toInt() ?? 0
             ..deckLegal = p['legal'] == true
             ..commanders = (p['commanders'] as List? ?? const []).cast<String>()
+            ..gameChangers = (p['gc'] as num?)?.toInt()
             ..ready = false
             ..images = [
               for (final r in (p['images'] as List? ?? const []).cast<Map<String, dynamic>>())
@@ -156,6 +190,15 @@ class NetworkGame extends ChangeNotifier {
         ]);
       case LobbyEv.ready:
         players[seat()]?.ready = p['value'] == true;
+      case LobbyEv.newGame:
+        game?.dispose();
+        game = null;
+        _pending.clear();
+        _restored = true;
+        for (final pl in players.values) {
+          pl.ready = false;
+        }
+        resumeStore?.clear();
     }
 
     if (_roomOnly.contains(e.type)) return;
@@ -168,13 +211,63 @@ class NetworkGame extends ChangeNotifier {
       return;
     }
     g.applyRemote(e.seq, e.type, e.actor, e.payload);
-    _afterGameEvent(e);
+    final r = resume;
+    if (r != null && !_restored && e.seq >= r.seq) {
+      // Cheguei ao ponto em que a app fechou: repõe a minha mão e grimório.
+      final priv = r.private;
+      if (priv != null) g.table.importPrivate(mySeat, priv);
+      _restored = true;
+    }
+    if (!_replaying(e)) _afterGameEvent(e);
+    _saveResume(e);
+  }
+
+  /// Guarda o necessário para voltar a este jogo se a app fechar.
+  void _saveResume(Envelope e) {
+    final store = resumeStore;
+    final g = game;
+    final client = link is RoomClient ? link as RoomClient : null;
+    if (store == null || g == null || client == null || _replaying(e)) return;
+    final token = client.token;
+    if (token == null || !g.state.players.containsKey(mySeat)) return;
+    if (g.state.over || link.status == LinkStatus.closed) {
+      store.clear();
+      return;
+    }
+    store.save(ResumeInfo(
+      room: session.roomName,
+      hosts: [if (client.connectedHost != null) client.connectedHost!, ...client.hosts],
+      port: client.port,
+      pin: client.pin,
+      token: token,
+      seat: mySeat,
+      name: client.playerName,
+      deckId: myDeck?.id,
+      seq: e.seq,
+      private: g.table.localSeats.contains(mySeat) ? g.table.exportPrivate(mySeat) : null,
+      savedAt: DateTime.now(),
+    ));
+  }
+
+  /// Os lugares desligados aparecem marcados na mesa.
+  void _syncOffline() {
+    final g = game;
+    if (g == null) return;
+    g.offline
+      ..clear()
+      ..addAll([
+        for (final p in players.values)
+          if (!p.connected) p.seat
+      ]);
   }
 
   final List<Envelope> _pending = [];
 
   void _createGame() {
-    final table = Table(format: format, localSeats: {mySeat});
+    // A voltar a um jogo: até ao ponto guardado vejo-me como os outros me
+    // veem; a mão e o grimório são repostos a seguir.
+    final restoring = resume?.private != null && !_restored;
+    final table = Table(format: format, localSeats: restoring ? {} : {mySeat});
     final g = GameController(
       table: table,
       repo: repo,
@@ -195,6 +288,7 @@ class NetworkGame extends ChangeNotifier {
     }
     _pending.clear();
     game = g;
+    _syncOffline();
   }
 
   void _afterGameEvent(Envelope e) {
@@ -219,7 +313,8 @@ class NetworkGame extends ChangeNotifier {
     link.submit(LobbyEv.config, {'format': format, 'life': life, 'seats': seats ?? maxSeats});
   }
 
-  void selectDeck(db.Deck deck, {required bool legal, required List<String> commanderNames}) {
+  void selectDeck(db.Deck deck,
+      {required bool legal, required List<String> commanderNames, int? gameChangers}) {
     myDeck = deck;
     // As versões e imagens do deck, para os outros saberem o que lhes falta.
     final usedPrints = <String, db.PrintInfo>{};
@@ -242,9 +337,11 @@ class NetworkGame extends ChangeNotifier {
       'size': deck.playableCount,
       'legal': legal,
       'commanders': commanderNames,
+      if (gameChangers != null) 'gc': gameChangers,
       'prints': [for (final p in usedPrints.values) p.toJson()],
       'images': [
-        for (final r in refs.values) {'k': r.key, if (r.small != null) 's': r.small, if (r.normal != null) 'n': r.normal},
+        for (final r in refs.values)
+          {'k': r.key, if (r.small != null) 's': r.small, if (r.normal != null) 'n': r.normal},
       ],
     });
     notifyListeners();
@@ -255,7 +352,10 @@ class NetworkGame extends ChangeNotifier {
     final imgs = images;
     final pl = players[seat];
     if (imgs == null || pl == null || seat == mySeat) return const [];
-    return [for (final r in pl.images) if (!imgs.has('small', r.key)) r];
+    return [
+      for (final r in pl.images)
+        if (!imgs.has('small', r.key)) r
+    ];
   }
 
   /// Total em falta de todos os outros jogadores.
@@ -315,6 +415,14 @@ class NetworkGame extends ChangeNotifier {
     }
   }
 
+  /// Anfitrião: volta todos ao lobby para outra partida.
+  void newGame() {
+    if (isHost) link.submit(LobbyEv.newGame, {});
+  }
+
+  /// Sair de vez: deixa de haver jogo a que voltar.
+  void forgetResume() => resumeStore?.clear();
+
   void setReady(bool value) {
     if (myDeck == null) return;
     link.submit(LobbyEv.ready, {'seat': mySeat, 'value': value});
@@ -328,9 +436,8 @@ class NetworkGame extends ChangeNotifier {
     for (final p in seated) {
       host.submit(Ev.joinTable, {'seat': p.seat, 'name': p.name, 'life': startingLife});
     }
-    final first = randomFirst
-        ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat
-        : seated.first.seat;
+    final first =
+        randomFirst ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat : seated.first.seat;
     host.submit(Ev.startGame, {'first': first});
   }
 

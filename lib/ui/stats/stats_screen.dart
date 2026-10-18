@@ -49,7 +49,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Column(children: [
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(value, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                 Text(label, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
               ]),
@@ -71,7 +71,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   ),
                 )
               : ListView(padding: const EdgeInsets.all(16), children: [
-                  Row(children: [
+                  // Mesma altura para todos, mesmo quando o texto parte em duas linhas.
+                  IntrinsicHeight(
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     stat('jogos', '${games.length}'),
                     const SizedBox(width: 8),
                     stat('vitórias', solo.isEmpty ? '—' : '${(wins * 100 / solo.length).round()}%'),
@@ -79,7 +81,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     stat('min por jogo', avgMin.toStringAsFixed(0)),
                     const SizedBox(width: 8),
                     stat('turnos', avgTurns.toStringAsFixed(1)),
-                  ]),
+                  ])),
                   if (perDeck.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text('Por deck', style: theme.textTheme.titleMedium),

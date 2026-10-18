@@ -119,7 +119,7 @@ void _checkCommanders(
   }
   if (cmds.length > 2) {
     err('No máximo dois comandantes (parceiros).');
-  } else if (cmds.length == 2 && !_validPair(cmds[0], cmds[1])) {
+  } else if (cmds.length == 2 && !canPartner(cmds[0], cmds[1])) {
     err('${cmds[0].name} e ${cmds[1].name} não podem ser comandantes juntos '
         '(precisam de Partner, Friends forever, Background ou Doctor\'s companion).');
   }
@@ -129,7 +129,9 @@ bool _isBackground(Card c) => c.frontType.contains('Background');
 bool _has(Card c, String kw) =>
     c.keywords.any((k) => k.toLowerCase() == kw.toLowerCase()) || c.oracleText.contains(kw);
 
-bool _validPair(Card a, Card b) {
+/// Se [a] e [b] podem ser comandantes juntos (Partner, Partner with,
+/// Friends forever, Background, Doctor's companion).
+bool canPartner(Card a, Card b) {
   // "Partner with X" só com X; "Partner" genérico com outro "Partner".
   final pw = RegExp(r'Partner with ([^\n(]+)');
   final aw = pw.firstMatch(a.oracleText)?.group(1)?.trim();

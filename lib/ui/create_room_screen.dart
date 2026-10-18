@@ -118,6 +118,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         return;
       }
       await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'lobby'),
         builder: (_) => LobbyScreen(
           session: session,
           format: _format,

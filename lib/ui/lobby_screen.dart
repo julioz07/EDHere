@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app/theme.dart';
+import '../data/bracket.dart';
 import '../data/providers.dart';
 import '../game/network_game.dart';
+import '../game/resume_store.dart';
+import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'room_screen.dart';
@@ -15,9 +18,12 @@ import 'widgets/responsive.dart';
 /// Lobby de uma sala: cada jogador escolhe o deck e fica pronto; o
 /// anfitrião começa o jogo. Depois mostra a mesa.
 class LobbyScreen extends ConsumerStatefulWidget {
-  const LobbyScreen({super.key, required this.session, this.format, this.life});
+  const LobbyScreen({super.key, required this.session, this.format, this.life, this.resume});
 
   final RoomSession session;
+
+  /// A voltar a um jogo depois de a app fechar.
+  final ResumeInfo? resume;
 
   /// Valores iniciais escolhidos pelo anfitrião ao criar a sala.
   final String? format;
@@ -33,9 +39,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     repo: ref.read(cardRepoProvider)!,
     prints: ref.read(printsProvider),
     images: ref.read(imagesProvider),
+    resume: widget.resume,
+    resumeStore: ref.read(resumeProvider),
+    resumeDeck: widget.resume?.deckId == null
+        ? null
+        : ref.read(decksProvider).decks.where((d) => d.id == widget.resume!.deckId).firstOrNull,
   );
   bool _closing = false;
   bool _tableShown = false;
+
+  /// A mesa fecha porque o anfitrião começou outra partida: o lobby fica.
+  bool _backToLobby = false;
 
   @override
   void initState() {
@@ -46,10 +60,19 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           .addPostFrameCallback((_) => _game.configure(format: widget.format!, life: widget.life ?? 40));
     }
     _game.addListener(_maybeShowTable);
+    // A voltar a um jogo: a mesa já existe (o registo foi repetido) e abre logo.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTable());
   }
 
   void _maybeShowTable() {
     final g = _game.game;
+    if (g == null && _tableShown && mounted) {
+      // Nova partida: todos voltam ao lobby para escolher deck e ficar prontos.
+      _tableShown = false;
+      _backToLobby = true;
+      Navigator.of(context).popUntil((r) => r.settings.name == _lobbyRoute || r.isFirst);
+      return;
+    }
     if (g == null || _tableShown || !mounted) return;
     if (!g.state.players.containsKey(_game.mySeat)) {
       // Fiquei de fora (não estava pronto): vejo como espectador.
@@ -63,30 +86,51 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         builder: (context, _) => TableScreen(
           ctrl: g,
           banner: switch (_game.link.status) {
-            LinkStatus.reconnecting => const MaterialBanner(
-                content: Text('Ligação perdida. A voltar a ligar…'),
-                leading: SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                actions: [SizedBox.shrink()],
+            LinkStatus.reconnecting => MaterialBanner(
+                content: const Text('Ligação perdida. A voltar a ligar…'),
+                leading:
+                    const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                actions: [TextButton(onPressed: _leaveFromTable, child: const Text('Sair'))],
               ),
-            LinkStatus.closed => const MaterialBanner(
-                content: Text('A sala foi fechada.'),
-                leading: Icon(Icons.link_off),
-                actions: [SizedBox.shrink()],
+            LinkStatus.closed when !_closing => MaterialBanner(
+                content: Text(_closedReason),
+                leading: const Icon(Icons.link_off),
+                actions: [TextButton(onPressed: _leaveFromTable, child: const Text('Sair'))],
               ),
             _ => null,
           },
           onLeave: _leaveRoom,
+          onNewGame: _game.isHost ? _game.newGame : null,
         ),
       ),
     ))
         .then((_) {
+      if (_backToLobby) {
+        _backToLobby = false;
+        return;
+      }
       if (mounted && !_closing) Navigator.of(context).pop();
     });
+  }
+
+  static const _lobbyRoute = 'lobby';
+
+  String get _closedReason {
+    final l = _game.link;
+    if (l is RoomClient && l.hostClosed) return 'O anfitrião fechou a sala.';
+    return 'A ligação à sala terminou.';
+  }
+
+  /// Sai da mesa e da sala (ligação perdida ou sala fechada).
+  Future<void> _leaveFromTable() async {
+    await _leaveRoom();
+    if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
   Future<void> _leaveRoom() async {
     if (_closing) return;
     _closing = true;
+    _game.forgetResume();
     await widget.session.close();
   }
 
@@ -131,6 +175,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       commanderNames: [
         for (final e in chosen.inBoard(Board.command)) cards[e.oracleId]?.name ?? '?',
       ],
+      gameChangers: format.hasCommandZone ? BracketEstimate.of(chosen, cards).count : null,
     );
     if (!legal && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -240,13 +285,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 const Card(
                     child: ListTile(leading: CircularProgressIndicator(), title: Text('A voltar a ligar…'))),
               if (status == LinkStatus.closed && !_closing)
-                const Card(
-                    child: ListTile(leading: Icon(Icons.link_off), title: Text('A sala foi fechada.'))),
+                Card(child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
                   title: Text('${format.label} · vida ${g.startingLife}'),
-                  subtitle: Text('${g.players.length} jogadores na sala'),
+                  subtitle: Text(
+                      g.players.length == 1 ? '1 jogador na sala' : '${g.players.length} jogadores na sala'),
                   trailing: g.isHost ? const Icon(Icons.edit) : null,
                   onTap: g.isHost ? _configure : null,
                 ),
@@ -267,6 +312,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         ? 'Ainda sem deck'
                         : '${p.deckName} · ${p.deckSize} cartas'
                             '${p.commanders.isEmpty ? '' : ' · ${p.commanders.join(' + ')}'}'
+                            '${p.gameChangers == null ? '' : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}'}'
                             '${p.deckLegal ? '' : ' · com avisos'}'),
                     trailing: p.ready
                         ? const Chip(label: Text('Pronto'), backgroundColor: Color(0x333FB27F))

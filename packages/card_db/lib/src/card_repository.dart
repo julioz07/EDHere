@@ -6,6 +6,7 @@ import 'card.dart';
 import 'schema.dart';
 import 'search_query.dart';
 import 'text_norm.dart';
+import 'tokens.dart';
 
 class SearchResult {
   const SearchResult(this.cards, this.total, this.errors);
@@ -53,8 +54,7 @@ class CardRepository {
   void close() => _db.dispose();
 
   Map<String, String> get meta => {
-        for (final r in _db.select('SELECT key, value FROM meta'))
-          r['key'] as String: r['value'] as String,
+        for (final r in _db.select('SELECT key, value FROM meta')) r['key'] as String: r['value'] as String,
       };
 
   /// Pesquisa. Com [restrictTo], só entre essas cartas (por exemplo a
@@ -116,6 +116,37 @@ class CardRepository {
     return rows.isEmpty ? null : _remember(Card.fromRow(rows.first));
   }
 
+  /// O token oficial com este nome (e P/R, se dado). Entre vários, prefere
+  /// o mais simples (menos texto), que é o que as cartas costumam criar.
+  Card? tokenNamed(TokenHint hint) {
+    final rows = _db.select('''
+      SELECT * FROM cards WHERE is_token = 1 AND name_norm = ?
+      ORDER BY length(coalesce(oracle_text, '')), print_id LIMIT 30''', [normalizeName(hint.name)]);
+    final cards = [for (final r in rows) Card.fromRow(r)];
+    if (cards.isEmpty) return null;
+    final pt = hint.pt;
+    final match = pt == null ? cards : cards.where((c) => '${c.power}/${c.toughness}' == pt).toList();
+    return _remember((match.isEmpty ? cards : match).first);
+  }
+
+  /// Tokens que estas cartas criam (lidos do texto de regras).
+  List<Card> tokensFor(Iterable<Card> cards, {int limit = 16}) {
+    final hints = <TokenHint>{};
+    for (final c in cards) {
+      hints.addAll(tokenHintsIn(c.oracleText));
+      for (final f in c.faces) {
+        hints.addAll(tokenHintsIn(f.oracleText));
+      }
+    }
+    final out = <String, Card>{};
+    for (final h in hints) {
+      final t = tokenNamed(h);
+      if (t != null) out[t.oracleId] = t;
+      if (out.length >= limit) break;
+    }
+    return out.values.toList();
+  }
+
   /// Sugestões rápidas pelo início do nome, para o autocompletar.
   List<Card> suggest(String prefix, {int limit = 8}) {
     final p = normalizeName(prefix);
@@ -130,8 +161,7 @@ class CardRepository {
   /// Estado da carta em cada formato (`legal`, `banned`, `restricted`).
   /// Formatos ausentes são `not_legal`.
   Map<String, String> legalities(String oracleId) => {
-        for (final r in _db.select(
-            'SELECT format, status FROM legalities WHERE oracle_id = ?', [oracleId]))
+        for (final r in _db.select('SELECT format, status FROM legalities WHERE oracle_id = ?', [oracleId]))
           r['format'] as String: r['status'] as String,
       };
 
@@ -162,8 +192,7 @@ class CardRepository {
               r['comment'] as String? ?? ''),
       ];
 
-  bool get hasRulings =>
-      _db.select('SELECT 1 FROM rulings LIMIT 1').isNotEmpty;
+  bool get hasRulings => _db.select('SELECT 1 FROM rulings LIMIT 1').isNotEmpty;
 
   /// Impressões (uma por carta) que correspondem a uma condição SQL sobre
   /// `cards`, para calcular os pacotes de imagens.
@@ -207,8 +236,7 @@ class ImageRef {
     if (c.hasFaceImages) {
       return [
         for (var i = 0; i < c.faces.length; i++)
-          if (c.faces[i].hasOwnImage)
-            ImageRef('${c.printId}_$i', c.faces[i].imgSmall, c.faces[i].imgNormal),
+          if (c.faces[i].hasOwnImage) ImageRef('${c.printId}_$i', c.faces[i].imgSmall, c.faces[i].imgNormal),
       ];
     }
     if (c.imgNormal == null && c.imgSmall == null) return const [];
@@ -216,6 +244,5 @@ class ImageRef {
   }
 
   /// Chave da imagem a mostrar para uma face (0 = frente).
-  static String keyFor(Card c, [int face = 0]) =>
-      c.hasFaceImages ? '${c.printId}_$face' : c.printId;
+  static String keyFor(Card c, [int face = 0]) => c.hasFaceImages ? '${c.printId}_$face' : c.printId;
 }

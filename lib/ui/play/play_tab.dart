@@ -8,6 +8,7 @@ import '../../net/discovery.dart';
 import '../create_room_screen.dart';
 import '../join_screen.dart';
 import '../playtest/playtest_setup_screen.dart';
+import '../resume_game.dart';
 import '../stats/stats_screen.dart';
 import '../widgets/responsive.dart';
 
@@ -23,12 +24,43 @@ class _PlayTabState extends ConsumerState<PlayTab> {
 
   String get _playerName => _name.text.trim().isEmpty ? 'Jogador' : _name.text.trim();
 
-  Future<void> _go(Widget Function(String name) screen) async {
+  Future<void> _go(Widget Function(String name) screen, {bool needsName = false}) async {
+    // Numa sala os outros veem o nome: sem ele, ficam todos "Jogador".
+    if (needsName && _name.text.trim().isEmpty) {
+      final name = await _askName();
+      if (name == null || !mounted) return;
+      _name.text = name;
+    }
     await ref.read(prefsProvider).setString('player_name', _name.text.trim());
     ref.read(playerNameProvider.notifier).state = _name.text.trim();
     if (!mounted) return;
     FocusScope.of(context).unfocus();
     await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen(_playerName)));
+  }
+
+  Future<String?> _askName() {
+    final c = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Como te chamas?'),
+        content: TextField(
+          controller: c,
+          autofocus: true,
+          maxLength: 24,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(hintText: 'O nome que os outros veem na mesa', counterText: ''),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim().isEmpty ? null : v.trim()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, c.text.trim().isEmpty ? null : c.text.trim()),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -55,24 +87,52 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               Text('Joga com quem está aqui',
                   style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
             ]),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            const ResumeCard(),
             TextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               maxLength: 24,
               decoration: const InputDecoration(
                 labelText: 'O teu nome',
+                helperText: 'É o nome que os outros veem na mesa',
                 prefixIcon: Icon(Icons.person_outline),
                 counterText: '',
               ),
             ),
             const SizedBox(height: 24),
-            Text('Sozinho', style: theme.textTheme.titleSmall),
+            Text('Com outros, cada um com o seu telemóvel', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: hasData ? () => _go((n) => CreateRoomScreen(playerName: n), needsName: true) : null,
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Criar sala'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _go((n) => JoinScreen(playerName: n), needsName: true),
+              icon: const Icon(Icons.wifi_find_rounded),
+              label: const Text('Entrar numa sala'),
+            ),
+            if (!hasData)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text('Descarrega primeiro a base de cartas (Definições → Dados).',
+                    style: theme.textTheme.bodySmall),
+              ),
+            const SizedBox(height: 24),
+            Text('Testar e ensinar', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
-              onPressed: hasDecks ? () => _go((_) => const PlaytestSetupScreen()) : null,
+              onPressed: hasDecks ? () => _go((_) => const GoldfishSetupScreen()) : null,
               icon: const Icon(Icons.science_outlined),
-              label: const Text('Playtest (goldfish / hot-seat)'),
+              label: const Text('Goldfish (testar um deck sozinho)'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              onPressed: hasDecks ? () => _go((_) => const DuelSetupScreen()) : null,
+              icon: const Icon(Icons.people_alt_outlined),
+              label: const Text('1 contra 1 neste dispositivo'),
             ),
             if (!hasDecks)
               Padding(
@@ -86,26 +146,6 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               icon: const Icon(Icons.bar_chart),
               label: const Text('Histórico e estatísticas'),
             ),
-            const SizedBox(height: 24),
-            Text('Com outros, na rede local', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: hasData ? () => _go((n) => CreateRoomScreen(playerName: n)) : null,
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Criar sala'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => _go((n) => JoinScreen(playerName: n)),
-              icon: const Icon(Icons.wifi_find_rounded),
-              label: const Text('Entrar numa sala'),
-            ),
-            if (!hasData)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text('Descarrega primeiro a base de cartas (Definições → Dados).',
-                    style: theme.textTheme.bodySmall),
-              ),
             const SizedBox(height: 32),
             Text(
               'EDHere v$appVersion · conteúdo de fãs não oficial, permitido pela Fan Content '

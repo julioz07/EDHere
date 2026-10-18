@@ -72,6 +72,7 @@ class _JoinScreenState extends State<JoinScreen> {
       await _browser.stop();
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'lobby'),
         builder: (_) => LobbyScreen(session: session),
       ));
     } on RoomJoinException catch (e) {
