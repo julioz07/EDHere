@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.0.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.0.2** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -83,6 +83,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.0.2 | Terrenos anexados uns aos outros viram (tap) todos juntos; "Virar só esta" para virar um |
 | 1.0.1 | Importar listas mantém as versões das cartas ("(SET) número" do Moxfield/Archidekt); exportar também as inclui |
 | 1.0.0 | Primeira versão estável: tudo o que está acima |
 | 0.13 | Segunda ronda de QA: decks por montar, imagens por set, melhorias no sealed, draft e JumpStart |

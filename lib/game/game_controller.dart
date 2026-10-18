@@ -260,8 +260,27 @@ class GameController extends ChangeNotifier {
 
   void draw([int n = 1]) => send(table.draw(actor, n));
 
-  void toggleTap(CardInstance c) => send(Intent(Ev.tap, {
-        'ids': [c.id],
+  /// Terrenos anexados uns aos outros (para poupar espaço): a pilha toda,
+  /// com o de cima primeiro. Uma carta que não está numa pilha de terrenos
+  /// fica sozinha. Auras e equipamentos não contam: não viram com a criatura.
+  List<CardInstance> landStack(CardInstance c) {
+    bool land(CardInstance x) => card(x.oracleId)?.isLand ?? false;
+    if (!land(c)) return [c];
+    final host = c.attachedTo == null ? null : state.cards[c.attachedTo];
+    final root = host != null && land(host) ? host : c;
+    return [
+      root,
+      for (final x in state.cards.values)
+        if (x.attachedTo == root.id && x.zone == Zone.battlefield && land(x)) x,
+    ];
+  }
+
+  /// Virar ou desvirar. Num terreno de uma pilha de terrenos anexados, vira a
+  /// pilha toda (a não ser com [single]).
+  void toggleTap(CardInstance c, {bool single = false}) => send(Intent(Ev.tap, {
+        'ids': [
+          for (final x in single ? [c] : landStack(c)) x.id
+        ],
         'value': !c.tapped
       }));
 

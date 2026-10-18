@@ -136,8 +136,20 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
           () => done(() => ctrl.highlight(ctrl.state.highlight == c.id ? null : c))),
       if (mine) ...[
         if (onField) ...[
-          _tile(c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw, c.tapped ? 'Desvirar' : 'Virar (tap)',
-              () => done(() => ctrl.toggleTap(c))),
+          if (ctrl.landStack(c).length > 1) ...[
+            _tile(
+                c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw,
+                c.tapped
+                    ? 'Desvirar os ${ctrl.landStack(c).length} terrenos'
+                    : 'Virar os ${ctrl.landStack(c).length} terrenos (tap)',
+                () => done(() => ctrl.toggleTap(c))),
+            _tile(
+                c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw,
+                c.tapped ? 'Desvirar só esta' : 'Virar só esta',
+                () => done(() => ctrl.toggleTap(c, single: true))),
+          ] else
+            _tile(c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw, c.tapped ? 'Desvirar' : 'Virar (tap)',
+                () => done(() => ctrl.toggleTap(c))),
           _tile(Icons.exposure, 'Contadores', () {
             Navigator.pop(ctx);
             showCounterSheet(context, ctrl, c);
