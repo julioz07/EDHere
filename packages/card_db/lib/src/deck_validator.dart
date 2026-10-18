@@ -44,6 +44,16 @@ List<DeckIssue> validateDeck(
     } else {
       _checkCommanders(commanderCards, format, err);
       identity = commanderCards.fold(0, (m, c) => m | c.identityMask);
+      // The Prismatic Piper / Faceless One: ficam da cor escolhida antes do
+      // jogo, por isso o deck pode ter mais uma cor à escolha.
+      if (commanderCards.any((c) => isDraftWildCommander(c.name))) {
+        final extra = deck.entries
+                .where((e) => e.board == Board.main)
+                .map((e) => cards[e.oracleId]?.identityMask ?? 0)
+                .fold(0, (m, x) => m | x) &
+            ~identity;
+        if (_bits(extra) <= 1) identity |= extra;
+      }
     }
   } else if (format.commandZone == CommandZone.oathbreaker) {
     final walkers = commanderCards.where((c) => c.frontType.contains('Planeswalker')).toList();
@@ -120,13 +130,27 @@ void _checkCommanders(
   }
   if (cmds.length > 2) {
     err('No máximo dois comandantes (parceiros).');
-  } else if (cmds.length == 2 && !canPartner(cmds[0], cmds[1])) {
+  } else if (cmds.length == 2 &&
+      !canPartner(cmds[0], cmds[1]) &&
+      // No commander draft, duas lendas monocolores também podem.
+      !(format.id == 'commanderdraft' && cmds.every((c) => c.canBeCommander && _bits(c.colorMask) == 1))) {
     err('${cmds[0].name} e ${cmds[1].name} não podem ser comandantes juntos '
         '(precisam de Partner, Friends forever, Background ou Doctor\'s companion).');
   }
 }
 
 bool _isBackground(Card c) => c.frontType.contains('Background');
+int _bits(int m) {
+  var n = 0;
+  for (var x = m; x != 0; x &= x - 1) {
+    n++;
+  }
+  return n;
+}
+
+/// Comandantes que o commander draft deixa sempre usar, mesmo sem os tirar.
+const draftWildCommanders = ['The Prismatic Piper', 'Faceless One'];
+bool isDraftWildCommander(String name) => draftWildCommanders.contains(name);
 bool _has(Card c, String kw) =>
     c.keywords.any((k) => k.toLowerCase() == kw.toLowerCase()) || c.oracleText.contains(kw);
 

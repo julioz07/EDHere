@@ -41,7 +41,7 @@ class GameFormat {
   bool get validates => id != 'free' && id != 'cube';
 
   /// Decks que vêm de boosters (sealed, draft, JumpStart).
-  bool get isLimited => id == 'limited';
+  bool get isLimited => id == 'limited' || id == 'commanderdraft';
 
   static const commander = GameFormat(
     id: 'commander', label: 'Commander', legalityKey: 'commander',
@@ -99,6 +99,16 @@ class GameFormat {
     startingLife: 20, minDeck: 40, maxCopies: 99,
   );
 
+  /// Commander draft (Commander Legends, Baldur's Gate, Commander Masters):
+  /// 60 cartas com o comandante, sem singleton, identidade de cor, vida 40.
+  /// Dois comandantes se forem parceiros ou ambos monocolores; The Prismatic
+  /// Piper e o Faceless One podem sempre ser comandantes.
+  static const commanderDraft = GameFormat(
+    id: 'commanderdraft', label: 'Commander draft',
+    startingLife: 40, minDeck: 60, maxCopies: 99,
+    commandZone: CommandZone.commander,
+  );
+
   /// Uma lista de cartas para abrir packs de cubo (não é para jogar).
   static const cube = GameFormat(id: 'cube', label: 'Cubo (lista para packs)', startingLife: 20, maxCopies: 99);
 
@@ -109,7 +119,7 @@ class GameFormat {
 
   static const all = [
     commander, brawl, standardBrawl, oathbreaker, pauperCommander,
-    modern, pioneer, standard, legacy, vintage, pauper, limited, cube, free,
+    modern, pioneer, standard, legacy, vintage, pauper, limited, commanderDraft, cube, free,
   ];
 
   static GameFormat byId(String id) =>

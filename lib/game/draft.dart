@@ -62,8 +62,12 @@ class DraftConfig {
     this.packs = 3,
     this.picks = 1,
     this.timer = 0,
+    this.commander = false,
     required this.seats,
   });
+
+  /// Commander draft: no fim monta-se um deck de 60 com comandante.
+  final bool commander;
 
   /// Nome do set ou do cubo (para mostrar).
   final String title;
@@ -87,6 +91,7 @@ class DraftConfig {
         'packs': packs,
         'picks': picks,
         'timer': timer,
+        if (commander) 'cmd': true,
         'seats': [
           for (final s in seats) {'seat': s.seat, 'name': s.name},
         ],
@@ -98,6 +103,7 @@ class DraftConfig {
         packs: (j['packs'] as num?)?.toInt() ?? 3,
         picks: (j['picks'] as num?)?.toInt() ?? 1,
         timer: (j['timer'] as num?)?.toInt() ?? 0,
+        commander: j['cmd'] == true,
         seats: [
           for (final s in (j['seats'] as List).cast<Map<String, dynamic>>())
             (seat: (s['seat'] as num?)?.toInt(), name: s['name'] as String),

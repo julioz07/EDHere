@@ -1,5 +1,6 @@
 import 'package:card_db/card_db.dart' as db;
 import 'package:edhoff/game/draft.dart';
+import 'package:edhoff/ui/limited/limited_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Packs de teste: [rondas][lugares], cada um com [size] cartas numeradas.
@@ -96,5 +97,22 @@ void main() {
     expect(back.setCode, 'TDM');
     expect(back.picks, 2);
     expect(back.seats[1].seat, isNull);
+    expect(back.commander, isFalse);
+    expect(DraftConfig.fromJson(const DraftConfig(title: 'CMR', commander: true, seats: []).toJson()).commander,
+        isTrue);
+  });
+
+  test('commander draft: pares de comandantes', () {
+    db.Card legend(String n, int c, [String text = '']) => db.Card(
+        oracleId: n, name: n, typeLine: 'Legendary Creature — Elf', oracleText: text, colorMask: c);
+    const bg = db.Card(oracleId: 'bg', name: 'Bg', typeLine: 'Legendary Enchantment — Background');
+    final g = legend('G', db.ManaColors.g), r = legend('R', db.ManaColors.r);
+    final gr = legend('GR', db.ManaColors.g | db.ManaColors.r);
+    expect(commanderPairOk([g]), isTrue);
+    expect(commanderPairOk([bg]), isFalse);
+    expect(commanderPairOk([g, r]), isTrue);
+    expect(commanderPairOk([gr, r]), isFalse);
+    expect(commanderPairOk([legend('X', db.ManaColors.g | db.ManaColors.u, 'Choose a Background'), bg]), isTrue);
+    expect(commanderPairOk([g, r, legend('W', db.ManaColors.w)]), isFalse);
   });
 }

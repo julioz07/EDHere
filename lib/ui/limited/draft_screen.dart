@@ -15,6 +15,9 @@ import 'limited_builder.dart';
 import 'limited_common.dart';
 import 'sealed_screen.dart';
 
+/// Sets feitos para commander draft (boosters de 20 cartas).
+const commanderDraftSets = {'CMR', 'CLB', 'CMM', 'MBC'};
+
 /// Anfitrião: escolher as regras do draft e começar. Os lugares vazios
 /// (até [seats]) ficam com bots.
 Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame game) async {
@@ -24,7 +27,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
   final humans = game.players.values.where((p) => p.connected).toList();
   db.BoosterSetInfo? set;
   int? cubeId;
-  var cube = false;
+  var mode = 'set'; // set, commander, cube
   var packs = 3;
   var picks = 1;
   var timer = 0;
@@ -35,6 +38,8 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
     useSafeArea: true,
     builder: (ctx) => StatefulBuilder(builder: (ctx, set_) {
       final theme = Theme.of(ctx);
+      final cube = mode == 'cube';
+      final commander = mode == 'commander';
       final ready = cube ? cubeId != null : set != null;
       Widget stepper(String label, String value, VoidCallback? minus, VoidCallback? plus) => ListTile(
             contentPadding: EdgeInsets.zero,
@@ -55,17 +60,26 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
             const SizedBox(height: 4),
             Text(
               'Cada um abre um booster, tira ${picks == 1 ? 'uma carta' : 'duas cartas'} e passa o resto: '
-              'à esquerda, depois à direita, depois à esquerda. No fim, cada um monta um deck de 40.',
+              'à esquerda, depois à direita, depois à esquerda. '
+              '${commander ? 'No fim, cada um escolhe um comandante entre as lendas que tirou (ou The '
+                  'Prismatic Piper) e monta um deck de 60, sem singleton, para jogar com vida 40.' : 'No fim, cada um monta um deck de 40.'}',
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            SegmentedButton<bool>(
+            SegmentedButton<String>(
               segments: const [
-                ButtonSegment(value: false, label: Text('Set')),
-                ButtonSegment(value: true, label: Text('Cubo')),
+                ButtonSegment(value: 'set', label: Text('Set')),
+                ButtonSegment(value: 'commander', label: Text('Commander')),
+                ButtonSegment(value: 'cube', label: Text('Cubo')),
               ],
-              selected: {cube},
-              onSelectionChanged: (v) => set_(() => cube = v.first),
+              selected: {mode},
+              onSelectionChanged: (v) => set_(() {
+                if (v.first == mode) return;
+                mode = v.first;
+                set = null;
+                // Commander Legends e companhia: escolhem-se 2 de cada vez.
+                picks = mode == 'commander' ? 2 : 1;
+              }),
             ),
             const SizedBox(height: 8),
             if (!cube)
@@ -80,7 +94,14 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                       : Text('${set!.code} · ${set!.year} · ${set!.size} cartas por booster'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
-                    final s = await showSetPicker(ctx, sets);
+                    final s = await showSetPicker(
+                        ctx,
+                        commander
+                            ? [
+                                for (final s in sets)
+                                  if (commanderDraftSets.contains(s.code)) s
+                              ]
+                            : sets);
                     if (s != null) set_(() => set = s);
                   },
                 ),
@@ -135,7 +156,8 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                           packs: packs,
                           picks: picks,
                           timer: timer,
-                          seats: seats);
+                          seats: seats,
+                          commander: commander);
                     },
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Começar draft'),
@@ -153,7 +175,8 @@ Future<void> _start(WidgetRef ref, NetworkGame game,
     required int packs,
     required int picks,
     required int timer,
-    required int seats}) async {
+    required int seats,
+    bool commander = false}) async {
   final humans = game.players.values.where((p) => p.connected).toList();
   // Bots espalhados entre os jogadores, para não ficarem todos seguidos.
   final order = <({int? seat, String name})>[];
@@ -185,7 +208,14 @@ Future<void> _start(WidgetRef ref, NetworkGame game,
     title = 'Cubo ${deck.name}';
   }
   game.startDraft(
-    DraftConfig(title: title, setCode: set?.code, packs: packs, picks: picks, timer: timer, seats: order),
+    DraftConfig(
+        title: title,
+        setCode: set?.code,
+        packs: packs,
+        picks: picks,
+        timer: timer,
+        commander: commander,
+        seats: order),
     generated,
   );
 }
@@ -281,6 +311,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
       builder: (_) => LimitedBuilderScreen(
         pool: pool,
         title: 'Draft · ${c.config.title}',
+        commander: c.config.commander,
         // Depois de guardar, volta à sala para escolher o deck e jogar.
         onSaved: (ctx, _) => Navigator.of(ctx).pop(),
       ),

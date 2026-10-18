@@ -446,8 +446,13 @@ class NetworkGame extends ChangeNotifier {
       packs: packs,
       colorsOf: (o) => repo.get(o)?.colorMask ?? 0,
     )..start();
-    // Os decks de draft jogam-se em Limited (40 cartas, vida 20).
-    configure(format: 'limited', life: 20);
+    // Os decks de draft jogam-se em Limited (40 cartas, vida 20), ou em
+    // Commander draft (60 cartas com comandante, vida 40).
+    if (config.commander) {
+      configure(format: 'commanderdraft', life: 40);
+    } else {
+      configure(format: 'limited', life: 20);
+    }
     link.submit(LobbyEv.draftStart, config.toJson());
   }
 
