@@ -7,6 +7,8 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
+**Versão atual: 1.0.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+
 ## O que é
 
 O EDHere é uma app Flutter (Android; iOS preparado) que funciona como **mesa de jogo, não como motor de regras**: gere zonas, vida, contadores, turnos e tokens, e as regras ficam a cargo dos jogadores, como numa mesa física. O foco é **Commander/EDH**, mas a mesa serve qualquer formato.
@@ -22,15 +24,18 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - Versões alternativas das cartas: escolher a arte por entrada de deck ou como preferida em todo o lado; só se descarrega a imagem escolhida.
 - As minhas cartas: coleção indicativa (importação do ManaBox, Moxfield, Deckbox, Dragon Shield ou texto), filtro "só as que tenho" ao construir decks e, em cada carta, em que decks está.
 - Pacotes de imagens à escolha (Commander, Modern, tokens…), em resolução pequena ou normal.
+- Backup num ficheiro: decks, coleção, histórico e versões escolhidas, guardado onde quiseres (Google Drive, PC, cartão) ou enviado a alguém; ao importar, junta ao que já existe sem duplicar. Também dá para exportar um só deck para o partilhar.
 
 **Boosters (sealed, draft e JumpStart)**
 - Draft na rede local: o anfitrião escolhe o set (ou um cubo), quantos boosters, tirar 1 ou 2 cartas de cada vez (Pick-Two), tempo por escolha e quantos lugares; os lugares vazios ficam com bots. Os packs passam à esquerda, à direita e à esquerda, e cada jogador só vê o seu. No fim cada um monta o deck de 40 e joga na mesma sala.
+- Commander draft (Commander Legends, Baldur's Gate, Commander Masters, Mystery Booster Commander): Pick-Two, comandante escolhido entre as lendas tiradas (ou The Prismatic Piper / Faceless One), deck de 60 sem singleton, vida 40.
 - Sealed: abrir boosters de qualquer um dos ~170 sets com boosters (de 1993 até hoje), com a composição real de cada set, ou packs de um cubo próprio; montar um deck de 40 com a pool (o resto fica no sideboard).
 - JumpStart: escolher 2 de 570 pacotes temáticos vendo só o tema e a carta de destaque; os dois juntos fazem o deck de 40.
-- Os dados vêm dentro da app (funcionam sem internet); só as imagens se descarregam.
+- Montar o deck com a pool: filtros por cor, ordenar por cor, custo ou tipo, terrenos sugeridos pelos símbolos de mana. O que fica a meio é guardado ("Decks por montar") e continua-se depois.
+- Os dados vêm dentro da app (funcionam sem internet); só as imagens se descarregam, e dá para descarregar as de um set antes de jogar sem rede.
 
 **Mesa**
-- Goldfish, 1 contra 1 no mesmo dispositivo (mesa partilhada frente a frente, mãos abertas para ensinar).
+- Goldfish, 1 contra 1 no mesmo dispositivo (mesa partilhada frente a frente, mãos abertas para ensinar). Grava-se sozinho: ao sair pergunta se fica gravado e continua-se depois, mesmo que a app feche.
 - Tap, contadores editáveis (+1/+1, lealdade, modificadores de poder/resistência), habilidades dadas por efeitos, tokens, anexar, mudar controlo, virar face, alvos em cartas ou jogadores.
 - Grimório: comprar, baralhar, scry, surveil, mill, procurar, revelar, mulligan London.
 - Vida, dano de comandante, veneno, energia, monarca, iniciativa, taxa de comandante automática.
@@ -39,7 +44,7 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 **Multijogador local**
 - Um jogador cria a sala na rede Wi-Fi ou num hotspot criado pela app; os outros entram por descoberta automática (mDNS), QR code ou IP.
 - A mão e o grimório de cada jogador nunca saem do telemóvel dele.
-- Religação automática a meio do jogo.
+- Religação automática a meio do jogo; se a app fechar, volta-se ao jogo com a mão e o grimório como estavam.
 - Imagens em falta (por exemplo, versões alternativas de outro jogador) podem vir da internet ou do próprio dispositivo desse jogador, pela rede local.
 
 **Definições**
@@ -53,8 +58,8 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 | `packages/mesa_protocol` | Envelope dos eventos e enquadramento TCP |
 | `packages/card_db` | Importação do Scryfall, pesquisa, decks, validação, listas em texto, versões (SQLite) |
 | `lib/net` | Sala: anfitrião TCP, cliente com religação, mensagens diretas, mDNS, hotspot, QR |
-| `lib/data` | Descargas, imagens, versões, definições, providers (Riverpod) |
-| `lib/game` | `GameController` (núcleo ↔ UI) e `NetworkGame` (lobby e jogo em rede) |
+| `lib/data` | Descargas, imagens, versões, boosters, decks por montar, definições, providers (Riverpod) |
+| `lib/game` | `GameController` (núcleo ↔ UI), `NetworkGame` (lobby e jogo em rede), draft, jogos gravados |
 | `lib/ui` | Ecrãs |
 | `android/.../MainActivity.kt` | Hotspot local (`LocalOnlyHotspot`) por platform channel |
 | `tool/` | Geradores (glifos da fonte Mana, ícones da app, dados de boosters) |
@@ -71,6 +76,18 @@ flutter pub get
 flutter run                                   # num dispositivo ou emulador
 flutter build apk --release --split-per-abi   # APKs por arquitetura
 ```
+
+## Versões
+
+O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de build depois do `+`, e em `appVersion`, `lib/net/discovery.dart`). Na sala, quem tiver uma versão diferente da do anfitrião vê-a indicada ao entrar.
+
+| Versão | O que trouxe |
+| --- | --- |
+| 1.0.0 | Primeira versão estável: tudo o que está acima |
+| 0.13 | Segunda ronda de QA: decks por montar, imagens por set, melhorias no sealed, draft e JumpStart |
+| 0.12 | Backup em ficheiro; gravar jogo solo |
+| 0.9–0.11 | Sealed, cubo, JumpStart, draft em rede, Commander draft, símbolos dos sets |
+| 0.1–0.8 | Base de cartas, decks, mesa, rede local, coleção, tablet, primeira ronda de QA |
 
 ## Testes
 
