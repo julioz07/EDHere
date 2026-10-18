@@ -39,5 +39,20 @@ void main() {
     );
     expect(ctrl.state.players[0]!.handCount, 7);
     expect(ctrl.zones(0).hand.length, 7);
+
+    // Gravar e continuar depois: o mesmo estado, a mesma mão e o jogo segue.
+    ctrl.mulligans[0] = 1;
+    ctrl.openingDone.add(0);
+    ctrl.passTurn();
+    final json = jsonDecode(jsonEncode(ctrl.saveJson())) as Map<String, dynamic>;
+    final back = GameController.restore(repo: repo, json: json, decks: {0: deck});
+    expect(jsonEncode(back.state.toJson()), jsonEncode(ctrl.state.toJson()));
+    expect(back.zones(0).hand.map((c) => c.oracleId), ctrl.zones(0).hand.map((c) => c.oracleId));
+    expect(back.zones(0).library.map((c) => c.oracleId), ctrl.zones(0).library.map((c) => c.oracleId));
+    expect(back.mulligans[0], 1);
+    expect(back.openingDone, {0});
+    expect(back.state.log.length, ctrl.state.log.length);
+    back.draw();
+    expect(back.zones(0).hand.length, ctrl.zones(0).hand.length + 1);
   });
 }

@@ -7,6 +7,8 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.core.content.FileProvider
+import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -30,15 +32,27 @@ class MainActivity : FlutterActivity() {
         // Partilhar texto (listas de decks) pela folha de partilha do Android.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/share")
             .setMethodCallHandler { call, result ->
-                if (call.method != "text") {
-                    result.notImplemented()
-                    return@setMethodCallHandler
+                val send = when (call.method) {
+                    "text" -> Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, call.argument<String>("text") ?: "")
+                    }
+                    // Ficheiros (backups) da cache da app, por FileProvider.
+                    "file" -> {
+                        val file = File(call.argument<String>("path") ?: "")
+                        val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = call.argument<String>("mime") ?: "application/octet-stream"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                    }
+                    else -> {
+                        result.notImplemented()
+                        return@setMethodCallHandler
+                    }
                 }
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, call.argument<String>("text") ?: "")
-                    call.argument<String>("subject")?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
-                }
+                call.argument<String>("subject")?.let { send.putExtra(Intent.EXTRA_SUBJECT, it) }
                 startActivity(Intent.createChooser(send, call.argument<String>("subject")))
                 result.success(null)
             }

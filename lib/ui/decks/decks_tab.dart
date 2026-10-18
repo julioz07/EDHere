@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/material.dart' as m show Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../settings/backup_actions.dart';
 import '../../data/providers.dart';
 import '../cards/cards_tab.dart';
 import '../widgets/card_view.dart';
@@ -60,6 +61,15 @@ class DecksTab extends ConsumerWidget {
                         Navigator.of(context).push(MaterialPageRoute<void>(
                           builder: (_) => const DeckImportScreen(),
                         ));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.file_open_outlined),
+                      title: const Text('Importar ficheiro do EDHere'),
+                      subtitle: const Text('Um deck ou backup que exportaste ou te enviaram'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        importBackupFile(context, ref);
                       },
                     ),
                   ]),

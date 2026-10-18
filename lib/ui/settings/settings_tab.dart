@@ -10,6 +10,7 @@ import '../about_screen.dart';
 import '../data/data_tab.dart';
 import '../stats/stats_screen.dart';
 import '../widgets/responsive.dart';
+import 'backup_actions.dart';
 
 /// Definições: aparência, mesa, dados offline e sobre.
 class SettingsTab extends ConsumerWidget {
@@ -162,6 +163,18 @@ class SettingsTab extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () =>
               Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
+        ),
+        ListTile(
+          leading: const Icon(Icons.upload_file),
+          title: const Text('Exportar backup'),
+          subtitle: const Text('Decks, as minhas cartas e histórico num ficheiro (Drive, PC…)'),
+          onTap: () => exportBackup(context, ref),
+        ),
+        ListTile(
+          leading: const Icon(Icons.download_outlined),
+          title: const Text('Importar backup'),
+          subtitle: const Text('Junta o que está no ficheiro ao que já tens'),
+          onTap: () => importBackupFile(context, ref),
         ),
         section('Sobre', Icons.info_outline),
         ListTile(

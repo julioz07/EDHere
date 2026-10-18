@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../game/resume_store.dart';
+import '../game/solo_save.dart';
 import 'app_paths.dart';
 import 'card_data_service.dart';
 import 'image_service.dart';
@@ -46,6 +47,12 @@ class DeckList extends ChangeNotifier {
     decks = store.listDecks();
     notifyListeners();
   }
+
+  /// Volta a ler da base (depois de importar um backup).
+  void reload() {
+    decks = store.listDecks();
+    notifyListeners();
+  }
 }
 
 /// Nome do jogador, guardado entre sessões.
@@ -54,3 +61,7 @@ final playerNameProvider =
 
 /// Jogo em rede a que se pode voltar (se a app fechou a meio).
 final resumeProvider = ChangeNotifierProvider<ResumeStore>((ref) => ResumeStore(ref.watch(prefsProvider)));
+
+/// Jogo solo gravado para continuar depois.
+final soloSaveProvider = ChangeNotifierProvider<SoloSaveStore>(
+    (ref) => SoloSaveStore('${ref.watch(pathsProvider).root}/solo_game.json'));

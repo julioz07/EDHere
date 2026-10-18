@@ -91,6 +91,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             ]),
             const SizedBox(height: 24),
             const ResumeCard(),
+            const SoloResumeCard(),
             TextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,

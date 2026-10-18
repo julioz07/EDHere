@@ -14,10 +14,13 @@ import 'table_sheets.dart';
 /// lado. Com [openHands] as mãos ficam à vista (para ensinar); senão ficam
 /// tapadas até o dono tocar em "Ver".
 class TabletTableScreen extends ConsumerStatefulWidget {
-  const TabletTableScreen({super.key, required this.ctrl, this.openHands = false});
+  const TabletTableScreen({super.key, required this.ctrl, this.openHands = false, this.confirmLeave});
 
   final GameController ctrl;
   final bool openHands;
+
+  /// Troca a pergunta "Sair da mesa?" (o playtest pergunta se grava).
+  final Future<bool> Function(BuildContext context)? confirmLeave;
 
   @override
   ConsumerState<TabletTableScreen> createState() => _TabletTableScreenState();
@@ -48,6 +51,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
   }
 
   Future<bool> _confirmLeave() async {
+    if (widget.confirmLeave case final ask?) return ask(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

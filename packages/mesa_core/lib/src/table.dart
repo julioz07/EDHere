@@ -885,6 +885,30 @@ class Table {
   }
 }
 
+extension TableSave on Table {
+  /// A mesa toda (estado público, registo e zonas ocultas dos lugares
+  /// locais), para gravar um jogo solo e continuar depois. O "desfazer" não
+  /// passa para trás deste ponto.
+  Map<String, dynamic> saveAll() => {
+        'state': state.toJson(),
+        'log': [
+          for (final e in state.log) [e.seq, e.actor, e.type, e.text],
+        ],
+        'private': {for (final s in localSeats) '$s': exportPrivate(s)},
+      };
+
+  /// Repõe o que [saveAll] gravou numa mesa nova.
+  void restoreAll(Map<String, dynamic> j) {
+    state = GameState.fromJson((j['state'] as Map).cast<String, dynamic>());
+    for (final e in (j['log'] as List? ?? const []).cast<List>()) {
+      state.log.add(LogEntry((e[0] as num).toInt(), (e[1] as num).toInt(), e[2] as String, e[3] as String));
+    }
+    for (final MapEntry(:key, :value) in (j['private'] as Map? ?? const {}).entries) {
+      importPrivate(int.parse(key as String), (value as Map).cast<String, dynamic>());
+    }
+  }
+}
+
 class _Snapshot {
   _Snapshot(this.seq, this.actor, this.type, this.state, this.private);
   final int seq;

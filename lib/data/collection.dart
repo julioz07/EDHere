@@ -17,7 +17,7 @@ class Collection extends ChangeNotifier {
 
   void set(String oracleId, int qty) {
     store.setOwned(oracleId, qty);
-    _reload();
+    reload();
   }
 
   void change(String oracleId, int delta) => set(oracleId, ownedOf(oracleId) + delta);
@@ -26,10 +26,11 @@ class Collection extends ChangeNotifier {
   /// quantidade (para "tenho este deck físico").
   void addAll(Map<String, int> cards, {bool atLeast = false}) {
     store.addOwned(cards, atLeast: atLeast);
-    _reload();
+    reload();
   }
 
-  void _reload() {
+  /// Volta a ler da base (depois de importar um backup).
+  void reload() {
     _owned = store.collection();
     notifyListeners();
   }

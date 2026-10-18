@@ -36,7 +36,8 @@ const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
 /// A mesa: campo do jogador em vista, zonas, mão e barra de turno.
 /// Serve o playtest e o jogo em rede.
 class TableScreen extends ConsumerStatefulWidget {
-  const TableScreen({super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame});
+  const TableScreen(
+      {super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame, this.confirmLeave});
 
   final GameController ctrl;
   final String? title;
@@ -49,6 +50,9 @@ class TableScreen extends ConsumerStatefulWidget {
 
   /// Só o anfitrião: volta todos ao lobby para outra partida.
   final VoidCallback? onNewGame;
+
+  /// Troca a pergunta "Sair da mesa?" (o playtest pergunta se grava).
+  final Future<bool> Function(BuildContext context)? confirmLeave;
 
   @override
   ConsumerState<TableScreen> createState() => _TableScreenState();
@@ -129,10 +133,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final s = ctrl.state;
     if (!s.started || s.over || s.turn > 1) return;
     for (final seat in ctrl.mySeats) {
-      if (_mulliganAsked.contains(seat)) continue;
+      if (_mulliganAsked.contains(seat) || ctrl.openingDone.contains(seat)) continue;
       final hand = ctrl.zones(seat).hand;
       if (hand.length < 7 || (ctrl.mulligans[seat] ?? 0) > 0) continue;
       _mulliganAsked.add(seat);
+      ctrl.openingDone.add(seat);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _askMulligan(seat);
       });
@@ -207,6 +212,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   }
 
   Future<bool> _confirmLeave() async {
+    if (widget.confirmLeave case final ask?) return ask(context);
     if (!ref.read(settingsProvider).confirmLeave) return true;
     final ok = await showDialog<bool>(
       context: context,

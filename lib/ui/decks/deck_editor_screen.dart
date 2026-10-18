@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../settings/backup_actions.dart';
 import '../../app/share.dart';
 import '../../app/theme.dart';
 import '../../data/bracket.dart';
@@ -342,6 +343,15 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             title: const Text('Copiar lista (MTGO)'),
             subtitle: const Text('Deck, linha em branco, sideboard'),
             onTap: () => _copy(ctx, exportDeckText(_deck, cards, style: ExportStyle.mtgo)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.insert_drive_file_outlined),
+            title: const Text('Exportar ficheiro do EDHere…'),
+            subtitle: const Text('Com versões das cartas e notas; guardar ou enviar a alguém'),
+            onTap: () {
+              Navigator.pop(ctx);
+              exportBackup(context, ref, deckIds: [_deck.id!], name: _deck.name);
+            },
           ),
           ListTile(
             leading: const Icon(Icons.share_outlined),

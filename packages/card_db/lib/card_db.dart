@@ -2,6 +2,7 @@
 /// decks, validação por formato e listas em texto.
 library;
 
+export 'src/backup.dart';
 export 'src/card.dart';
 export 'src/boosters.dart';
 export 'src/card_repository.dart';

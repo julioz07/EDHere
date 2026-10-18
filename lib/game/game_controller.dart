@@ -62,6 +62,49 @@ class GameController extends ChangeNotifier {
     return c;
   }
 
+  /// Volta a um jogo solo gravado com [saveJson]. [decks] são os decks de
+  /// cada lugar (para o histórico e os tokens), se ainda existirem.
+  factory GameController.restore({
+    required db.CardRepository repo,
+    required Map<String, dynamic> json,
+    required Map<int, db.Deck> decks,
+    db.Card Function(db.Card base, String? printId)? resolvePrint,
+    String? Function(String oracleId, String? deckPrintId)? effectivePrint,
+  }) {
+    final seats = {for (final s in (json['seats'] as List).cast<num>()) s.toInt()};
+    final table = Table(format: (json['table']['state'] as Map)['format'] as String, localSeats: seats)
+      ..restoreAll((json['table'] as Map).cast<String, dynamic>());
+    final c = GameController(
+      table: table,
+      repo: repo,
+      mySeats: seats,
+      viewSeat: (json['view'] as num?)?.toInt() ?? seats.first,
+      decks: decks,
+    )
+      ..resolvePrint = resolvePrint
+      ..effectivePrint = effectivePrint
+      ..autoDraw = json['auto'] == true
+      ..elapsedBefore = Duration(seconds: (json['elapsed'] as num?)?.toInt() ?? 0)
+      .._seq = (json['seq'] as num?)?.toInt() ?? table.state.seq;
+    for (final MapEntry(:key, :value) in (json['mull'] as Map? ?? const {}).entries) {
+      c.mulligans[int.parse(key as String)] = (value as num).toInt();
+    }
+    c.openingDone.addAll((json['opening'] as List? ?? const []).cast<num>().map((n) => n.toInt()));
+    return c;
+  }
+
+  /// Tudo o que é preciso para continuar este jogo mais tarde (só local).
+  Map<String, dynamic> saveJson() => {
+        'table': table.saveAll(),
+        'seq': _seq,
+        'seats': mySeats.toList(),
+        'view': viewSeat,
+        'auto': autoDraw,
+        'mull': {for (final e in mulligans.entries) '${e.key}': e.value},
+        'opening': openingDone.toList(),
+        'elapsed': (elapsedBefore + DateTime.now().difference(startedAt)).inSeconds,
+      };
+
   final Table table;
   final db.CardRepository repo;
 
@@ -71,6 +114,12 @@ class GameController extends ChangeNotifier {
   /// Decks dos lugares deste dispositivo (para o histórico).
   final Map<int, db.Deck> decks;
   final DateTime startedAt = DateTime.now();
+
+  /// Tempo jogado antes de gravar (num jogo retomado).
+  Duration elapsedBefore = Duration.zero;
+
+  /// Lugares que já decidiram a mão inicial (manter ou mulligan).
+  final Set<int> openingDone = {};
 
   /// Registo da partida para o histórico local.
   db.GameRecord record({int? winnerSeat}) {
@@ -95,7 +144,7 @@ class GameController extends ChangeNotifier {
       myDeckId: (winnerLocal ? decks[winnerSeat] : decks[mySeats.first])?.id,
       myWon: winnerLocal && mySeats.length == 1,
       turns: s.turn,
-      duration: DateTime.now().difference(startedAt),
+      duration: elapsedBefore + DateTime.now().difference(startedAt),
       network: isNetwork,
       playedAt: DateTime.now(),
     );

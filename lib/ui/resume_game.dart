@@ -6,6 +6,7 @@ import '../game/resume_store.dart';
 import '../net/room_client.dart';
 import '../room/room_session.dart';
 import 'lobby_screen.dart';
+import 'playtest/playtest_screen.dart';
 
 /// Volta ao jogo em rede guardado: liga-se com o mesmo token (o anfitrião
 /// devolve o mesmo lugar) e repõe a mão e o grimório.
@@ -109,4 +110,54 @@ Future<void> offerResume(BuildContext context, WidgetRef ref) async {
     ),
   );
   if (go == true && context.mounted) await resumeGame(context, ref, info);
+}
+
+/// Cartão "Continuar jogo" de um goldfish ou 1 contra 1 gravado.
+class SoloResumeCard extends ConsumerWidget {
+  const SoloResumeCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final save = ref.watch(soloSaveProvider).save;
+    if (save == null || ref.watch(cardRepoProvider) == null) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    final d = save.savedAt;
+    final when = '${d.day}/${d.month} às ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
+    return Card(
+      color: scheme.secondaryContainer,
+      margin: const EdgeInsets.only(bottom: 20),
+      child: ListTile(
+        leading: const Icon(Icons.bookmark_rounded),
+        title: Text(save.title),
+        subtitle: Text('Jogo gravado · turno ${save.turn} · $when'),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton(
+            tooltip: 'Apagar',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Apagar o jogo gravado?'),
+                  content: Text('${save.title}, turno ${save.turn}.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
+                  ],
+                ),
+              );
+              if (ok == true) ref.read(soloSaveProvider).clear();
+            },
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => PlaytestScreen.resume(save),
+            )),
+            child: const Text('Continuar'),
+          ),
+        ]),
+      ),
+    );
+  }
 }

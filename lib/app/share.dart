@@ -12,3 +12,16 @@ Future<bool> shareText(String text, {String? subject}) async {
     return false;
   }
 }
+
+/// Envia um ficheiro pela folha de partilha (WhatsApp, email, Drive…).
+Future<bool> shareFile(String path, {String mime = 'application/json', String? subject}) async {
+  try {
+    await const MethodChannel('edhere/share')
+        .invokeMethod<void>('file', {'path': path, 'mime': mime, 'subject': subject});
+    return true;
+  } on PlatformException {
+    return false;
+  } on MissingPluginException {
+    return false;
+  }
+}
