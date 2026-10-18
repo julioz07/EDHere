@@ -1,3 +1,4 @@
+import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -178,13 +179,14 @@ class _Packs extends ConsumerWidget {
     ref.watch(decksProvider);
     final installed = store.installedPacks(size);
     final deckIds = store.allDeckOracleIds();
+    final mine = deckCardsWithPrints(ref);
     final job = images.job;
     final theme = Theme.of(context);
 
     return Column(children: [
       for (final pack in ImagePack.all)
         Builder(builder: (context) {
-          final refs = images.refsFor(pack, repo, deckIds);
+          final refs = images.refsFor(pack, repo, deckIds, mine: mine);
           final st = images.status(refs, size);
           final running = job != null && job.pack.id == pack.id && job.size == size;
           final complete = st.missing == 0 && st.total > 0;
@@ -360,4 +362,21 @@ class _VersionsPack extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// As cartas de todos os decks, cada uma com a versão escolhida no deck (ou
+/// a preferida): são estas as imagens que aparecem na app.
+List<db.Card> deckCardsWithPrints(WidgetRef ref) {
+  final repo = ref.read(cardRepoProvider);
+  if (repo == null) return const [];
+  final prints = ref.read(printsProvider);
+  final seen = <String>{};
+  return [
+    for (final d in ref.read(decksProvider).decks)
+      for (final e in d.entries)
+        if (repo.get(e.oracleId) case final c?)
+          if (prints.resolve(c, printId: prints.effectivePrint(e.oracleId, e.printId)) case final shown
+              when seen.add('${shown.oracleId}|${shown.printId}'))
+            shown,
+  ];
 }

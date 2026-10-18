@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../data/settings.dart';
 import '../../net/discovery.dart';
 import '../about_screen.dart';
+import '../onboarding_screen.dart';
 import '../data/data_tab.dart';
 import '../stats/stats_screen.dart';
 import '../widgets/responsive.dart';
@@ -177,6 +178,13 @@ class SettingsTab extends ConsumerWidget {
           onTap: () => importBackupFile(context, ref),
         ),
         section('Sobre', Icons.info_outline),
+        ListTile(
+          leading: const Icon(Icons.slideshow_outlined),
+          title: const Text('Ver a introdução'),
+          subtitle: const Text('O que a app faz e como funciona'),
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute<void>(builder: (_) => const OnboardingScreen(replay: true))),
+        ),
         ListTile(
           leading: SvgPicture.asset(Brand.symbol(theme.brightness), width: 28, height: 28),
           title: const Text('Sobre o EDHere'),

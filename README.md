@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.1.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.2.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -53,6 +53,9 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - Religação automática a meio do jogo; se a app fechar, volta-se ao jogo com a mão e o grimório como estavam.
 - Imagens em falta (por exemplo, versões alternativas de outro jogador) podem vir da internet ou do próprio dispositivo desse jogador, pela rede local.
 
+**Primeira abertura**
+- Introdução em 4 ecrãs: o que é a app, decks e boosters, jogar juntos e aprender, e porque é preciso descarregar a base de cartas. O último ecrã arranca o download.
+
 **Definições**
 - Tema claro, escuro ou do sistema; fundo da área de jogo (5 incluídos ou da galeria); tamanho das cartas; gestão dos dados offline.
 
@@ -89,6 +92,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.2.0 | Introdução na primeira abertura (4 ecrãs com prints da app) que acaba no download da base de cartas; "Ver a introdução" nas Definições. O pacote "As minhas cartas" e a importação de backups descarregam as versões escolhidas nos decks |
 | 1.1.1 | Tutorial: bloquear, responder na vez dos outros e cadeias; mulligan de treino; cartas a tocar destacadas; correções de QA. Bracket deteta turnos extra e destruição de terrenos em massa |
 | 1.1.0 | Aprender a jogar Commander: tutorial guiado com duas versões, adversários simulados e glossário; Vehicles e Spacecraft lendários como comandantes |
 | 1.0.3 | Espaço entre os cartões na lista de decks do Goldfish e nos avisos da sala |

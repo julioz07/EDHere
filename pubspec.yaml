@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.1+22
+version: 1.2.0+23
 
 environment:
   sdk: ^3.5.4
@@ -93,6 +93,7 @@ flutter:
     - assets/licenses/keyrune_LICENSE.md
     - assets/boosters/
     - assets/logo/edhere-logo-svg/
+    - assets/onboarding/
     - assets/Fundos para area de jogo/edhere-fundos/01-eter-oficial.webp
     - assets/Fundos para area de jogo/edhere-fundos/03-feltro-azul.webp
     - assets/Fundos para area de jogo/edhere-fundos/04-ardosia.webp

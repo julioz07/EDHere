@@ -95,13 +95,21 @@ class ImageService extends ChangeNotifier {
 
   /// Imagens de um pacote. As listas dos pacotes por formato só mudam
   /// quando a base de cartas muda, por isso ficam em cache.
-  List<ImageRef> refsFor(ImagePack pack, CardRepository repo, Set<String> deckIds) {
+  /// [mine]: as cartas dos decks já com a versão escolhida em cada deck (o
+  /// pacote "As minhas cartas" descarrega essas, não as versões por defeito).
+  List<ImageRef> refsFor(ImagePack pack, CardRepository repo, Set<String> deckIds, {List<Card>? mine}) {
     if (!identical(repo, _refRepo)) {
       _refCache.clear();
       _refRepo = repo;
     }
     if (pack.where == null) {
-      return repo.getMany(deckIds).values.expand(ImageRef.allOf).toList();
+      final cards = mine ?? repo.getMany(deckIds).values.toList();
+      final seen = <String>{};
+      return [
+        for (final c in cards)
+          for (final r in ImageRef.allOf(c))
+            if (seen.add(r.key)) r,
+      ];
     }
     return _refCache.putIfAbsent(pack.id, () => repo.imageRefs(pack.where!));
   }

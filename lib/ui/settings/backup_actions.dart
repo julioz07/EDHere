@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import '../../app/share.dart';
 import '../../data/collection.dart';
 import '../../data/providers.dart';
+import '../data/data_tab.dart';
 
 /// Exportar um backup (todos os decks, ou só [deckIds]) para um ficheiro:
 /// guardar onde se quiser (Drive, Transferências…) ou enviar a alguém.
@@ -192,6 +193,10 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
   );
   ref.read(decksProvider).reload();
   ref.read(collectionProvider).reload();
+  // Imagens pequenas das cartas importadas (com as versões dos decks), em
+  // silêncio, se houver rede.
+  final shown = deckCardsWithPrints(ref);
+  ref.read(imagesProvider).ensure(shown.take(400));
   if (!context.mounted) return;
   final lines = [
     if (decks)

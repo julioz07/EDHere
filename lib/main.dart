@@ -10,7 +10,7 @@ import 'app/theme.dart';
 import 'data/app_paths.dart';
 import 'data/providers.dart';
 import 'data/settings.dart';
-import 'ui/shell.dart';
+import 'ui/onboarding_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +44,7 @@ class EdhereApp extends ConsumerWidget {
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
       themeMode: settings.themeMode,
-      home: const AppShell(),
+      home: const OnboardingGate(),
     );
   }
 }

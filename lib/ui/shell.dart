@@ -13,7 +13,10 @@ import 'widgets/responsive.dart';
 
 /// Estrutura principal: Cartas, Decks, Jogar e Definições.
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({super.key});
+  const AppShell({super.key, this.startDownload = false});
+
+  /// Vindo da introdução: começa logo a descarregar a base de cartas.
+  final bool startDownload;
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -31,6 +34,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.initState();
     // Verifica novidades no máximo uma vez por dia, se houver rede.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.startDownload && !ref.read(cardDataProvider).hasData) {
+        ref.read(cardDataProvider).update(includeRulings: true);
+        return;
+      }
       final store = ref.read(deckStoreProvider);
       final last = int.tryParse(store.setting('last_bulk_check') ?? '') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
