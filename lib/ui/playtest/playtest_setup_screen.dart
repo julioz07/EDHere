@@ -23,6 +23,7 @@ class GoldfishSetupScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           for (final d in decks)
             Card(
+              margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(d.name),
                 subtitle: Text('${GameFormat.byId(d.format).label} · ${d.playableCount} cartas'),

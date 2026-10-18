@@ -316,9 +316,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 child: ListView(padding: const EdgeInsets.all(16), children: [
               if (status == LinkStatus.reconnecting)
                 const Card(
+                    margin: EdgeInsets.only(bottom: 8),
                     child: ListTile(leading: CircularProgressIndicator(), title: Text('A voltar a ligar…'))),
               if (status == LinkStatus.closed && !_closing)
-                Card(child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
+                Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
