@@ -167,6 +167,13 @@ class GameController extends ChangeNotifier {
   /// Para a versão em rede: envia a intenção em vez de a aplicar.
   void Function(int actor, Intent intent)? networkSend;
 
+  /// Jogo com guião (tutorial): a mesa não aplica as preferências de compra
+  /// automática nem pergunta pelo mulligan.
+  bool scripted = false;
+
+  /// Decide se uma ação pode acontecer (o tutorial só deixa o passo pedido).
+  bool Function(int seat, Intent intent)? guard;
+
   GameState get state => table.state;
 
   /// O lugar que age: no hot-seat é o que está no ecrã.
@@ -182,6 +189,7 @@ class GameController extends ChangeNotifier {
       send(seat, i);
       return;
     }
+    if (guard case final g? when !g(seat, i)) return;
     // Local: aplica já, com o mesmo caminho por JSON da rede.
     final p = jsonDecode(jsonEncode(i.payload)) as Map<String, dynamic>;
     table.apply(++_seq, i.type, seat, p);

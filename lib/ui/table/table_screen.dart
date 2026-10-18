@@ -74,7 +74,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     super.initState();
     final settings = ref.read(settingsProvider);
     if (settings.keepScreenOn) WakelockPlus.enable();
-    ctrl.autoDraw = settings.autoDraw;
+    if (!ctrl.scripted) ctrl.autoDraw = settings.autoDraw;
     ctrl.addListener(_onChange);
     WidgetsBinding.instance.addPostFrameCallback((_) => _onChange());
   }
@@ -131,7 +131,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   /// No início do jogo, cada mão inicial pergunta "manter ou mulligan".
   void _maybeAskMulligan() {
     final s = ctrl.state;
-    if (!s.started || s.over || s.turn > 1) return;
+    if (!s.started || s.over || s.turn > 1 || ctrl.scripted) return;
     for (final seat in ctrl.mySeats) {
       if (_mulliganAsked.contains(seat) || ctrl.openingDone.contains(seat)) continue;
       final hand = ctrl.zones(seat).hand;

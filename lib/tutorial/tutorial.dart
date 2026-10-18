@@ -1,0 +1,261 @@
+import 'package:mesa_core/mesa_core.dart';
+
+/// Um tutorial é uma lista de capítulos. Cada capítulo tem páginas para ler
+/// e, quase sempre, um bocado de jogo guiado: os passos dizem o que fazer,
+/// a mesa só deixa fazer isso e os adversários jogam por guião.
+class Chapter {
+  const Chapter({
+    required this.id,
+    required this.title,
+    required this.summary,
+    this.pages = const [],
+    this.setup,
+    this.steps = const [],
+    this.minutes = 3,
+  });
+
+  final String id;
+  final String title;
+
+  /// Uma frase para a lista de capítulos.
+  final String summary;
+  final List<TPage> pages;
+
+  /// A mesa no início da parte jogada (null = só páginas).
+  final TSetup? setup;
+  final List<TStep> steps;
+  final int minutes;
+
+  bool get hasGame => setup != null && steps.isNotEmpty;
+}
+
+/// Uma página de explicação, com cartas de exemplo opcionais.
+class TPage {
+  const TPage(this.title, this.body, {this.cards = const []});
+  final String title;
+
+  /// Texto; **assim** fica a negrito. Linhas começadas por "• " são listas.
+  final String body;
+  final List<TCard> cards;
+}
+
+/// Uma carta de exemplo numa página: [ok] mostra um visto (pode) ou uma cruz
+/// (não pode); null não mostra nada.
+class TCard {
+  const TCard(this.name, {this.caption, this.ok});
+  final String name;
+  final String? caption;
+  final bool? ok;
+}
+
+/// Um lugar à mesa no início do capítulo.
+class TSeat {
+  const TSeat({
+    required this.name,
+    this.commander,
+    this.battlefield = const [],
+    this.hand = const [],
+    this.library = const [],
+    this.life = 40,
+  });
+
+  final String name;
+  final String? commander;
+
+  /// Cartas já em campo (os terrenos ficam em baixo).
+  final List<String> battlefield;
+
+  /// Mão inicial (fica na mão por esta ordem).
+  final List<String> hand;
+
+  /// O resto do grimório, do topo para o fundo.
+  final List<String> library;
+  final int life;
+}
+
+/// A mesa no início da parte jogada. O lugar 0 é o jogador.
+class TSetup {
+  const TSetup({required this.seats, this.active = 0, this.turn = 1, this.prepare = const []});
+  final List<TSeat> seats;
+  final int active;
+  final int turn;
+
+  /// Ações de preparação (contadores, dano já sofrido, comandante em campo…),
+  /// feitas antes de o jogador ver a mesa.
+  final List<Act> prepare;
+}
+
+/// O que o jogador tentou fazer, já com os nomes das cartas.
+class TAction {
+  const TAction(this.seat, this.intent, {this.names = const [], this.from, this.to});
+  final int seat;
+  final Intent intent;
+  final List<String> names;
+  final Zone? from;
+  final Zone? to;
+
+  String get type => intent.type;
+  Map<String, dynamic> get p => intent.payload;
+  bool has(String name) => names.contains(name);
+}
+
+/// Um passo: o texto do guia, o que se pode fazer e quando está feito.
+/// Sem [done], o passo é só para ler (botão "Continuar").
+class TStep {
+  const TStep(this.text, {this.allow, this.done, this.hint, this.run = const [], this.focus, this.title});
+
+  final String? title;
+  final String text;
+
+  /// Ações do jogador aceites neste passo; as outras são bloqueadas.
+  final bool Function(TAction a)? allow;
+
+  /// Condição (sobre a mesa) que termina o passo.
+  final bool Function(TableView t)? done;
+
+  /// O que dizer quando o jogador faz outra coisa.
+  final String? hint;
+
+  /// O que acontece antes do texto aparecer (os adversários jogam).
+  final List<Act> run;
+
+  /// Carta a destacar no campo.
+  final String? focus;
+}
+
+/// Uma ação com guião, feita por um lugar (normalmente um adversário).
+/// [say] aparece no guia enquanto acontece.
+sealed class Act {
+  const Act({this.say});
+  final String? say;
+}
+
+/// Jogar uma carta da mão (ou do grimório) para o campo.
+class Play extends Act {
+  const Play(this.seat, this.name, {super.say});
+  final int seat;
+  final String name;
+}
+
+/// Lançar um instantâneo ou feitiço: vai para o cemitério.
+class Cast extends Act {
+  const Cast(this.seat, this.name, {super.say});
+  final int seat;
+  final String name;
+}
+
+/// Lançar o comandante (paga a taxa).
+class CastCommander extends Act {
+  const CastCommander(this.seat, {super.say});
+  final int seat;
+}
+
+class Tap extends Act {
+  const Tap(this.seat, this.names, {super.say, this.value = true});
+  final int seat;
+  final List<String> names;
+  final bool value;
+}
+
+class UntapAll extends Act {
+  const UntapAll(this.seat, {super.say});
+  final int seat;
+}
+
+/// Mudar a vida de um lugar.
+class Life extends Act {
+  const Life(this.seat, this.delta, {super.say});
+  final int seat;
+  final int delta;
+}
+
+/// Dano de combate do comandante de [from] a [to].
+class CommanderHit extends Act {
+  const CommanderHit(this.from, this.to, this.amount, {super.say});
+  final int from;
+  final int to;
+  final int amount;
+}
+
+/// Mover uma carta pública (pelo nome) de [seat] para outra zona.
+class MoveCard extends Act {
+  const MoveCard(this.seat, this.name, this.to, {super.say});
+  final int seat;
+  final String name;
+  final Zone to;
+}
+
+class Counter extends Act {
+  const Counter(this.seat, this.name, this.kind, this.delta, {super.say});
+  final int seat;
+  final String name;
+  final String kind;
+  final int delta;
+}
+
+class Token extends Act {
+  const Token(this.seat, this.tokenName, this.pt, {this.qty = 1, super.say});
+  final int seat;
+  final String tokenName;
+  final String pt;
+  final int qty;
+}
+
+class Draw extends Act {
+  const Draw(this.seat, [this.n = 1, String? say]) : super(say: say);
+  final int seat;
+  final int n;
+}
+
+class PassTurn extends Act {
+  const PassTurn({super.say});
+}
+
+class Concede extends Act {
+  const Concede(this.seat, {super.say});
+  final int seat;
+}
+
+/// Só uma pausa com texto (por exemplo "O Bruno pensa…").
+class Pause extends Act {
+  const Pause({super.say, this.ms = 900});
+  final int ms;
+}
+
+/// Leitura da mesa para as condições dos passos.
+abstract class TableView {
+  GameState get state;
+  String? nameOf(String? oracleId);
+  List<CardInstance> cardsNamed(String name, {Zone? zone, int? seat});
+  int handCount(int seat);
+  bool inHand(int seat, String name);
+}
+
+/// Atalhos para escrever os passos.
+abstract final class Allow {
+  /// Jogar [name] da mão para o campo.
+  static bool Function(TAction) play(String name) =>
+      (a) => a.type == Ev.move && a.from == Zone.hand && a.to == Zone.battlefield && a.has(name);
+
+  /// Lançar [name] da mão (instantâneo ou feitiço: vai para o cemitério).
+  static bool Function(TAction) cast(String name) =>
+      (a) => a.type == Ev.move && a.from == Zone.hand && a.to == Zone.graveyard && a.has(name);
+
+  /// Virar (ou desvirar) só cartas com estes nomes.
+  static bool Function(TAction) tap(List<String> names) =>
+      (a) => a.type == Ev.tap && a.names.isNotEmpty && a.names.every(names.contains);
+
+  /// Mover [name] para [to] (de qualquer zona, ou de [from]).
+  static bool Function(TAction) move(String name, Zone to, {Zone? from}) =>
+      (a) => a.type == Ev.move && a.to == to && (from == null || a.from == from) && a.has(name);
+
+  static bool Function(TAction) life(int seat) => (a) => a.type == Ev.life && a.p['seat'] == seat;
+
+  static bool Function(TAction) commanderDamage(int seat) =>
+      (a) => a.type == Ev.commanderDamage && a.p['seat'] == seat;
+
+  static bool passTurn(TAction a) => a.type == Ev.passTurn;
+  static bool draw(TAction a) => a.type == Ev.draw;
+
+  static bool Function(TAction) any(List<bool Function(TAction)> list) => (a) => list.any((f) => f(a));
+}

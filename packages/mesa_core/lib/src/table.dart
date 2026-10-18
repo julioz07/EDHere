@@ -144,7 +144,8 @@ class Table {
             ..library.clear()
             ..library.addAll(deck)
             ..hand.clear();
-          zonesOf(seat).library.shuffle(_random);
+          // O tutorial usa grimórios com ordem fixa (o topo é o primeiro).
+          if (p['keep'] != true) zonesOf(seat).library.shuffle(_random);
         }
         return '${_n(seat)} baralhou um deck de ${i('size')} cartas';
 
@@ -716,14 +717,17 @@ class Table {
   /// Prepara o deck de um lugar local; fica no grimório quando o evento
   /// [Ev.deckLoaded] chegar.
   /// [prints] dá a impressão escolhida de cada carta (oracleId -> printId).
+  /// Com [keepOrder] o grimório não é baralhado: o primeiro da lista fica
+  /// no topo (para jogos com guião, como o tutorial).
   Intent loadDeck(int seat, List<String> library, List<String> commanders,
-      {Map<String, String> prints = const {}}) {
+      {Map<String, String> prints = const {}, bool keepOrder = false}) {
     _pendingDecks[seat] = [
       for (final o in library) PrivateCard(_newPid(), o, printId: prints[o]),
     ];
     return Intent(Ev.deckLoaded, {
       'seat': seat,
       'size': library.length,
+      if (keepOrder) 'keep': true,
       'commanders': [
         for (final o in commanders) {'id': newId(seat), 'o': o, if (prints[o] != null) 'p': prints[o]},
       ],

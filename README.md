@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.0.3** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.1.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -33,6 +33,11 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - JumpStart: escolher 2 de 570 pacotes temáticos vendo só o tema e a carta de destaque; os dois juntos fazem o deck de 40.
 - Montar o deck com a pool: filtros por cor, ordenar por cor, custo ou tipo, terrenos sugeridos pelos símbolos de mana. O que fica a meio é guardado ("Decks por montar") e continua-se depois.
 - Os dados vêm dentro da app (funcionam sem internet); só as imagens se descarregam, e dá para descarregar as de um set antes de jogar sem rede.
+
+**Aprender a jogar Commander**
+- Tutorial guiado contra dois adversários simulados, com jogadas fechadas: lês um pouco, jogas um pouco, e a mesa só deixa fazer o passo pedido (explica quando te enganas).
+- Duas versões: "Já sei jogar Magic" (só o que o Commander tem de especial: baralho de 100, identidade de cor, zona de comando, taxa, dano de comandante, jogo a vários, brackets) e "Nunca joguei" (cartas, mana, turno, combate e a pilha primeiro).
+- Termina com um jogo curto que junta tudo; progresso guardado e glossário de termos.
 
 **Mesa**
 - Goldfish, 1 contra 1 no mesmo dispositivo (mesa partilhada frente a frente, mãos abertas para ensinar). Grava-se sozinho: ao sair pergunta se fica gravado e continua-se depois, mesmo que a app feche.
@@ -83,6 +88,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.1.0 | Aprender a jogar Commander: tutorial guiado com duas versões, adversários simulados e glossário; Vehicles e Spacecraft lendários como comandantes |
 | 1.0.3 | Espaço entre os cartões na lista de decks do Goldfish e nos avisos da sala |
 | 1.0.2 | Terrenos anexados uns aos outros viram (tap) todos juntos; "Virar só esta" para virar um |
 | 1.0.1 | Importar listas mantém as versões das cartas ("(SET) número" do Moxfield/Archidekt); exportar também as inclui |

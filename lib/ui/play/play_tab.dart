@@ -13,6 +13,7 @@ import '../limited/sealed_screen.dart';
 import '../playtest/playtest_setup_screen.dart';
 import '../resume_game.dart';
 import '../stats/stats_screen.dart';
+import '../tutorial/tutorial_home.dart';
 import '../widgets/responsive.dart';
 
 class PlayTab extends ConsumerStatefulWidget {
@@ -166,6 +167,12 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             ]),
             const SizedBox(height: 24),
             Text('Testar e ensinar', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => _go((_) => const TutorialHome()),
+              icon: const Icon(Icons.school_outlined),
+              label: const Text('Aprender a jogar Commander'),
+            ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
               onPressed: hasDecks ? () => _go((_) => const GoldfishSetupScreen()) : null,

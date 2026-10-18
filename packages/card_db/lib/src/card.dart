@@ -146,8 +146,13 @@ class Card {
   bool get hasFaceImages => faces.isNotEmpty && faces.first.hasOwnImage;
 
   /// Pode ser comandante: criatura lendária ou texto que o permite.
+  /// Criatura lendária; desde Edge of Eternities (2025), também Vehicles e
+  /// Spacecraft lendários com poder/resistência; ou "can be your commander".
   bool get canBeCommander =>
       (isLegendary && frontType.contains('Creature')) ||
+      (isLegendary &&
+          (frontType.contains('Vehicle') || frontType.contains('Spacecraft')) &&
+          power != null) ||
       oracleText.contains('can be your commander');
 
   /// Máximo de cópias num deck, com as exceções das próprias cartas:

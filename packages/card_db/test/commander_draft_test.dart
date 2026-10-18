@@ -69,4 +69,15 @@ void main() {
     final issues = _check([piper, elf], [_spell('Bird', ManaColors.w), _spell('Bat', ManaColors.b)], fill: 54);
     expect(issues.map((i) => i.message).join(), contains('identidade'));
   });
+
+  test('Vehicles e Spacecraft lendários com P/T podem ser comandantes (desde 2025)', () {
+    const vehicle = Card(oracleId: 'v', name: 'V', typeLine: 'Legendary Artifact — Vehicle', power: '4', toughness: '4');
+    const craft = Card(oracleId: 's', name: 'S', typeLine: 'Legendary Artifact — Spacecraft', power: '6', toughness: '6');
+    const noPt = Card(oracleId: 'n', name: 'N', typeLine: 'Legendary Artifact — Spacecraft');
+    const plain = Card(oracleId: 'a', name: 'A', typeLine: 'Legendary Artifact');
+    expect(vehicle.canBeCommander, isTrue);
+    expect(craft.canBeCommander, isTrue);
+    expect(noPt.canBeCommander, isFalse);
+    expect(plain.canBeCommander, isFalse);
+  });
 }
