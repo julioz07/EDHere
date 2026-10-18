@@ -1,0 +1,1384 @@
+{
+"v": 1,
+"generated": "2026-10-18",
+"source": "MTGJSON (MIT) — https://mtgjson.com",
+"sets": [
+{
+"code": "MBC",
+"name": "Mystery Booster Commander Edition",
+"date": "2026-10-19",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 20
+},
+{
+"code": "FRA",
+"name": "Reality Fracture",
+"date": "2026-10-02",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "HOB",
+"name": "The Hobbit",
+"date": "2026-08-14",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "MSH",
+"name": "Marvel Super Heroes",
+"date": "2026-06-26",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "TMT",
+"name": "Teenage Mutant Ninja Turtles",
+"date": "2026-03-06",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "ECL",
+"name": "Lorwyn Eclipsed",
+"date": "2026-01-23",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "TLA",
+"name": "Avatar: The Last Airbender",
+"date": "2025-11-21",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "SPM",
+"name": "Marvel's Spider-Man",
+"date": "2025-09-26",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "EOE",
+"name": "Edge of Eternities",
+"date": "2025-08-01",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "FIN",
+"name": "Final Fantasy",
+"date": "2025-06-13",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "TDM",
+"name": "Tarkir: Dragonstorm",
+"date": "2025-04-11",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "DFT",
+"name": "Aetherdrift",
+"date": "2025-02-14",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "INR",
+"name": "Innistrad Remastered",
+"date": "2025-01-24",
+"type": "masters",
+"kind": "play",
+"size": 14
+},
+{
+"code": "FDN",
+"name": "Foundations",
+"date": "2024-11-15",
+"type": "core",
+"kind": "play",
+"size": 14
+},
+{
+"code": "DSK",
+"name": "Duskmourn: House of Horror",
+"date": "2024-09-27",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "BLB",
+"name": "Bloomburrow",
+"date": "2024-08-02",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "MB2",
+"name": "Mystery Booster 2",
+"date": "2024-08-02",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ACR",
+"name": "Assassin's Creed",
+"date": "2024-07-05",
+"type": "draft_innovation",
+"kind": "default",
+"size": 7
+},
+{
+"code": "MH3",
+"name": "Modern Horizons 3",
+"date": "2024-06-14",
+"type": "draft_innovation",
+"kind": "play",
+"size": 14
+},
+{
+"code": "CLU",
+"name": "Ravnica: Clue Edition",
+"date": "2024-02-23",
+"type": "draft_innovation",
+"kind": "default",
+"size": 20
+},
+{
+"code": "MKM",
+"name": "Murders at Karlov Manor",
+"date": "2024-02-09",
+"type": "expansion",
+"kind": "play",
+"size": 14
+},
+{
+"code": "RVR",
+"name": "Ravnica Remastered",
+"date": "2024-01-12",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "LCI",
+"name": "The Lost Caverns of Ixalan",
+"date": "2023-11-17",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CMM",
+"name": "Commander Masters",
+"date": "2023-08-04",
+"type": "masters",
+"kind": "draft",
+"size": 20
+},
+{
+"code": "LTR",
+"name": "The Lord of the Rings: Tales of Middle-earth",
+"date": "2023-06-23",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MAT",
+"name": "March of the Machine: The Aftermath",
+"date": "2023-05-12",
+"type": "expansion",
+"kind": "default",
+"size": 5
+},
+{
+"code": "ONE",
+"name": "Phyrexia: All Will Be One",
+"date": "2023-02-10",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DMR",
+"name": "Dominaria Remastered",
+"date": "2023-01-13",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "UNF",
+"name": "Unfinity",
+"date": "2022-10-07",
+"type": "funny",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DMU",
+"name": "Dominaria United",
+"date": "2022-09-09",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "2X2",
+"name": "Double Masters 2022",
+"date": "2022-07-08",
+"type": "masters",
+"kind": "draft",
+"size": 16
+},
+{
+"code": "CLB",
+"name": "Commander Legends: Battle for Baldur's Gate",
+"date": "2022-06-10",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 20
+},
+{
+"code": "SNC",
+"name": "Streets of New Capenna",
+"date": "2022-04-29",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "NEO",
+"name": "Kamigawa: Neon Dynasty",
+"date": "2022-02-18",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DBL",
+"name": "Innistrad: Double Feature",
+"date": "2022-01-28",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "VOW",
+"name": "Innistrad: Crimson Vow",
+"date": "2021-11-19",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MID",
+"name": "Innistrad: Midnight Hunt",
+"date": "2021-09-24",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "AFR",
+"name": "Adventures in the Forgotten Realms",
+"date": "2021-07-23",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MH2",
+"name": "Modern Horizons 2",
+"date": "2021-06-18",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "TSR",
+"name": "Time Spiral Remastered",
+"date": "2021-03-19",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "KHM",
+"name": "Kaldheim",
+"date": "2021-02-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CMR",
+"name": "Commander Legends",
+"date": "2020-11-20",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 20
+},
+{
+"code": "ZNR",
+"name": "Zendikar Rising",
+"date": "2020-09-25",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "2XM",
+"name": "Double Masters",
+"date": "2020-08-07",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M21",
+"name": "Core Set 2021",
+"date": "2020-07-03",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "IKO",
+"name": "Ikoria: Lair of Behemoths",
+"date": "2020-04-24",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "THB",
+"name": "Theros Beyond Death",
+"date": "2020-01-24",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MB1",
+"name": "Mystery Booster",
+"date": "2019-11-07",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ELD",
+"name": "Throne of Eldraine",
+"date": "2019-10-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M20",
+"name": "Core Set 2020",
+"date": "2019-07-12",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MH1",
+"name": "Modern Horizons",
+"date": "2019-06-14",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "WAR",
+"name": "War of the Spark",
+"date": "2019-05-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "RNA",
+"name": "Ravnica Allegiance",
+"date": "2019-01-25",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "UMA",
+"name": "Ultimate Masters",
+"date": "2018-12-07",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "GRN",
+"name": "Guilds of Ravnica",
+"date": "2018-10-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M19",
+"name": "Core Set 2019",
+"date": "2018-07-13",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "BBD",
+"name": "Battlebond",
+"date": "2018-06-08",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DOM",
+"name": "Dominaria",
+"date": "2018-04-27",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "A25",
+"name": "Masters 25",
+"date": "2018-03-16",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "RIX",
+"name": "Rivals of Ixalan",
+"date": "2018-01-19",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "UST",
+"name": "Unstable",
+"date": "2017-12-08",
+"type": "funny",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "IMA",
+"name": "Iconic Masters",
+"date": "2017-11-17",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "XLN",
+"name": "Ixalan",
+"date": "2017-09-29",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "HOU",
+"name": "Hour of Devastation",
+"date": "2017-07-14",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "AKH",
+"name": "Amonkhet",
+"date": "2017-04-28",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MM3",
+"name": "Modern Masters 2017",
+"date": "2017-03-17",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "AER",
+"name": "Aether Revolt",
+"date": "2017-01-20",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "KLD",
+"name": "Kaladesh",
+"date": "2016-09-30",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CN2",
+"name": "Conspiracy: Take the Crown",
+"date": "2016-08-26",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "EMN",
+"name": "Eldritch Moon",
+"date": "2016-07-22",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "EMA",
+"name": "Eternal Masters",
+"date": "2016-06-10",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "SOI",
+"name": "Shadows over Innistrad",
+"date": "2016-04-08",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "OGW",
+"name": "Oath of the Gatewatch",
+"date": "2016-01-22",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "BFZ",
+"name": "Battle for Zendikar",
+"date": "2015-10-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ORI",
+"name": "Magic Origins",
+"date": "2015-07-17",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MM2",
+"name": "Modern Masters 2015",
+"date": "2015-05-22",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DTK",
+"name": "Dragons of Tarkir",
+"date": "2015-03-27",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "FRF",
+"name": "Fate Reforged",
+"date": "2015-01-23",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "KTK",
+"name": "Khans of Tarkir",
+"date": "2014-09-26",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M15",
+"name": "Magic 2015",
+"date": "2014-07-18",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CNS",
+"name": "Conspiracy",
+"date": "2014-06-06",
+"type": "draft_innovation",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "JOU",
+"name": "Journey into Nyx",
+"date": "2014-05-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "BNG",
+"name": "Born of the Gods",
+"date": "2014-02-07",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "THS",
+"name": "Theros",
+"date": "2013-09-27",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M14",
+"name": "Magic 2014",
+"date": "2013-07-19",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MMA",
+"name": "Modern Masters",
+"date": "2013-06-07",
+"type": "masters",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DGM",
+"name": "Dragon's Maze",
+"date": "2013-05-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "GTC",
+"name": "Gatecrash",
+"date": "2013-02-01",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "RTR",
+"name": "Return to Ravnica",
+"date": "2012-10-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M13",
+"name": "Magic 2013",
+"date": "2012-07-13",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "AVR",
+"name": "Avacyn Restored",
+"date": "2012-05-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DKA",
+"name": "Dark Ascension",
+"date": "2012-02-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ISD",
+"name": "Innistrad",
+"date": "2011-09-30",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M12",
+"name": "Magic 2012",
+"date": "2011-07-15",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "NPH",
+"name": "New Phyrexia",
+"date": "2011-05-13",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MBS",
+"name": "Mirrodin Besieged",
+"date": "2011-02-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "SOM",
+"name": "Scars of Mirrodin",
+"date": "2010-10-01",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M11",
+"name": "Magic 2011",
+"date": "2010-07-16",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ROE",
+"name": "Rise of the Eldrazi",
+"date": "2010-04-23",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "WWK",
+"name": "Worldwake",
+"date": "2010-02-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ZEN",
+"name": "Zendikar",
+"date": "2009-10-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "M10",
+"name": "Magic 2010",
+"date": "2009-07-17",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ARB",
+"name": "Alara Reborn",
+"date": "2009-04-30",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CON",
+"name": "Conflux",
+"date": "2009-02-06",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ALA",
+"name": "Shards of Alara",
+"date": "2008-10-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "EVE",
+"name": "Eventide",
+"date": "2008-07-25",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "SHM",
+"name": "Shadowmoor",
+"date": "2008-05-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MOR",
+"name": "Morningtide",
+"date": "2008-02-01",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "LRW",
+"name": "Lorwyn",
+"date": "2007-10-12",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "10E",
+"name": "Tenth Edition",
+"date": "2007-07-13",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "FUT",
+"name": "Future Sight",
+"date": "2007-05-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "PLC",
+"name": "Planar Chaos",
+"date": "2007-02-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "TSP",
+"name": "Time Spiral",
+"date": "2006-10-06",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CSP",
+"name": "Coldsnap",
+"date": "2006-07-21",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DIS",
+"name": "Dissension",
+"date": "2006-05-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "GPT",
+"name": "Guildpact",
+"date": "2006-02-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "RAV",
+"name": "Ravnica: City of Guilds",
+"date": "2005-10-07",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "9ED",
+"name": "Ninth Edition",
+"date": "2005-07-29",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "SOK",
+"name": "Saviors of Kamigawa",
+"date": "2005-06-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "BOK",
+"name": "Betrayers of Kamigawa",
+"date": "2005-02-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "UNH",
+"name": "Unhinged",
+"date": "2004-11-19",
+"type": "funny",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "CHK",
+"name": "Champions of Kamigawa",
+"date": "2004-10-01",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "5DN",
+"name": "Fifth Dawn",
+"date": "2004-06-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "DST",
+"name": "Darksteel",
+"date": "2004-02-06",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MRD",
+"name": "Mirrodin",
+"date": "2003-10-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "8ED",
+"name": "Eighth Edition",
+"date": "2003-07-28",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "SCG",
+"name": "Scourge",
+"date": "2003-05-26",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "LGN",
+"name": "Legions",
+"date": "2003-02-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ONS",
+"name": "Onslaught",
+"date": "2002-10-07",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "JUD",
+"name": "Judgment",
+"date": "2002-05-27",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "TOR",
+"name": "Torment",
+"date": "2002-02-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ODY",
+"name": "Odyssey",
+"date": "2001-10-01",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "APC",
+"name": "Apocalypse",
+"date": "2001-06-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "7ED",
+"name": "Seventh Edition",
+"date": "2001-04-11",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "PLS",
+"name": "Planeshift",
+"date": "2001-02-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "INV",
+"name": "Invasion",
+"date": "2000-10-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "PCY",
+"name": "Prophecy",
+"date": "2000-06-05",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "NEM",
+"name": "Nemesis",
+"date": "2000-02-14",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MMQ",
+"name": "Mercadian Masques",
+"date": "1999-10-04",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "S99",
+"name": "Starter 1999",
+"date": "1999-07-01",
+"type": "starter",
+"kind": "default",
+"size": 15
+},
+{
+"code": "UDS",
+"name": "Urza's Destiny",
+"date": "1999-06-07",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "PTK",
+"name": "Portal Three Kingdoms",
+"date": "1999-05-01",
+"type": "starter",
+"kind": "default",
+"size": 10
+},
+{
+"code": "6ED",
+"name": "Classic Sixth Edition",
+"date": "1999-04-21",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ULG",
+"name": "Urza's Legacy",
+"date": "1999-02-15",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "USG",
+"name": "Urza's Saga",
+"date": "1998-10-12",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "UGL",
+"name": "Unglued",
+"date": "1998-08-11",
+"type": "funny",
+"kind": "draft",
+"size": 10
+},
+{
+"code": "P02",
+"name": "Portal Second Age",
+"date": "1998-06-24",
+"type": "starter",
+"kind": "default",
+"size": 15
+},
+{
+"code": "EXO",
+"name": "Exodus",
+"date": "1998-06-15",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "STH",
+"name": "Stronghold",
+"date": "1998-03-02",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "TMP",
+"name": "Tempest",
+"date": "1997-10-14",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "WTH",
+"name": "Weatherlight",
+"date": "1997-06-09",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "POR",
+"name": "Portal",
+"date": "1997-05-01",
+"type": "starter",
+"kind": "default",
+"size": 15
+},
+{
+"code": "5ED",
+"name": "Fifth Edition",
+"date": "1997-03-24",
+"type": "core",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "VIS",
+"name": "Visions",
+"date": "1997-02-03",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "MIR",
+"name": "Mirage",
+"date": "1996-10-08",
+"type": "expansion",
+"kind": "draft",
+"size": 15
+},
+{
+"code": "ALL",
+"name": "Alliances",
+"date": "1996-06-10",
+"type": "expansion",
+"kind": "default",
+"size": 12
+},
+{
+"code": "HML",
+"name": "Homelands",
+"date": "1995-10-01",
+"type": "expansion",
+"kind": "default",
+"size": 8
+},
+{
+"code": "REN",
+"name": "Renaissance",
+"date": "1995-08-01",
+"type": "masters",
+"kind": "default",
+"size": 8
+},
+{
+"code": "RIN",
+"name": "Rinascimento",
+"date": "1995-08-01",
+"type": "masters",
+"kind": "default",
+"size": 8
+},
+{
+"code": "CHR",
+"name": "Chronicles",
+"date": "1995-07-01",
+"type": "masters",
+"kind": "default",
+"size": 12
+},
+{
+"code": "ICE",
+"name": "Ice Age",
+"date": "1995-06-03",
+"type": "expansion",
+"kind": "default",
+"size": 15
+},
+{
+"code": "4ED",
+"name": "Fourth Edition",
+"date": "1995-04-01",
+"type": "core",
+"kind": "default",
+"size": 15
+},
+{
+"code": "FEM",
+"name": "Fallen Empires",
+"date": "1994-11-01",
+"type": "expansion",
+"kind": "default",
+"size": 8
+},
+{
+"code": "DRK",
+"name": "The Dark",
+"date": "1994-08-01",
+"type": "expansion",
+"kind": "default",
+"size": 8
+},
+{
+"code": "SUM",
+"name": "Summer Magic / Edgar",
+"date": "1994-06-21",
+"type": "core",
+"kind": "default",
+"size": 15
+},
+{
+"code": "LEG",
+"name": "Legends",
+"date": "1994-06-01",
+"type": "expansion",
+"kind": "default",
+"size": 15
+},
+{
+"code": "3ED",
+"name": "Revised Edition",
+"date": "1994-04-11",
+"type": "core",
+"kind": "default",
+"size": 15
+},
+{
+"code": "ATQ",
+"name": "Antiquities",
+"date": "1994-03-04",
+"type": "expansion",
+"kind": "default",
+"size": 8
+},
+{
+"code": "ARN",
+"name": "Arabian Nights",
+"date": "1993-12-17",
+"type": "expansion",
+"kind": "default",
+"size": 8
+},
+{
+"code": "2ED",
+"name": "Unlimited Edition",
+"date": "1993-12-01",
+"type": "core",
+"kind": "default",
+"size": 15
+},
+{
+"code": "LEB",
+"name": "Limited Edition Beta",
+"date": "1993-10-04",
+"type": "core",
+"kind": "default",
+"size": 15
+},
+{
+"code": "LEA",
+"name": "Limited Edition Alpha",
+"date": "1993-08-05",
+"type": "core",
+"kind": "default",
+"size": 15
+}
+],
+"jumpstart": 570
+}

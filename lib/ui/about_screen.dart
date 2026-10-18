@@ -45,6 +45,10 @@ class AboutScreen extends StatelessWidget {
               'Os dados e as imagens das cartas vêm do Scryfall, descarregados diretamente para o '
                   'teu telemóvel. O EDHere não é produzido nem apoiado pelo Scryfall. As imagens são '
                   'mostradas sem cortes nem alterações, com o nome do artista.'),
+          section(
+              'Boosters e JumpStart',
+              'A composição dos boosters de cada set e as listas dos pacotes JumpStart vêm do MTGJSON '
+                  '(licença MIT) e estão incluídas na app.'),
           section('Símbolos de mana',
               'Os símbolos de mana são desenhados pela própria app e mostram sempre a letra da cor.'),
         ],

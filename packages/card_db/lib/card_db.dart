@@ -3,6 +3,7 @@
 library;
 
 export 'src/card.dart';
+export 'src/boosters.dart';
 export 'src/card_repository.dart';
 export 'src/colors.dart';
 export 'src/deck.dart';

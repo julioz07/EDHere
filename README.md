@@ -23,8 +23,13 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - As minhas cartas: coleção indicativa (importação do ManaBox, Moxfield, Deckbox, Dragon Shield ou texto), filtro "só as que tenho" ao construir decks e, em cada carta, em que decks está.
 - Pacotes de imagens à escolha (Commander, Modern, tokens…), em resolução pequena ou normal.
 
+**Boosters (sealed e JumpStart)**
+- Sealed: abrir boosters de qualquer um dos ~170 sets com boosters (de 1993 até hoje), com a composição real de cada set, ou packs de um cubo próprio; montar um deck de 40 com a pool (o resto fica no sideboard).
+- JumpStart: escolher 2 de 570 pacotes temáticos vendo só o tema e a carta de destaque; os dois juntos fazem o deck de 40.
+- Os dados vêm dentro da app (funcionam sem internet); só as imagens se descarregam.
+
 **Mesa**
-- Goldfish, hot-seat no mesmo dispositivo e modo tablet (cada jogador com a sua área virada para si).
+- Goldfish, 1 contra 1 no mesmo dispositivo (mesa partilhada frente a frente, mãos abertas para ensinar).
 - Tap, contadores editáveis (+1/+1, lealdade, modificadores de poder/resistência), habilidades dadas por efeitos, tokens, anexar, mudar controlo, virar face, alvos em cartas ou jogadores.
 - Grimório: comprar, baralhar, scry, surveil, mill, procurar, revelar, mulligan London.
 - Vida, dano de comandante, veneno, energia, monarca, iniciativa, taxa de comandante automática.
@@ -51,7 +56,8 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 | `lib/game` | `GameController` (núcleo ↔ UI) e `NetworkGame` (lobby e jogo em rede) |
 | `lib/ui` | Ecrãs |
 | `android/.../MainActivity.kt` | Hotspot local (`LocalOnlyHotspot`) por platform channel |
-| `tool/` | Geradores (glifos da fonte Mana, ícones da app) |
+| `tool/` | Geradores (glifos da fonte Mana, ícones da app, dados de boosters) |
+| `assets/boosters` | Composição dos boosters por set e pacotes JumpStart (gerados do MTGJSON) |
 
 O plano completo do projeto está em [`App Commander Offline — Arquitetura e Plano.md`](App%20Commander%20Offline%20—%20Arquitetura%20e%20Plano.md).
 
@@ -80,12 +86,14 @@ No Windows, os testes do `card_db` usam a `sqlite3.dll` do Python (ou a indicada
 Ferramentas:
 - `python -I tool/gen_mana_glyphs.py mana.css` — volta a gerar o mapa de glifos da fonte Mana.
 - `flutter test tool/icons/render_icons_test.dart` — volta a gerar os ícones Android a partir do logótipo.
+- `python tool/boosters/build_boosters.py` — volta a gerar os dados de boosters e JumpStart a partir do MTGJSON (correr quando sai um set novo; a cache fica em `tool/boosters/.cache`).
 
 ## Aviso legal e créditos
 
 EDHere é **conteúdo de fãs não oficial**, permitido pela [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC.
 
 - Dados e imagens das cartas: [Scryfall](https://scryfall.com), descarregados diretamente para o dispositivo de cada utilizador. O EDHere não é produzido nem apoiado pelo Scryfall.
+- Composição dos boosters e pacotes JumpStart: [MTGJSON](https://mtgjson.com) (licença MIT).
 - Símbolos de mana, contadores e habilidades: fonte [Mana](https://github.com/andrewgioia/mana), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/mana_OFL.txt`).
 
 A app é e será **100% gratuita**: sem anúncios, sem funcionalidades pagas, sem contas.

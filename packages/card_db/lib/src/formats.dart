@@ -38,7 +38,10 @@ class GameFormat {
 
   bool get isSingleton => maxCopies == 1;
   bool get hasCommandZone => commandZone != CommandZone.none;
-  bool get validates => id != 'free';
+  bool get validates => id != 'free' && id != 'cube';
+
+  /// Decks que vêm de boosters (sealed, draft, JumpStart).
+  bool get isLimited => id == 'limited';
 
   static const commander = GameFormat(
     id: 'commander', label: 'Commander', legalityKey: 'commander',
@@ -89,6 +92,16 @@ class GameFormat {
     id: 'pauper', label: 'Pauper', legalityKey: 'pauper',
     startingLife: 20, minDeck: 60, maxSideboard: 15,
   );
+  /// Sealed, draft e JumpStart: 40 cartas, sem limite de cópias (o que sai
+  /// dos boosters) e sem banidas.
+  static const limited = GameFormat(
+    id: 'limited', label: 'Limited (sealed/draft)',
+    startingLife: 20, minDeck: 40, maxCopies: 99,
+  );
+
+  /// Uma lista de cartas para abrir packs de cubo (não é para jogar).
+  static const cube = GameFormat(id: 'cube', label: 'Cubo (lista para packs)', startingLife: 20, maxCopies: 99);
+
   static const free = GameFormat(
     id: 'free', label: 'Livre', startingLife: 20,
     commandZone: CommandZone.commander,
@@ -96,7 +109,7 @@ class GameFormat {
 
   static const all = [
     commander, brawl, standardBrawl, oathbreaker, pauperCommander,
-    modern, pioneer, standard, legacy, vintage, pauper, free,
+    modern, pioneer, standard, legacy, vintage, pauper, limited, cube, free,
   ];
 
   static GameFormat byId(String id) =>

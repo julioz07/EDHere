@@ -7,6 +7,8 @@ import '../../data/settings.dart';
 import '../../net/discovery.dart';
 import '../create_room_screen.dart';
 import '../join_screen.dart';
+import '../limited/jumpstart_screen.dart';
+import '../limited/sealed_screen.dart';
 import '../playtest/playtest_setup_screen.dart';
 import '../resume_game.dart';
 import '../stats/stats_screen.dart';
@@ -120,6 +122,26 @@ class _PlayTabState extends ConsumerState<PlayTab> {
                 child: Text('Descarrega primeiro a base de cartas (Definições → Dados).',
                     style: theme.textTheme.bodySmall),
               ),
+            const SizedBox(height: 24),
+            Text('Abrir boosters', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: hasData ? () => _go((_) => const SealedSetupScreen()) : null,
+                  icon: const Icon(Icons.card_giftcard),
+                  label: const Text('Sealed'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: hasData ? () => _go((_) => const JumpstartScreen()) : null,
+                  icon: const Icon(Icons.bolt),
+                  label: const Text('JumpStart'),
+                ),
+              ),
+            ]),
             const SizedBox(height: 24),
             Text('Testar e ensinar', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),

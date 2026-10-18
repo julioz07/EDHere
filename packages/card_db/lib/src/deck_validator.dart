@@ -97,7 +97,8 @@ List<DeckIssue> validateDeck(
     }
     if (status == 'banned') {
       err('${card.name} está banida em ${format.label}.', id);
-    } else if (status == null) {
+    } else if (status == null && format.legalityKey != null) {
+      // Formatos sem lista de legalidade (Limited) aceitam tudo o que sai.
       err('${card.name} não é legal em ${format.label}.', id);
     }
     if (format.hasCommandZone &&
