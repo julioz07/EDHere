@@ -29,7 +29,8 @@ android {
 
     defaultConfig {
         applicationId = "com.juliocr.edhere"
-        minSdk = 23
+        // Android 7.0+: a Proteção automática do Google Play exige o SDK 24.
+        minSdk = 24
         // A Play Store pede o Android 15 (API 35) às apps novas.
         targetSdk = 35
         versionCode = flutter.versionCode

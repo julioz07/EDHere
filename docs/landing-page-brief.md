@@ -117,7 +117,7 @@ Um bloco curto a explicar a filosofia:
 - Título: **"Entra no open beta"**.
 - Texto: *"O EDHere está em beta aberto para Android. Experimenta, joga com os teus amigos e diz-nos o que melhorar."*
 - Botão: **"Quero entrar no beta"**. O link ainda está por definir (ver secção 7).
-- Requisitos: Android 6.0 ou superior. O download inicial das cartas é de cerca de 25 MB e convém fazê-lo em Wi-Fi.
+- Requisitos: Android 7.0 ou superior. O download inicial das cartas é de cerca de 25 MB e convém fazê-lo em Wi-Fi.
 
 ### 5.6 Apoiar o projeto
 - Título: **"Apoia o EDHere"**.
