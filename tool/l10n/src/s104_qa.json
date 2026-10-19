@@ -7,5 +7,7 @@
 ["=1 lugar livre", "1 free seat", "1 puesto libre", "1 posto libero"],
 ["=Mão de {v}: 1 carta", "{v}'s hand: 1 card", "Mano de {v}: 1 carta", "Mano di {v}: 1 carta"],
 ["=1 carta junta às minhas cartas.", "1 card added to my cards.", "1 carta añadida a mis cartas.", "1 carta aggiunta alle mie carte."],
-["=Histórico (1 partida)", "History (1 game)", "Historial (1 partida)", "Cronologia (1 partita)"]
+["=Histórico (1 partida)", "History (1 game)", "Historial (1 partida)", "Cronologia (1 partita)"],
+["=Jogadores: {n} · bots: {bots}", "Players: {n} · bots: {bots}", "Jugadores: {n} · bots: {bots}", "Giocatori: {n} · bot: {bots}"],
+["=1 jogador, sem bots", "1 player, no bots", "1 jugador, sin bots", "1 giocatore, senza bot"]
 ]

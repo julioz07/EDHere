@@ -92,8 +92,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           banner: switch (_game.link.status) {
             LinkStatus.reconnecting => MaterialBanner(
                 content: Text(tr('Ligação perdida. A voltar a ligar…')),
-                leading:
-                    const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                leading: const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                 actions: [TextButton(onPressed: _leaveFromTable, child: Text(tr('Sair')))],
               ),
             LinkStatus.closed when !_closing => MaterialBanner(
@@ -180,11 +179,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         child: ListView(shrinkWrap: true, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(tr('Escolher deck ({v})', {'v': format.label}),
-                style: Theme.of(ctx).textTheme.titleMedium),
+            child: Text(tr('Escolher deck ({v})', {'v': format.label}), style: Theme.of(ctx).textTheme.titleMedium),
           ),
-          if (decks.isEmpty)
-            Padding(padding: const EdgeInsets.all(16), child: Text(tr('Ainda não tens decks.'))),
+          if (decks.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(tr('Ainda não tens decks.'))),
           for (final d in decks)
             ListTile(
               title: Text(d.name),
@@ -218,8 +215,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(issues.length == 1
             ? tr('O deck tem 1 aviso para {v}. Podes jogar na mesma.', {'v': format.label})
-            : tr('O deck tem {n} avisos para {v}. Podes jogar na mesma.',
-                {'n': issues.length, 'v': format.label})),
+            : tr('O deck tem {n} avisos para {v}. Podes jogar na mesma.', {'n': issues.length, 'v': format.label})),
       ));
     }
   }
@@ -295,6 +291,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           final format = GameFormat.byId(g.format);
           final me = g.me;
           final status = g.link.status;
+          final narrow = MediaQuery.sizeOf(context).width < 440;
           return Scaffold(
             appBar: AppBar(
               title: Text(widget.session.roomName, overflow: TextOverflow.ellipsis),
@@ -319,13 +316,44 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 ),
               ],
             ),
+            // O que se faz a seguir fica sempre à vista, mesmo com a lista
+            // de jogadores a pedir scroll num ecrã pequeno.
+            bottomNavigationBar: me == null && !g.isHost
+                ? null
+                : BottomActions(children: [
+                    if (me != null)
+                      Row(children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: me.ready ? null : _pickDeck,
+                            child: Text(g.myDeck == null ? tr('Escolher deck') : g.myDeck!.name,
+                                maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: g.myDeck == null ? null : () => g.setReady(!me.ready),
+                            child: Text(me.ready ? tr('Já não estou pronto') : tr('Estou pronto'),
+                                textAlign: TextAlign.center),
+                          ),
+                        ),
+                      ]),
+                    if (g.isHost) ...[
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: Text(g.allReady ? tr('Começar jogo') : tr('Começar (só com quem está pronto)')),
+                      ),
+                    ],
+                  ]),
             body: MaxWidth(
                 child: ListView(padding: const EdgeInsets.all(16), children: [
               if (status == LinkStatus.reconnecting)
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                        leading: const CircularProgressIndicator(), title: Text(tr('A voltar a ligar…')))),
+                    child: ListTile(leading: const CircularProgressIndicator(), title: Text(tr('A voltar a ligar…')))),
               if (status == LinkStatus.closed && !_closing)
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -333,8 +361,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
-                  title: Text(
-                      tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
+                  title: Text(tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
                   subtitle: Text(g.players.length == 1
                       ? tr('1 jogador na sala')
                       : tr('{n} jogadores na sala', {'n': g.players.length})),
@@ -365,9 +392,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                 : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}',
                             'v3': p.deckLegal ? '' : tr(' · com avisos')
                           })),
-                    trailing: p.ready
-                        ? Chip(label: Text(tr('Pronto')), backgroundColor: const Color(0x333FB27F))
-                        : Chip(label: Text(tr('A escolher'))),
+                    trailing: narrow
+                        ? Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
+                            color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant,
+                            semanticLabel: p.ready ? tr('Pronto') : tr('A escolher'))
+                        : p.ready
+                            ? Chip(label: Text(tr('Pronto')), backgroundColor: const Color(0x333FB27F))
+                            : Chip(label: Text(tr('A escolher'))),
                   ),
                 ),
               for (final p in g.players.values)
@@ -381,18 +412,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                           ? tr('{v} tem 1 imagem que não tens', {'v': p.name})
                           : tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
                       subtitle: Text(g.transfer?.seat == p.seat
-                          ? tr('A receber do dispositivo de {v}… {received}/{expected}', {
-                              'v': p.name,
-                              'received': g.transfer!.received,
-                              'expected': g.transfer!.expected
-                            })
+                          ? tr('A receber do dispositivo de {v}… {received}/{expected}',
+                              {'v': p.name, 'received': g.transfer!.received, 'expected': g.transfer!.expected})
                           : tr('~{v} MB · da internet ou, sem rede, do telemóvel de {v2}', {
                               'v': (missing.length * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
                               'v2': p.name
                             })),
                       trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
-                          ? const SizedBox.square(
-                              dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
+                          ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                           : FilledButton(
                               style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
                               onPressed: () => g.downloadMissing(p.seat),
@@ -400,42 +427,20 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                             ),
                     ),
                   ),
-              const SizedBox(height: 16),
-              if (me != null) ...[
-                OutlinedButton.icon(
-                  onPressed: me.ready ? null : _pickDeck,
-                  icon: const Icon(Icons.style_outlined),
-                  label: Text(g.myDeck == null
-                      ? tr('Escolher deck')
-                      : tr('Trocar deck ({v})', {'v': g.myDeck!.name})),
-                ),
-                const SizedBox(height: 10),
-                FilledButton.tonal(
-                  onPressed: g.myDeck == null ? null : () => g.setReady(!me.ready),
-                  child: Text(me.ready ? tr('Já não estou pronto') : tr('Estou pronto')),
-                ),
-              ],
               if (g.draftClient != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 FilledButton.tonalIcon(
                   onPressed: _openDraft,
                   icon: const Icon(Icons.style),
-                  label:
-                      Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
+                  label: Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
                 ),
               ],
               if (g.isHost) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => showDraftSetup(context, ref, g),
                   icon: const Icon(Icons.card_giftcard),
                   label: Text(g.draft == null ? tr('Fazer um draft') : tr('Novo draft')),
-                ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(g.allReady ? tr('Começar jogo') : tr('Começar (só com quem está pronto)')),
                 ),
               ],
               const SizedBox(height: 16),

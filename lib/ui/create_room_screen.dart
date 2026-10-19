@@ -21,8 +21,7 @@ class CreateRoomScreen extends StatefulWidget {
 }
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
-  late final _roomName =
-      TextEditingController(text: tr('Mesa de {playerName}', {'playerName': widget.playerName}));
+  late final _roomName = TextEditingController(text: tr('Mesa de {playerName}', {'playerName': widget.playerName}));
   final _pin = TextEditingController();
   int _seats = 4;
   String _format = 'commander';
@@ -144,74 +143,80 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(tr('Criar sala'))),
-      body: MaxWidth(
-          child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          TextField(
-            controller: _roomName,
-            maxLength: 40,
-            decoration: InputDecoration(labelText: tr('Nome da sala'), counterText: ''),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: _format,
-            decoration: InputDecoration(labelText: tr('Formato')),
-            items: [
-              for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
+      // "Abrir sala" fica fora da lista: sempre à vista, mesmo com o teclado.
+      body: Column(children: [
+        Expanded(
+          child: MaxWidth(
+              child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              TextField(
+                controller: _roomName,
+                maxLength: 40,
+                decoration: InputDecoration(labelText: tr('Nome da sala'), counterText: ''),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _format,
+                decoration: InputDecoration(labelText: tr('Formato')),
+                items: [
+                  for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
+                ],
+                onChanged: _busy ? null : (v) => setState(() => _format = v ?? _format),
+              ),
+              const SizedBox(height: 20),
+              Text(tr('Lugares: {seats}', {'seats': _seats}), style: theme.textTheme.titleSmall),
+              Slider(
+                value: _seats.toDouble(),
+                min: 2,
+                max: 6,
+                divisions: 4,
+                label: '$_seats',
+                onChanged: _busy ? null : (v) => setState(() => _seats = v.round()),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _pin,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: tr('PIN (opcional)'),
+                  helperText: tr('Impede que estranhos na mesma rede entrem'),
+                  counterText: '',
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (Hotspot.isSupported)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _useHotspot,
+                  onChanged: _busy ? null : (v) => setState(() => _useHotspot = v),
+                  title: Text(tr('Criar hotspot (sem Wi-Fi)')),
+                  subtitle:
+                      Text(tr('Este telemóvel cria uma rede local. Os outros ligam-se a ela pelo QR code do Wi-Fi.')),
+                )
+              else
+                Text(
+                  tr('Sem Wi-Fi? Liga o Hotspot Pessoal nas Definições do iPhone e pede aos outros que se liguem a ele.'),
+                  style: theme.textTheme.bodySmall,
+                ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+              ],
             ],
-            onChanged: _busy ? null : (v) => setState(() => _format = v ?? _format),
-          ),
-          const SizedBox(height: 20),
-          Text(tr('Lugares: {seats}', {'seats': _seats}), style: theme.textTheme.titleSmall),
-          Slider(
-            value: _seats.toDouble(),
-            min: 2,
-            max: 6,
-            divisions: 4,
-            label: '$_seats',
-            onChanged: _busy ? null : (v) => setState(() => _seats = v.round()),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _pin,
-            keyboardType: TextInputType.number,
-            maxLength: 4,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: tr('PIN (opcional)'),
-              helperText: tr('Impede que estranhos na mesma rede entrem'),
-              counterText: '',
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (Hotspot.isSupported)
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _useHotspot,
-              onChanged: _busy ? null : (v) => setState(() => _useHotspot = v),
-              title: Text(tr('Criar hotspot (sem Wi-Fi)')),
-              subtitle: Text(
-                  tr('Este telemóvel cria uma rede local. Os outros ligam-se a ela pelo QR code do Wi-Fi.')),
-            )
-          else
-            Text(
-              tr('Sem Wi-Fi? Liga o Hotspot Pessoal nas Definições do iPhone e pede aos outros que se liguem a ele.'),
-              style: theme.textTheme.bodySmall,
-            ),
-          if (_error != null) ...[
-            const SizedBox(height: 16),
-            Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          ],
-          const SizedBox(height: 24),
+          )),
+        ),
+        BottomActions(children: [
           FilledButton(
             onPressed: _busy ? null : _create,
             child: _busy
                 ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                 : Text(tr('Abrir sala')),
           ),
-        ],
-      )),
+        ]),
+      ]),
     );
   }
 }

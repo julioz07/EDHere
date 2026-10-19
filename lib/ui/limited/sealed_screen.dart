@@ -33,8 +33,8 @@ Future<db.BoosterSetInfo?> showSetPicker(BuildContext context, List<db.BoosterSe
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: TextField(
                 autofocus: false,
-                decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search), hintText: tr('Set (nome, código ou ano)')),
+                decoration:
+                    InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('Set (nome, código ou ano)')),
                 onChanged: (v) => set(() => query = v),
               ),
             ),
@@ -115,8 +115,7 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
           [
             for (final o in pack)
               if (cards[o] case final c?)
-                db.PackCard(
-                    db.BoosterPrint(c.printId, o, (c.rarity.isEmpty ? 'c' : c.rarity[0]).toUpperCase(), '')),
+                db.PackCard(db.BoosterPrint(c.printId, o, (c.rarity.isEmpty ? 'c' : c.rarity[0]).toUpperCase(), '')),
           ],
       ];
       title = tr('Cubo {v}', {'v': deck.name});
@@ -139,84 +138,93 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
     final ready = _cube ? _cubeId != null : _set != null;
     return Scaffold(
       appBar: AppBar(title: Text(tr('Sealed'))),
-      body: MaxWidth(
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text(
-            tr('Cada um abre os seus boosters e monta um deck de 40 cartas com o que saiu (mais terrenos básicos à vontade). Para jogar com outros, cada um faz o seu sealed e depois criam uma sala.'),
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(
-                  value: false, icon: const Icon(Icons.inventory_2_outlined), label: Text(tr('Set'))),
-              ButtonSegment(value: true, icon: const Icon(Icons.grid_view), label: Text(tr('Cubo'))),
-            ],
-            selected: {_cube},
-            onSelectionChanged: (v) => setState(() => _cube = v.first),
-          ),
-          const SizedBox(height: 12),
-          if (!_cube)
-            Card(
-              child: ListTile(
-                leading:
-                    _set == null ? const Icon(Icons.style) : SetSymbol(_set!.code, rarity: 'M', size: 30),
-                title: Text(_set?.name ?? tr('Escolher set')),
-                subtitle: Text(_set == null
-                    ? (_sets.isEmpty
-                        ? tr('A carregar…')
-                        : tr('{n} sets disponíveis, de 1993 até hoje', {'n': _sets.length}))
-                    : tr('{code} · {year} · {size} cartas por booster',
-                        {'code': _set!.code, 'year': _set!.year, 'size': _set!.size})),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _sets.isEmpty
-                    ? null
-                    : () async {
-                        final s = await showSetPicker(context, _sets);
-                        if (s != null) setState(() => _set = s);
-                      },
+      // "Abrir boosters" fica fora da lista: sempre à vista.
+      body: Column(children: [
+        Expanded(
+          child: MaxWidth(
+            child: ListView(padding: const EdgeInsets.all(16), children: [
+              Text(
+                tr('Cada um abre os seus boosters e monta um deck de 40 cartas com o que saiu (mais terrenos básicos à vontade). Para jogar com outros, cada um faz o seu sealed e depois criam uma sala.'),
+                style: theme.textTheme.bodyMedium,
               ),
-            ),
-          if (!_cube && _set != null)
-            SetImagesTile(set: _set!)
-          else if (cubes.isEmpty)
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: Text(tr('Ainda não tens cubos')),
-                subtitle: Text(tr(
-                    'Em Decks → Importar lista, cola a lista do cubo (por exemplo, exportada do CubeCobra) e escolhe o formato "Cubo".')),
+              const SizedBox(height: 16),
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment(value: false, icon: const Icon(Icons.inventory_2_outlined), label: Text(tr('Set'))),
+                  ButtonSegment(value: true, icon: const Icon(Icons.grid_view), label: Text(tr('Cubo'))),
+                ],
+                selected: {_cube},
+                onSelectionChanged: (v) => setState(() => _cube = v.first),
               ),
-            )
-          else ...[
-            DropdownButtonFormField<int>(
-              value: _cubeId,
-              decoration: InputDecoration(labelText: tr('Cubo')),
-              items: [
-                for (final d in cubes)
-                  DropdownMenuItem(
-                      value: d.id,
-                      child: Text(tr('{v} ({v2} cartas)', {'v': d.name, 'v2': d.count(db.Board.main)}))),
+              const SizedBox(height: 12),
+              if (!_cube)
+                Card(
+                  child: ListTile(
+                    leading: _set == null ? const Icon(Icons.style) : SetSymbol(_set!.code, rarity: 'M', size: 30),
+                    title: Text(_set?.name ?? tr('Escolher set')),
+                    subtitle: Text(_set == null
+                        ? (_sets.isEmpty
+                            ? tr('A carregar…')
+                            : tr('{n} sets disponíveis, de 1993 até hoje', {'n': _sets.length}))
+                        : tr('{code} · {year} · {size} cartas por booster',
+                            {'code': _set!.code, 'year': _set!.year, 'size': _set!.size})),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _sets.isEmpty
+                        ? null
+                        : () async {
+                            final s = await showSetPicker(context, _sets);
+                            if (s != null) setState(() => _set = s);
+                          },
+                  ),
+                ),
+              if (!_cube && _set != null)
+                SetImagesTile(set: _set!)
+              else if (cubes.isEmpty)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(tr('Ainda não tens cubos')),
+                    subtitle: Text(tr(
+                        'Em Decks → Importar lista, cola a lista do cubo (por exemplo, exportada do CubeCobra) e escolhe o formato "Cubo".')),
+                  ),
+                )
+              else ...[
+                DropdownButtonFormField<int>(
+                  value: _cubeId,
+                  decoration: InputDecoration(labelText: tr('Cubo')),
+                  items: [
+                    for (final d in cubes)
+                      DropdownMenuItem(
+                          value: d.id,
+                          child: Text(tr('{v} ({v2} cartas)', {'v': d.name, 'v2': d.count(db.Board.main)}))),
+                  ],
+                  onChanged: (v) => setState(() => _cubeId = v),
+                ),
+                const SizedBox(height: 8),
+                _Stepper(
+                  label: tr('Cartas por pack'),
+                  value: _cubePackSize,
+                  min: 5,
+                  max: 20,
+                  onChanged: (v) => setState(() => _cubePackSize = v),
+                ),
               ],
-              onChanged: (v) => setState(() => _cubeId = v),
-            ),
-            const SizedBox(height: 8),
-            _Stepper(
-              label: tr('Cartas por pack'),
-              value: _cubePackSize,
-              min: 5,
-              max: 20,
-              onChanged: (v) => setState(() => _cubePackSize = v),
-            ),
-          ],
-          _Stepper(
-            label: tr('Boosters'),
-            value: _packs,
-            min: 1,
-            max: 12,
-            onChanged: (v) => setState(() => _packs = v),
+              _Stepper(
+                label: tr('Boosters'),
+                value: _packs,
+                min: 1,
+                max: 12,
+                onChanged: (v) => setState(() => _packs = v),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                tr('Os boosters seguem a composição real de cada set (dados do MTGJSON). As imagens descarregam-se quando há rede, ou passam de outro telemóvel na sala.'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ]),
           ),
-          const SizedBox(height: 16),
+        ),
+        BottomActions(children: [
           FilledButton.icon(
             onPressed: !ready || _busy ? null : _open,
             icon: _busy
@@ -224,24 +232,15 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
                 : const Icon(Icons.card_giftcard),
             label: Text(tr('Abrir {packs} boosters', {'packs': _packs})),
           ),
-          const SizedBox(height: 16),
-          Text(
-            tr('Os boosters seguem a composição real de cada set (dados do MTGJSON). As imagens descarregam-se quando há rede, ou passam de outro telemóvel na sala.'),
-            style: theme.textTheme.bodySmall,
-          ),
         ]),
-      ),
+      ]),
     );
   }
 }
 
 class _Stepper extends StatelessWidget {
   const _Stepper(
-      {required this.label,
-      required this.value,
-      required this.min,
-      required this.max,
-      required this.onChanged});
+      {required this.label, required this.value, required this.min, required this.max, required this.onChanged});
   final String label;
   final int value;
   final int min;
@@ -258,11 +257,9 @@ class _Stepper extends StatelessWidget {
               icon: const Icon(Icons.remove_circle_outline)),
           SizedBox(
               width: 32,
-              child: Text('$value',
-                  textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium)),
+              child: Text('$value', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium)),
           IconButton(
-              onPressed: value < max ? () => onChanged(value + 1) : null,
-              icon: const Icon(Icons.add_circle_outline)),
+              onPressed: value < max ? () => onChanged(value + 1) : null, icon: const Icon(Icons.add_circle_outline)),
         ]),
       );
 }
@@ -283,18 +280,15 @@ class PackOpeningScreen extends ConsumerStatefulWidget {
 class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
   // Comuns primeiro e a rara no fim, como num booster a sério.
   late final List<List<PoolCard>> _packs = [
-    for (final p in widget.packs)
-      resolvePool(ref, [...p]..sort((a, b) => revealRank(a).compareTo(revealRank(b)))),
+    for (final p in widget.packs) resolvePool(ref, [...p]..sort((a, b) => revealRank(a).compareTo(revealRank(b)))),
   ];
-  late final int _missing =
-      widget.packs.fold(0, (n, p) => n + p.length) - _packs.fold(0, (n, p) => n + p.length);
+  late final int _missing = widget.packs.fold(0, (n, p) => n + p.length) - _packs.fold(0, (n, p) => n + p.length);
   int _opened = 1;
 
   List<PoolCard> get _pool => [for (final p in _packs) ...p];
 
   void _build() => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-        builder: (_) =>
-            LimitedBuilderScreen(pool: _pool, title: tr('Sealed · {title}', {'title': widget.title})),
+        builder: (_) => LimitedBuilderScreen(pool: _pool, title: tr('Sealed · {title}', {'title': widget.title})),
       ));
 
   /// Sair antes de montar: a pool pode ficar guardada para depois.
@@ -340,8 +334,8 @@ class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
               color: theme.colorScheme.errorContainer,
               child: ListTile(
                 leading: const Icon(Icons.update),
-                title: Text(tr('{missing} cartas destes boosters não estão na tua base de cartas',
-                    {'missing': _missing})),
+                title:
+                    Text(tr('{missing} cartas destes boosters não estão na tua base de cartas', {'missing': _missing})),
                 subtitle: Text(tr('O set é mais recente do que a base. Atualiza-a em Definições → Dados.')),
               ),
             ),

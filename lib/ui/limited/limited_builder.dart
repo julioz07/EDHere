@@ -9,6 +9,7 @@ import '../../data/providers.dart';
 import '../decks/deck_editor_screen.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
+import '../widgets/resume_tile.dart';
 import 'limited_common.dart';
 import '../../l10n/l10n.dart';
 
@@ -677,37 +678,29 @@ class LimitedBuildsCard extends ConsumerWidget {
           child: Text(tr('Decks por montar'), style: theme.textTheme.titleSmall),
         ),
         for (final b in builds)
-          ListTile(
-            leading: const Icon(Icons.construction),
-            title: Text(b.title),
-            subtitle: Text(tr('{n} cartas na pool · {n2} no deck · {v}',
-                {'n': b.pool.length, 'n2': b.deck.length, 'v': shortDate(b.savedAt)})),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              IconButton(
-                tooltip: tr('Deitar fora'),
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text(tr('Deitar fora a pool?')),
-                      content: Text(
-                          tr('{title}: as {n} cartas perdem-se.', {'title': b.title, 'n': b.pool.length})),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Deitar fora'))),
-                      ],
-                    ),
-                  );
-                  if (ok == true) ref.read(limitedBuildsProvider).remove(b.id);
-                },
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
-                onPressed: () => resumeLimitedBuild(context, ref, b),
-                child: Text(tr('Montar')),
-              ),
-            ]),
+          ResumeTile(
+            icon: Icons.construction,
+            title: b.title,
+            subtitle: tr('{n} cartas na pool · {n2} no deck · {v}',
+                {'n': b.pool.length, 'n2': b.deck.length, 'v': shortDate(b.savedAt)}),
+            deleteTooltip: tr('Deitar fora'),
+            onDelete: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(tr('Deitar fora a pool?')),
+                  content: Text(
+                      tr('{title}: as {n} cartas perdem-se.', {'title': b.title, 'n': b.pool.length})),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Deitar fora'))),
+                  ],
+                ),
+              );
+              if (ok == true) ref.read(limitedBuildsProvider).remove(b.id);
+            },
+            actionLabel: tr('Montar'),
+            onAction: () => resumeLimitedBuild(context, ref, b),
           ),
       ]),
     );

@@ -125,8 +125,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
           child: RotatedBox(
             quarterTurns: turns,
             child: Row(children: [
-              for (final s in list)
-                Expanded(child: _SeatArea(ctrl: ctrl, seat: s, openHand: widget.openHands)),
+              for (final s in list) Expanded(child: _SeatArea(ctrl: ctrl, seat: s, openHand: widget.openHands)),
             ]),
           ),
         );
@@ -148,25 +147,29 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
         if (didPop) return;
         if (await _confirmLeave() && context.mounted) Navigator.of(context).pop();
       },
-      child: Scaffold(
-        body: SafeArea(
-          child: ListenableBuilder(
-            listenable: ctrl,
-            builder: (context, _) {
-              final size = MediaQuery.sizeOf(context);
-              if (size.width > size.height) {
-                return Row(children: [
-                  half(top, 1),
-                  bar(3),
-                  if (bottom.isNotEmpty) half(bottom, 3),
+      // Mesa densa: a letra do sistema só aumenta até 115% (ver TableScreen).
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Scaffold(
+          body: SafeArea(
+            child: ListenableBuilder(
+              listenable: ctrl,
+              builder: (context, _) {
+                final size = MediaQuery.sizeOf(context);
+                if (size.width > size.height) {
+                  return Row(children: [
+                    half(top, 1),
+                    bar(3),
+                    if (bottom.isNotEmpty) half(bottom, 3),
+                  ]);
+                }
+                return Column(children: [
+                  half(top, 2),
+                  bar(0),
+                  if (bottom.isNotEmpty) half(bottom, 0),
                 ]);
-              }
-              return Column(children: [
-                half(top, 2),
-                bar(0),
-                if (bottom.isNotEmpty) half(bottom, 0),
-              ]);
-            },
+              },
+            ),
           ),
         ),
       ),
@@ -247,8 +250,7 @@ class _SeatArea extends StatelessWidget {
     final theme = Theme.of(context);
     final active = s.activeSeat == seat;
     final last = s.log.isEmpty ? null : s.log.last;
-    final showResult =
-        last != null && (last.type == Ev.rollDie || last.type == Ev.flipCoin) && last.actor == seat;
+    final showResult = last != null && (last.type == Ev.rollDie || last.type == Ev.flipCoin) && last.actor == seat;
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(

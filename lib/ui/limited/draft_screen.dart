@@ -48,9 +48,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
             title: Text(label),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(onPressed: minus, icon: const Icon(Icons.remove_circle_outline)),
-              SizedBox(
-                  width: 56,
-                  child: Text(value, textAlign: TextAlign.center, style: theme.textTheme.titleMedium)),
+              SizedBox(width: 56, child: Text(value, textAlign: TextAlign.center, style: theme.textTheme.titleMedium)),
               IconButton(onPressed: plus, icon: const Icon(Icons.add_circle_outline)),
             ]),
           );
@@ -93,8 +91,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
               Card(
                 margin: EdgeInsets.zero,
                 child: ListTile(
-                  leading:
-                      set == null ? const Icon(Icons.style) : SetSymbol(set!.code, rarity: 'M', size: 28),
+                  leading: set == null ? const Icon(Icons.style) : SetSymbol(set!.code, rarity: 'M', size: 28),
                   title: Text(set?.name ?? tr('Escolher set')),
                   subtitle: set == null
                       ? null
@@ -135,24 +132,21 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
             ),
             stepper(tr('Boosters por jogador'), '$packs', packs > 1 ? () => set_(() => packs--) : null,
                 packs < 6 ? () => set_(() => packs++) : null),
-            stepper(
-                tr('Lugares à mesa'),
-                '$seats',
-                seats > max(2, humans.length) ? () => set_(() => seats--) : null,
+            stepper(tr('Lugares à mesa'), '$seats', seats > max(2, humans.length) ? () => set_(() => seats--) : null,
                 seats < 8 ? () => set_(() => seats++) : null),
             Text(
                 seats > humans.length
-                    ? '${humans.length} ${humans.length == 1 ? 'jogador' : 'jogadores'} e ${seats - humans.length} '
-                        '${seats - humans.length == 1 ? 'bot' : 'bots'}'
-                    : tr('{n} jogadores, sem bots', {'n': humans.length}),
+                    ? tr('Jogadores: {n} · bots: {bots}', {'n': humans.length, 'bots': seats - humans.length})
+                    : humans.length == 1
+                        ? tr('1 jogador, sem bots')
+                        : tr('{n} jogadores, sem bots', {'n': humans.length}),
                 style: theme.textTheme.bodySmall),
             stepper(
                 tr('Tempo por escolha'),
                 timer == 0 ? tr('livre') : '${timer}s',
                 timer > 0 ? () => set_(() => timer = timer <= 30 ? 0 : timer - 15) : null,
                 timer < 120 ? () => set_(() => timer = timer == 0 ? 30 : timer + 15) : null),
-            if (timer > 0)
-              Text(tr('Quando o tempo acaba, a app escolhe por ti.'), style: theme.textTheme.bodySmall),
+            if (timer > 0) Text(tr('Quando o tempo acaba, a app escolhe por ti.'), style: theme.textTheme.bodySmall),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: !ready
@@ -218,13 +212,7 @@ Future<void> _start(WidgetRef ref, NetworkGame game,
   }
   game.startDraft(
     DraftConfig(
-        title: title,
-        setCode: set?.code,
-        packs: packs,
-        picks: picks,
-        timer: timer,
-        commander: commander,
-        seats: order),
+        title: title, setCode: set?.code, packs: packs, picks: picks, timer: timer, commander: commander, seats: order),
     generated,
   );
 }
@@ -309,8 +297,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
         child: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(tr('As tuas escolhas ({n})', {'n': cards.length}),
-                style: Theme.of(ctx).textTheme.titleMedium),
+            child: Text(tr('As tuas escolhas ({n})', {'n': cards.length}), style: Theme.of(ctx).textTheme.titleMedium),
           ),
           PoolGrid(target: 96, children: [for (final p in cards) PoolCardView(card: p)]),
         ]),
@@ -397,9 +384,8 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                       ],
                     ]),
                   ),
-                  backgroundColor: i < c.seats.length && c.seats[i].waiting > 1
-                      ? theme.colorScheme.tertiaryContainer
-                      : null,
+                  backgroundColor:
+                      i < c.seats.length && c.seats[i].waiting > 1 ? theme.colorScheme.tertiaryContainer : null,
                 ),
               ),
             Center(
@@ -417,8 +403,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.emoji_events_outlined, size: 48),
                     const SizedBox(height: 8),
-                    Text(tr('Draft terminado: {n} cartas', {'n': c.pool.length}),
-                        style: theme.textTheme.titleLarge),
+                    Text(tr('Draft terminado: {n} cartas', {'n': c.pool.length}), style: theme.textTheme.titleLarge),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),

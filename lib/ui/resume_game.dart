@@ -8,6 +8,7 @@ import '../room/room_session.dart';
 import 'lobby_screen.dart';
 import 'playtest/playtest_screen.dart';
 import '../l10n/l10n.dart';
+import 'widgets/resume_tile.dart';
 
 /// Volta ao jogo em rede guardado: liga-se com o mesmo token (o anfitrião
 /// devolve o mesmo lugar) e repõe a mão e o grimório.
@@ -68,18 +69,12 @@ class ResumeCard extends ConsumerWidget {
     return Card(
       color: scheme.primaryContainer,
       margin: const EdgeInsets.only(bottom: 20),
-      child: ListTile(
-        leading: const Icon(Icons.replay_circle_filled_rounded),
-        title: Text(tr('Jogo em curso: {room}', {'room': info.room})),
-        subtitle: Text(tr('A app fechou a meio do jogo. A tua mão e o grimório ficaram guardados.')),
-        isThreeLine: true,
-        trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
-            onPressed: () => resumeGame(context, ref, info),
-            child: Text(tr('Voltar')),
-          ),
-        ]),
+      child: ResumeTile(
+        icon: Icons.replay_circle_filled_rounded,
+        title: tr('Jogo em curso: {room}', {'room': info.room}),
+        subtitle: tr('A app fechou a meio do jogo. A tua mão e o grimório ficaram guardados.'),
+        actionLabel: tr('Voltar'),
+        onAction: () => resumeGame(context, ref, info),
         onLongPress: () => ref.read(resumeProvider).clear(),
       ),
     );
@@ -128,37 +123,29 @@ class SoloResumeCard extends ConsumerWidget {
     return Card(
       color: scheme.secondaryContainer,
       margin: const EdgeInsets.only(bottom: 20),
-      child: ListTile(
-        leading: const Icon(Icons.bookmark_rounded),
-        title: Text(save.title),
-        subtitle: Text(tr('Jogo gravado · turno {turn} · {when}', {'turn': save.turn, 'when': when})),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          IconButton(
-            tooltip: tr('Apagar'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(tr('Apagar o jogo gravado?')),
-                  content: Text(tr('{title}, turno {turn}.', {'title': save.title, 'turn': save.turn})),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
-                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Apagar'))),
-                  ],
-                ),
-              );
-              if (ok == true) ref.read(soloSaveProvider).clear();
-            },
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => PlaytestScreen.resume(save),
-            )),
-            child: Text(tr('Continuar')),
-          ),
-        ]),
+      child: ResumeTile(
+        icon: Icons.bookmark_rounded,
+        title: save.title,
+        subtitle: tr('Jogo gravado · turno {turn} · {when}', {'turn': save.turn, 'when': when}),
+        deleteTooltip: tr('Apagar'),
+        onDelete: () async {
+          final ok = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(tr('Apagar o jogo gravado?')),
+              content: Text(tr('{title}, turno {turn}.', {'title': save.title, 'turn': save.turn})),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Apagar'))),
+              ],
+            ),
+          );
+          if (ok == true) ref.read(soloSaveProvider).clear();
+        },
+        actionLabel: tr('Continuar'),
+        onAction: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => PlaytestScreen.resume(save),
+        )),
       ),
     );
   }

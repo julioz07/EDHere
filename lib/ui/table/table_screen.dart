@@ -38,13 +38,7 @@ const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
 /// Serve o playtest e o jogo em rede.
 class TableScreen extends ConsumerStatefulWidget {
   const TableScreen(
-      {super.key,
-      required this.ctrl,
-      this.title,
-      this.onLeave,
-      this.banner,
-      this.onNewGame,
-      this.confirmLeave});
+      {super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame, this.confirmLeave});
 
   final GameController ctrl;
   final String? title;
@@ -168,9 +162,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             final hand = ctrl.zones(seat).hand;
             final next = free ? count : count + 1;
             return AlertDialog(
-              title: Text(ctrl.mySeats.length > 1
-                  ? tr('Mão inicial de {name}', {'name': name})
-                  : tr('A tua mão inicial')),
+              title:
+                  Text(ctrl.mySeats.length > 1 ? tr('Mão inicial de {name}', {'name': name}) : tr('A tua mão inicial')),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -269,8 +262,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           for (final p in players)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, p.seat),
-              child: Text(
-                  ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
+              child: Text(ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
                   style: const TextStyle(fontSize: 16)),
             ),
           SimpleDialogOption(
@@ -350,8 +342,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   ]),
                 ),
                 ListTile(
-                  leading:
-                      Icon(ctrl.state.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny_outlined),
+                  leading: Icon(ctrl.state.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny_outlined),
                   title: Text(tr('Dia / noite')),
                   trailing: SegmentedButton<String>(
                     showSelectedIcon: false,
@@ -419,8 +410,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   onTap: () => run(() {
                     final hand = ctrl.zones(ctrl.actor).hand;
                     if (hand.isNotEmpty) {
-                      ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid],
-                          what: tr('a mão')));
+                      ctrl.send(ctrl.table
+                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: tr('a mão')));
                     }
                   }),
                 ),
@@ -452,140 +443,149 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           final phaseLabel = _phases.firstWhere((p) => p.$1 == s.phase, orElse: () => _phases[2]).$2;
           final myTurn = ctrl.mySeats.contains(s.activeSeat) && ctrl.isNetwork;
           final layout = tableLayoutFor(MediaQuery.sizeOf(context));
-          return Scaffold(
-            appBar: AppBar(
-              toolbarHeight: layout.short ? 44 : 48,
-              titleSpacing: 0,
-              title: Text(
-                s.over
-                    ? tr('Jogo terminado')
-                    : ctrl.scripted
-                        ? tr('Ronda {round} · {v}',
-                            {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
-                        : myTurn
-                            ? tr('T{turn} · o teu turno', {'turn': s.turn})
-                            : 'T${s.turn} · ${active?.name ?? ''}',
-                style: theme.textTheme.titleMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
-              actions: [
-                if (s.storm > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Chip(
-                      visualDensity: VisualDensity.compact,
-                      avatar: const Icon(Icons.bolt, size: 16),
-                      label: Text('${s.storm}'),
+          final narrowBar = MediaQuery.sizeOf(context).width < 400;
+          // A mesa é densa: com a letra do sistema muito grande, os cartões dos
+          // jogadores e as zonas deixavam de caber. Os menus e diálogos (fora
+          // deste MediaQuery) continuam com o tamanho escolhido.
+          return MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.15,
+              child: Scaffold(
+                appBar: AppBar(
+                  toolbarHeight: layout.short ? 44 : 48,
+                  titleSpacing: 0,
+                  title: Text(
+                    s.over
+                        ? tr('Jogo terminado')
+                        : ctrl.scripted
+                            ? tr('Ronda {round} · {v}',
+                                {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
+                            : myTurn
+                                ? tr('T{turn} · o teu turno', {'turn': s.turn})
+                                : 'T${s.turn} · ${active?.name ?? ''}',
+                    // Num telemóvel estreito o botão da fase tira espaço: duas linhas.
+                    style: narrowBar ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
+                    maxLines: narrowBar ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  actions: [
+                    if (s.storm > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Chip(
+                          visualDensity: VisualDensity.compact,
+                          avatar: const Icon(Icons.bolt, size: 16),
+                          label: Text('${s.storm}'),
+                        ),
+                      ),
+                    if (s.dayNight != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
+                            color: s.dayNight == 'night' ? Colors.indigo.shade200 : Colors.amber),
+                      ),
+                    ActionChip(
+                      label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        final i = _phases.indexWhere((p) => p.$1 == s.phase);
+                        ctrl.send(Intent(Ev.setPhase, {'phase': _phases[(i + 1) % _phases.length].$1}));
+                      },
                     ),
-                  ),
-                if (s.dayNight != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
-                        color: s.dayNight == 'night' ? Colors.indigo.shade200 : Colors.amber),
-                  ),
-                ActionChip(
-                  label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
-                  onPressed: () {
-                    final i = _phases.indexWhere((p) => p.$1 == s.phase);
-                    ctrl.send(Intent(Ev.setPhase, {'phase': _phases[(i + 1) % _phases.length].$1}));
-                  },
+                    IconButton(
+                      tooltip: tr('Desfazer'),
+                      onPressed: ctrl.canUndo ? ctrl.undo : null,
+                      icon: const Icon(Icons.undo),
+                    ),
+                    IconButton(
+                      tooltip: tr('Registo'),
+                      onPressed: () => showLogSheet(context, ctrl),
+                      icon: const Icon(Icons.receipt_long),
+                    ),
+                    IconButton(tooltip: tr('Mais'), onPressed: _menu, icon: const Icon(Icons.more_vert)),
+                  ],
                 ),
-                IconButton(
-                  tooltip: tr('Desfazer'),
-                  onPressed: ctrl.canUndo ? ctrl.undo : null,
-                  icon: const Icon(Icons.undo),
-                ),
-                IconButton(
-                  tooltip: tr('Registo'),
-                  onPressed: () => showLogSheet(context, ctrl),
-                  icon: const Icon(Icons.receipt_long),
-                ),
-                IconButton(tooltip: tr('Mais'), onPressed: _menu, icon: const Icon(Icons.more_vert)),
-              ],
-            ),
-            body: Stack(children: [
-              LayoutBuilder(builder: (context, box) {
-                final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
-                if (!layout.wide) {
-                  return Column(children: [
-                    if (widget.banner != null) widget.banner!,
-                    _PlayersStrip(ctrl: ctrl),
-                    Expanded(child: TableBattlefield(ctrl: ctrl)),
-                    TableZonesRow(ctrl: ctrl),
-                    TableHand(ctrl: ctrl),
-                    _BottomBar(ctrl: ctrl, lastLog: lastLog),
-                  ]);
-                }
-                // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
-                // turno" passam para uma coluna à direita. Num telemóvel deitado
-                // (pouca altura) a mão e a coluna encolhem.
-                final handH = (box.maxHeight * 0.24).clamp(84.0, 168.0);
-                final panelW = layout.short ? 96.0 : 128.0;
-                return Column(children: [
-                  if (widget.banner != null) widget.banner!,
-                  Expanded(
-                    child: Row(children: [
+                body: Stack(children: [
+                  LayoutBuilder(builder: (context, box) {
+                    final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
+                    if (!layout.wide) {
+                      // Em telemóveis pequenos a mão, as zonas e os jogadores
+                      // encolhem, para o campo não ficar reduzido a uma tira.
+                      final tight = box.maxHeight < 600;
+                      return Column(children: [
+                        if (widget.banner != null) widget.banner!,
+                        _PlayersStrip(ctrl: ctrl, compact: tight),
+                        Expanded(child: TableBattlefield(ctrl: ctrl)),
+                        TableZonesRow(ctrl: ctrl, pileWidth: tight ? 34 : 44),
+                        TableHand(ctrl: ctrl, height: (box.maxHeight * 0.2).clamp(92.0, 136.0)),
+                        _BottomBar(ctrl: ctrl, lastLog: lastLog),
+                      ]);
+                    }
+                    // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
+                    // turno" passam para uma coluna à direita. Num telemóvel deitado
+                    // (pouca altura) a mão e a coluna encolhem.
+                    final handH = (box.maxHeight * 0.24).clamp(84.0, 168.0);
+                    final panelW = layout.short ? 96.0 : 128.0;
+                    return Column(children: [
+                      if (widget.banner != null) widget.banner!,
                       Expanded(
-                        child: Column(children: [
-                          _PlayersStrip(ctrl: ctrl, compact: layout.short),
-                          Expanded(child: TableBattlefield(ctrl: ctrl)),
-                          TableHand(ctrl: ctrl, height: handH),
+                        child: Row(children: [
+                          Expanded(
+                            child: Column(children: [
+                              _PlayersStrip(ctrl: ctrl, compact: layout.short),
+                              Expanded(child: TableBattlefield(ctrl: ctrl)),
+                              TableHand(ctrl: ctrl, height: handH),
+                            ]),
+                          ),
+                          Container(
+                            width: panelW,
+                            decoration: BoxDecoration(
+                              border: Border(left: BorderSide(color: theme.colorScheme.outline)),
+                            ),
+                            child: SafeArea(
+                              left: false,
+                              child: Column(children: [
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: TableZonesRow(ctrl: ctrl, vertical: true, pileWidth: layout.short ? 42 : 72),
+                                  ),
+                                ),
+                                const Divider(height: 1),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                                  child: GestureDetector(
+                                    onTap: () => showLogSheet(context, ctrl),
+                                    child: Text(lastLog,
+                                        maxLines: layout.short ? 2 : 4,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: FilledButton(
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: Size.fromHeight(layout.short ? 44 : 64),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    ),
+                                    onPressed:
+                                        ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork ? ctrl.passTurn : null,
+                                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                      const Icon(Icons.skip_next),
+                                      if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
+                                    ]),
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ),
                         ]),
                       ),
-                      Container(
-                        width: panelW,
-                        decoration: BoxDecoration(
-                          border: Border(left: BorderSide(color: theme.colorScheme.outline)),
-                        ),
-                        child: SafeArea(
-                          left: false,
-                          child: Column(children: [
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: TableZonesRow(
-                                    ctrl: ctrl, vertical: true, pileWidth: layout.short ? 42 : 72),
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
-                              child: GestureDetector(
-                                onTap: () => showLogSheet(context, ctrl),
-                                child: Text(lastLog,
-                                    maxLines: layout.short ? 2 : 4,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.bodySmall
-                                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: FilledButton(
-                                style: FilledButton.styleFrom(
-                                  minimumSize: Size.fromHeight(layout.short ? 44 : 64),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                ),
-                                onPressed: ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork
-                                    ? ctrl.passTurn
-                                    : null,
-                                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                  const Icon(Icons.skip_next),
-                                  if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
-                                ]),
-                              ),
-                            ),
-                          ]),
-                        ),
-                      ),
-                    ]),
-                  ),
-                ]);
-              }),
-              if (_bigResult case final r?) BigResult(value: r.$1, label: r.$2),
-            ]),
-          );
+                    ]);
+                  }),
+                  if (_bigResult case final r?) BigResult(value: r.$1, label: r.$2),
+                ]),
+              ));
         },
       ),
     );
@@ -682,57 +682,56 @@ class _PlayersStrip extends StatelessWidget {
                           ? [BoxShadow(color: targetGlow.withOpacity(0.8), blurRadius: 12, spreadRadius: 1)]
                           : null,
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (targeted) ...[
-                        const Icon(Icons.gps_fixed, color: targetGlow, size: 20),
-                        const SizedBox(width: 6),
-                      ],
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            if (s.monarch == seat)
-                              const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
-                            if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
-                            if (ctrl.offline.contains(seat))
-                              Padding(
-                                padding: const EdgeInsets.only(right: 3),
-                                child: Tooltip(
-                                    message: tr('Sem ligação'),
-                                    child: const Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
-                              ),
-                            Text(p.name,
-                                style: theme.textTheme.labelMedium
-                                    ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
-                          ]),
-                          // Cartas na mão e no grimório.
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.back_hand_outlined,
-                                size: 13, color: theme.colorScheme.onSurfaceVariant),
-                            Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
-                            Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
-                            Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
+                    // Com letra grande, o cartão encolhe em vez de transbordar.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        if (targeted) ...[
+                          const Icon(Icons.gps_fixed, color: targetGlow, size: 20),
+                          const SizedBox(width: 6),
+                        ],
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              if (s.monarch == seat) const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
+                              if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
+                              if (ctrl.offline.contains(seat))
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 3),
+                                  child: Tooltip(
+                                      message: tr('Sem ligação'),
+                                      child: const Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
+                                ),
+                              Text(p.name,
+                                  style: theme.textTheme.labelMedium
+                                      ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
+                            ]),
+                            // Cartas na mão e no grimório.
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(Icons.back_hand_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                              Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
+                              Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                              Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
+                            ]),
+                          ],
+                        ),
+                        const SizedBox(width: 10),
+                        Text('${p.life}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800, color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
+                        if (poison > 0 || maxCmd > 0) ...[
+                          const SizedBox(width: 6),
+                          Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            if (poison > 0) Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                            if (maxCmd > 0)
+                              Text('★$maxCmd',
+                                  style: TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : Colors.amber)),
                           ]),
                         ],
-                      ),
-                      const SizedBox(width: 10),
-                      Text('${p.life}',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
-                      if (poison > 0 || maxCmd > 0) ...[
-                        const SizedBox(width: 6),
-                        Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          if (poison > 0)
-                            Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
-                          if (maxCmd > 0)
-                            Text('★$maxCmd',
-                                style: TextStyle(
-                                    fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : Colors.amber)),
-                        ]),
-                      ],
-                    ]),
+                      ]),
+                    ),
                   ),
                 ),
               );
@@ -823,9 +822,8 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
               x: ((local.dx - pad) / spanX).clamp(0.0, 1.0), y: ((local.dy - pad) / spanY).clamp(0.0, 1.0));
         },
         builder: (context, candidates, _) => Container(
-          foregroundDecoration: candidates.isEmpty
-              ? null
-              : BoxDecoration(border: Border.all(color: theme.colorScheme.primary, width: 3)),
+          foregroundDecoration:
+              candidates.isEmpty ? null : BoxDecoration(border: Border.all(color: theme.colorScheme.primary, width: 3)),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
             image: bg == null
@@ -833,8 +831,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
                 : DecorationImage(
                     image: bg,
                     fit: BoxFit.cover,
-                    colorFilter:
-                        ColorFilter.mode(Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
+                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(settings.backgroundDim), BlendMode.darken),
                   ),
           ),
           child: Stack(clipBehavior: Clip.hardEdge, children: [
@@ -894,10 +891,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
                 painter: _ArrowPainter(
                   [
                     for (final t in s.targets)
-                      if (t.from != null &&
-                          t.card != null &&
-                          centers[t.from] != null &&
-                          centers[t.card] != null)
+                      if (t.from != null && t.card != null && centers[t.from] != null && centers[t.card] != null)
                         (centers[t.from]!, centers[t.card]!),
                   ],
                   targetGlow,
@@ -965,8 +959,7 @@ class TableZonesRow extends StatelessWidget {
     final w = pileWidth;
     Widget gap() => vertical ? const SizedBox(height: 10) : const SizedBox(width: 8);
 
-    Widget pile(String label, int count, Widget? top, VoidCallback onTap, {VoidCallback? onLong}) =>
-        GestureDetector(
+    Widget pile(String label, int count, Widget? top, VoidCallback onTap, {VoidCallback? onLong}) => GestureDetector(
           onTap: onTap,
           onLongPress: onLong,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1184,8 +1177,7 @@ class _TableHandState extends ConsumerState<TableHand> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(6),
                                   boxShadow: [
-                                    BoxShadow(
-                                        color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
+                                    BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
                                   ],
                                 ),
                                 child: CardImage(card, radius: 5),

@@ -61,6 +61,9 @@ class SettingsTab extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SegmentedButton<ThemeMode>(
+            // Sem o visto (o ícone de cada um já está lá): com letra grande,
+            // "Sistema" deixava de caber numa linha.
+            showSelectedIcon: false,
             segments: [
               ButtonSegment(
                   value: ThemeMode.system,

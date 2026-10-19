@@ -94,19 +94,21 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     final scheme = theme.colorScheme;
     final hasDecks = ref.watch(decksProvider).decks.isNotEmpty;
     final hasData = ref.watch(cardDataProvider).hasData;
+    // Em ecrãs baixos o cabeçalho encolhe, para as ações aparecerem logo.
+    final short = MediaQuery.sizeOf(context).height < 700;
     return Scaffold(
       body: MaxWidth(
           child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, short ? 16 : 32, 24, 24),
           children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SvgPicture.asset(Brand.horizontal(theme.brightness), height: 56),
+              SvgPicture.asset(Brand.horizontal(theme.brightness), height: short ? 40 : 56),
               const SizedBox(height: 6),
               Text(tr('Joga com quem está aqui'),
                   style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
             ]),
-            const SizedBox(height: 24),
+            SizedBox(height: short ? 16 : 24),
             const ResumeCard(),
             const SoloResumeCard(),
             const LimitedBuildsCard(),

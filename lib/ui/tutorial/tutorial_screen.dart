@@ -378,7 +378,20 @@ class _CoachPanelState extends State<CoachPanel> {
         final s = r.current;
         final total = r.chapter.steps.length;
         // Telemóvel deitado: pouca altura, o guia fica compacto para a mesa caber.
-        final short = MediaQuery.of(context).size.height < 520;
+        final screenH = MediaQuery.sizeOf(context).height;
+        final short = screenH < 520;
+        // O texto do passo tem altura limitada (com scroll), proporcional ao
+        // ecrã; em telemóveis pequenos o "Continuar" sobe para a linha do título.
+        final textMax = (screenH * 0.16).clamp(64.0, 180.0);
+        final inlineNext = screenH < 760;
+        final showNext = s != null && s.done == null && !r.busy;
+        Widget nextButton() => FilledButton(
+              style: FilledButton.styleFrom(
+                  minimumSize: Size(0, inlineNext ? 34 : 40),
+                  padding: inlineNext ? const EdgeInsets.symmetric(horizontal: 14) : null),
+              onPressed: r.next,
+              child: Text(r.step + 1 >= total ? tr('Concluir') : tr('Continuar')),
+            );
         return Material(
           color: theme.colorScheme.primaryContainer,
           child: AnimatedSize(
@@ -403,6 +416,7 @@ class _CoachPanelState extends State<CoachPanel> {
                               ?.copyWith(color: theme.colorScheme.onPrimaryContainer),
                         ),
                       ),
+                      if (inlineNext && showNext) nextButton(),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: tr('Glossário'),
@@ -421,7 +435,7 @@ class _CoachPanelState extends State<CoachPanel> {
                       if (r.busy && r.narration != null)
                         // Tudo o que os adversários fizeram nesta vez; a última em destaque.
                         ConstrainedBox(
-                          constraints: BoxConstraints(maxHeight: short ? 64 : 180),
+                          constraints: BoxConstraints(maxHeight: textMax),
                           child: SingleChildScrollView(
                             reverse: true,
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -454,7 +468,7 @@ class _CoachPanelState extends State<CoachPanel> {
                         )
                       else if (s != null && !r.busy)
                         ConstrainedBox(
-                          constraints: BoxConstraints(maxHeight: short ? 64 : 180),
+                          constraints: BoxConstraints(maxHeight: textMax),
                           child: SingleChildScrollView(
                             child: Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -475,16 +489,12 @@ class _CoachPanelState extends State<CoachPanel> {
                             ),
                           ]),
                         ),
-                      if (s != null && s.done == null && !r.busy)
+                      if (showNext && !inlineNext)
                         Align(
                           alignment: Alignment.centerRight,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 6, right: 8),
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-                              onPressed: r.next,
-                              child: Text(r.step + 1 >= total ? tr('Concluir') : tr('Continuar')),
-                            ),
+                            child: nextButton(),
                           ),
                         ),
                     ],

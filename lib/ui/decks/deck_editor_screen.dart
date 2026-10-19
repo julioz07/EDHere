@@ -169,8 +169,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     }
     ref.read(collectionProvider).addAll(cards, atLeast: true);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(cards.length == 1
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(cards.length == 1
               ? tr('1 carta junta às minhas cartas.')
               : tr('{n} cartas juntas às minhas cartas.', {'n': cards.length}))));
     }
@@ -188,8 +188,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               ListTile(
                 leading: SizedBox(
-                    width: 36,
-                    child: CardImage(ref.read(printsProvider).resolve(card, printId: e.printId), radius: 3)),
+                    width: 36, child: CardImage(ref.read(printsProvider).resolve(card, printId: e.printId), radius: 3)),
                 title: Text(card.displayName),
                 subtitle: Text('${e.qty} × ${e.board.label}${e.category == null ? '' : ' · ${e.category}'}'),
               ),
@@ -374,8 +373,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             subtitle: Text(tr('WhatsApp, email, notas…')),
             onTap: () {
               Navigator.pop(ctx);
-              shareText(exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info),
-                  subject: _deck.name);
+              shareText(exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info), subject: _deck.name);
             },
           ),
           if (ref.read(collectionProvider).owned.isNotEmpty)
@@ -399,8 +397,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     }
     final lines = <String>[
       for (final MapEntry(key: id, value: n) in need.entries)
-        if (cards[id] case final c? when !c.isBasicLand && n > (owned[id] ?? 0))
-          '${n - (owned[id] ?? 0)} ${c.name}',
+        if (cards[id] case final c? when !c.isBasicLand && n > (owned[id] ?? 0)) '${n - (owned[id] ?? 0)} ${c.name}',
     ]..sort((a, b) => a.substring(a.indexOf(' ')).compareTo(b.substring(b.indexOf(' '))));
     return lines.isEmpty ? '' : lines.join('\n');
   }
@@ -438,6 +435,11 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     Navigator.of(context).pop();
   }
 
+  void _toggleView() {
+    setState(() => _grid = !_grid);
+    ref.read(deckStoreProvider).setSetting('deck_view', _grid ? 'grid' : 'list');
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(imagesProvider);
@@ -448,6 +450,9 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     final f = _format;
     final size = f.hasCommandZone ? _deck.playableCount : _deck.count(Board.main);
     final target = f.exactDeck ?? f.minDeck;
+    // Num telemóvel estreito, só exportar e o menu ficam na barra (o nome do
+    // deck precisa do espaço).
+    final narrow = MediaQuery.sizeOf(context).width < 400;
 
     return DefaultTabController(
       length: 3,
@@ -455,29 +460,26 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
         appBar: AppBar(
           title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(_deck.name, overflow: TextOverflow.ellipsis),
-            Text(
-                tr('{v} · {size}{v2} cartas',
-                    {'v': f.label, 'size': size, 'v2': target == null ? '' : '/$target'}),
+            Text(tr('{v} · {size}{v2} cartas', {'v': f.label, 'size': size, 'v2': target == null ? '' : '/$target'}),
                 style: Theme.of(context).textTheme.bodySmall),
           ]),
           actions: [
-            IconButton(
-              tooltip: tr('Testar (goldfish)'),
-              icon: const Icon(Icons.play_arrow_rounded),
-              onPressed: _deck.playableCount == 0
-                  ? null
-                  : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
-                      )),
-            ),
-            IconButton(
-              tooltip: _grid ? tr('Ver em lista') : tr('Ver em grelha'),
-              icon: Icon(_grid ? Icons.view_list : Icons.grid_view),
-              onPressed: () {
-                setState(() => _grid = !_grid);
-                ref.read(deckStoreProvider).setSetting('deck_view', _grid ? 'grid' : 'list');
-              },
-            ),
+            if (!narrow) ...[
+              IconButton(
+                tooltip: tr('Testar (goldfish)'),
+                icon: const Icon(Icons.play_arrow_rounded),
+                onPressed: _deck.playableCount == 0
+                    ? null
+                    : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
+                        )),
+              ),
+              IconButton(
+                tooltip: _grid ? tr('Ver em lista') : tr('Ver em grelha'),
+                icon: Icon(_grid ? Icons.view_list : Icons.grid_view),
+                onPressed: _toggleView,
+              ),
+            ],
             IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
             PopupMenuButton<String>(
               onSelected: (v) => switch (v) {
@@ -487,9 +489,19 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                     builder: (_) => HandSimulatorScreen(deck: _deck, cards: _cards()),
                   )),
                 'delete' => _delete(),
+                'test' => _deck.playableCount == 0
+                    ? null
+                    : Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
+                      )),
+                'view' => _toggleView(),
                 _ => null,
               },
               itemBuilder: (_) => [
+                if (narrow) ...[
+                  PopupMenuItem(value: 'test', child: Text(tr('Testar (goldfish)'))),
+                  PopupMenuItem(value: 'view', child: Text(_grid ? tr('Ver em lista') : tr('Ver em grelha'))),
+                ],
                 PopupMenuItem(value: 'hands', child: Text(tr('Simular mãos iniciais'))),
                 PopupMenuItem(value: 'own', child: Text(tr('Tenho este deck (juntar às minhas cartas)'))),
                 PopupMenuItem(value: 'edit', child: Text(tr('Nome e formato'))),
@@ -498,19 +510,23 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
             ),
           ],
           bottom: TabBar(tabs: [
-            Tab(text: tr('Cartas')),
-            Tab(text: tr('Estatísticas')),
+            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Cartas')))),
+            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Estatísticas')))),
             Tab(
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(tr('Validação')),
-                const SizedBox(width: 6),
-                if (!f.validates)
-                  const Icon(Icons.remove_circle_outline, size: 16)
-                else if (errors == 0)
-                  const Icon(Icons.check_circle, size: 16, color: EdhColors.ok)
-                else
-                  Badge(label: Text('$errors'), backgroundColor: EdhColors.bad),
-              ]),
+              // Com letra grande, os rótulos encolhem em vez de transbordar.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(tr('Validação')),
+                  const SizedBox(width: 6),
+                  if (!f.validates)
+                    const Icon(Icons.remove_circle_outline, size: 16)
+                  else if (errors == 0)
+                    const Icon(Icons.check_circle, size: 16, color: EdhColors.ok)
+                  else
+                    Badge(label: Text('$errors'), backgroundColor: EdhColors.bad),
+                ]),
+              ),
             ),
           ]),
         ),
@@ -594,12 +610,12 @@ class _CardListState extends State<_CardList> {
 
   Widget _tile(DeckEntry e, db.Card c) => CardTile(
         shown(e, c),
-        thumbWidth: 84,
-        subtitle: [c.typeLine, if (_ownedNote(e) case final n?) n].join(' · '),
+        // Num telemóvel estreito, miniaturas menores: cabem mais cartas no ecrã.
+        thumbWidth: MediaQuery.sizeOf(context).width < 400 ? 60 : 84,
+        subtitle: [c.displayTypeOf(), if (_ownedNote(e) case final n?) n].join(' · '),
         leadingQty: e.qty,
         onTap: () => onTap(e, c),
-        trailing:
-            flagged(e) ? const Icon(Icons.warning_amber_rounded, color: EdhColors.warn, size: 22) : null,
+        trailing: flagged(e) ? const Icon(Icons.warning_amber_rounded, color: EdhColors.warn, size: 22) : null,
       );
 
   bool flagged(DeckEntry e) => issues.any((i) => i.oracleId == e.oracleId);
@@ -624,7 +640,8 @@ class _CardListState extends State<_CardList> {
       return c != null &&
           (normalizeName(c.name).contains(q) ||
               normalizeName(c.displayName).contains(q) ||
-              normalizeName(c.typeLine).contains(q));
+              normalizeName(c.typeLine).contains(q) ||
+              normalizeName(c.displayTypeOf()).contains(q));
     }
 
     final flagged = {
@@ -658,8 +675,7 @@ class _CardListState extends State<_CardList> {
             : tr('Custo {v}', {'v': (c?.mv ?? 0).round() >= 7 ? '7+' : (c?.mv ?? 0).round()});
       } else {
         key = e.category ??
-            DeckStats.typeOrder
-                .firstWhere((t) => c?.frontType.contains(t) ?? false, orElse: () => tr('Outros'));
+            DeckStats.typeOrder.firstWhere((t) => c?.frontType.contains(t) ?? false, orElse: () => tr('Outros'));
       }
       groups.putIfAbsent(key, () => []).add(e);
     }
@@ -711,8 +727,8 @@ class _CardListState extends State<_CardList> {
           ),
         if (owned.isNotEmpty)
           Builder(builder: (context) {
-            final relevant = deck.entries
-                .where((e) => e.board != Board.maybe && !(cards[e.oracleId]?.isBasicLand ?? false));
+            final relevant =
+                deck.entries.where((e) => e.board != Board.maybe && !(cards[e.oracleId]?.isBasicLand ?? false));
             final need = relevant.fold(0, (n, e) => n + e.qty);
             final have = relevant.fold(0, (n, e) => n + ((owned[e.oracleId] ?? 0).clamp(0, e.qty)));
             return Padding(
@@ -939,19 +955,15 @@ class _StatsView extends StatelessWidget {
             child: Row(children: [
               ManaSymbol(c, size: 20),
               const SizedBox(width: 10),
-              Expanded(
-                  child: Text(
-                      tr('{v} nos custos', {'v': plural(s.pips[c] ?? 0, tr('símbolo'), tr('símbolos'))}))),
+              Expanded(child: Text(tr('{v} nos custos', {'v': plural(s.pips[c] ?? 0, tr('símbolo'), tr('símbolos'))}))),
               Text(plural(s.sources[c] ?? 0, tr('terreno'), tr('terrenos'))),
             ]),
           ),
       if (library > 0 && s.lands > 0) ...[
         title(tr('Mão inicial (7 cartas)')),
         for (final k in [2, 3, 4])
-          Text(tr('Pelo menos {k} terrenos: {v}%', {
-            'k': k,
-            'v': (probabilityAtLeast(library, s.lands - _commandLands(), 7, k) * 100).toStringAsFixed(0)
-          })),
+          Text(tr('Pelo menos {k} terrenos: {v}%',
+              {'k': k, 'v': (probabilityAtLeast(library, s.lands - _commandLands(), 7, k) * 100).toStringAsFixed(0)})),
         const SizedBox(height: 4),
         Text(tr('Calculado sobre as {library} cartas do grimório.', {'library': library}),
             style: theme.textTheme.bodySmall),
@@ -975,10 +987,8 @@ class _StatsView extends StatelessWidget {
     );
   }
 
-  int _commandLands() => deck
-      .inBoard(Board.command)
-      .where((e) => cards[e.oracleId]?.isLand ?? false)
-      .fold(0, (n, e) => n + e.qty);
+  int _commandLands() =>
+      deck.inBoard(Board.command).where((e) => cards[e.oracleId]?.isLand ?? false).fold(0, (n, e) => n + e.qty);
 }
 
 class _IssuesView extends StatelessWidget {
@@ -1106,9 +1116,8 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
             if (hasFilter)
               FilterChip(
                 avatar: Icon(_filtered ? Icons.filter_alt : Icons.filter_alt_off, size: 16),
-                label: Text(_filtered && widget.filterLabel.isNotEmpty
-                    ? widget.filterLabel
-                    : tr('Sem filtros do deck')),
+                label:
+                    Text(_filtered && widget.filterLabel.isNotEmpty ? widget.filterLabel : tr('Sem filtros do deck')),
                 selected: _filtered,
                 showCheckmark: false,
                 onSelected: (v) => setState(() => _filtered = v),
@@ -1130,9 +1139,8 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
                 _add(c);
               },
               icon: const Icon(Icons.add),
-              label: Text(widget.title == tr('Escolher comandante')
-                  ? tr('Escolher como comandante')
-                  : tr('Juntar ao deck')),
+              label: Text(
+                  widget.title == tr('Escolher comandante') ? tr('Escolher como comandante') : tr('Juntar ao deck')),
             ),
           ]),
         )),
@@ -1171,8 +1179,8 @@ class _GridCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(10)),
-              child: Text('×$qty',
-                  style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+              child:
+                  Text('×$qty', style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
             ),
           ),
         if (flagged)

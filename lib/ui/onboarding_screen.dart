@@ -51,10 +51,7 @@ List<_Slide> get _slides => [
         tr('Decks, cartas e boosters'),
         [
           (Icons.search, tr('Todas as cartas pesquisáveis offline, com as versões que escolheres.')),
-          (
-            Icons.style_outlined,
-            tr('Monta ou importa decks (Moxfield, Archidekt…) com validação e bracket.')
-          ),
+          (Icons.style_outlined, tr('Monta ou importa decks (Moxfield, Archidekt…) com validação e bracket.')),
           (Icons.card_giftcard, tr('Abre boosters: sealed, draft, Commander draft e JumpStart.')),
         ],
         image: 'assets/onboarding/${L10n.lang.code}/deck.jpg',
@@ -62,15 +59,9 @@ List<_Slide> get _slides => [
       _Slide(
         tr('Jogar juntos e aprender'),
         [
-          (
-            Icons.router_outlined,
-            tr('Um cria a sala no Wi-Fi ou num hotspot; os outros entram pelo QR code.')
-          ),
+          (Icons.router_outlined, tr('Um cria a sala no Wi-Fi ou num hotspot; os outros entram pelo QR code.')),
           (Icons.smartphone, tr('Cada um joga no seu telemóvel: a tua mão nunca sai do teu.')),
-          (
-            Icons.school_outlined,
-            tr('Nunca jogaste? O tutorial "Aprender a jogar Commander" ensina-te a jogar.')
-          ),
+          (Icons.school_outlined, tr('Nunca jogaste? O tutorial "Aprender a jogar Commander" ensina-te a jogar.')),
         ],
         image: 'assets/onboarding/${L10n.lang.code}/room.jpg',
       ),
@@ -112,8 +103,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  void _go(int page) =>
-      _pages.animateToPage(page, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  void _go(int page) => _pages.animateToPage(page, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
 
   Future<void> _finish({required bool download}) async {
     final prefs = ref.read(prefsProvider);
@@ -203,25 +193,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: _last
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                            // Em que língua vêm as cartas (nome, texto e imagem).
-                            if (!hasData) const CardLanguageTile(contentPadding: EdgeInsets.zero),
-                            FilledButton.icon(
-                              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                              onPressed: () => _finish(download: true),
-                              icon: Icon(hasData ? Icons.check_rounded : Icons.download_rounded),
-                              label: Text(hasData ? tr('Começar') : tr('Descarregar as cartas e começar')),
-                            ),
-                            if (!hasData)
-                              TextButton(
-                                style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                                onPressed: () => _finish(download: false),
-                                child: Text(tr('Mais tarde (Definições → Dados)')),
-                              ),
-                          ])
+                    ? Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        // Em que língua vêm as cartas (nome, texto e imagem).
+                        if (!hasData) const CardLanguageTile(contentPadding: EdgeInsets.zero),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                          onPressed: () => _finish(download: true),
+                          icon: Icon(hasData ? Icons.check_rounded : Icons.download_rounded),
+                          label: Text(hasData ? tr('Começar') : tr('Descarregar as cartas e começar')),
+                        ),
+                        if (!hasData)
+                          TextButton(
+                            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                            onPressed: () => _finish(download: false),
+                            child: Text(tr('Mais tarde (Definições → Dados)')),
+                          ),
+                      ])
                     : Row(children: [
                         if (_page > 0)
                           TextButton(
@@ -278,6 +265,9 @@ class _SlideView extends StatelessWidget {
             child: Icon(slide.icon, size: 72, color: theme.colorScheme.primary),
           );
 
+    // Telemóveis pequenos: imagem menor e letra um pouco mais pequena, para
+    // os pontos todos caberem sem scroll.
+    final short = MediaQuery.sizeOf(context).height < 720;
     final text = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +280,9 @@ class _SlideView extends StatelessWidget {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(icon, size: 22, color: theme.colorScheme.primary),
               const SizedBox(width: 12),
-              Expanded(child: Text(line, style: theme.textTheme.bodyLarge?.copyWith(height: 1.35))),
+              Expanded(
+                  child: Text(line,
+                      style: (short ? theme.textTheme.bodyMedium : theme.textTheme.bodyLarge)?.copyWith(height: 1.35))),
             ]),
           ),
       ],
@@ -314,8 +306,8 @@ class _SlideView extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: Column(children: [
-              Center(child: picture(box.maxHeight * 0.52)),
-              const SizedBox(height: 22),
+              Center(child: picture(box.maxHeight * (short ? 0.32 : 0.52))),
+              SizedBox(height: short ? 14 : 22),
               text,
             ]),
           ),
