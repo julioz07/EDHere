@@ -195,6 +195,7 @@ class GameController extends ChangeNotifier {
   void send(Intent i) => sendAs(actor, i);
 
   void sendAs(int seat, Intent i) {
+    i = _withEntryCounters(i);
     final send = networkSend;
     if (send != null) {
       send(seat, i);
@@ -206,6 +207,28 @@ class GameController extends ChangeNotifier {
     table.apply(++_seq, i.type, seat, p);
     _afterApply(i.type, seat);
     notifyListeners();
+  }
+
+  /// Um planeswalker entra em campo com a lealdade impressa na carta.
+  Intent _withEntryCounters(Intent i) {
+    final p = i.payload;
+    if (i.type != Ev.move || p['to'] != Zone.battlefield.id || p['fd'] == true || p.containsKey('ctr')) {
+      return i;
+    }
+    final String? oracle;
+    if (p['id'] is num) {
+      final c = state.cards[(p['id'] as num).toInt()];
+      if (c == null || c.zone == Zone.battlefield) return i;
+      oracle = c.oracleId;
+    } else {
+      oracle = p['o'] as String?;
+    }
+    final loyalty = int.tryParse(card(oracle)?.loyalty ?? '');
+    if (loyalty == null || loyalty <= 0) return i;
+    return Intent(i.type, {
+      ...p,
+      'ctr': {CounterKind.loyalty: loyalty}
+    });
   }
 
   /// Chamado pela versão em rede quando chega um evento ordenado.
@@ -354,6 +377,10 @@ class GameController extends ChangeNotifier {
 
   void counter(CardInstance c, String kind, int delta) =>
       send(Intent(Ev.counter, {'id': c.id, 'kind': kind, 'delta': delta}));
+
+  /// Usa uma habilidade de lealdade: soma (ou tira) o custo à lealdade.
+  void loyaltyAbility(CardInstance c, String cost, int delta) =>
+      send(Intent(Ev.counter, {'id': c.id, 'kind': CounterKind.loyalty, 'delta': delta, 'ability': cost}));
 
   void life(int seat, int delta) => send(Intent(Ev.life, {'seat': seat, 'delta': delta}));
 

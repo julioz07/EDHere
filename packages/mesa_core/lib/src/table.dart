@@ -262,6 +262,10 @@ class Table {
           c.counters[kind] = v;
         }
         final now = c.counters[kind] ?? 0;
+        // Habilidade de lealdade de um planeswalker ("+1", "−4"…).
+        if (p['ability'] is String) {
+          return '${_n(actor)} usou ${p['ability']} de ${_cardName(c)} (lealdade $now)';
+        }
         if (kind.startsWith(CounterKind.keyword)) {
           final kw = kind.substring(CounterKind.keyword.length);
           return now > 0
@@ -614,6 +618,7 @@ class Table {
         if (x != null) c.x = x;
         if (y != null) c.y = y;
         if (p['fd'] == true) c.faceDown = true;
+        if (from != Zone.battlefield) _entersWith(c, p);
       } else {
         c.controller = c.owner;
       }
@@ -680,6 +685,7 @@ class Table {
       order: s.maxOrder() + 1,
       printId: p['p'] as String?,
     );
+    if (to == Zone.battlefield) _entersWith(s.cards[newId]!, p);
     final shown = p['fd'] == true ? 'uma carta virada para baixo' : '[[$oid]]';
     final verb = switch ((from, to)) {
       (Zone.hand, Zone.battlefield) => 'jogou',
@@ -687,6 +693,15 @@ class Table {
       _ => 'moveu',
     };
     return verb == 'moveu' ? '${pl.name} moveu $shown ${_whereTo(to, pos)}' : '${pl.name} $verb $shown';
+  }
+
+  /// Contadores com que a carta entra em campo (a lealdade inicial de um
+  /// planeswalker), na mesma ação, para o desfazer apagar tudo de uma vez.
+  void _entersWith(CardInstance c, Map<String, dynamic> p) {
+    if (c.faceDown || p['ctr'] is! Map) return;
+    for (final e in (p['ctr'] as Map).entries) {
+      if (e.value is num && (e.value as num) > 0) c.counters[e.key as String] = (e.value as num).toInt();
+    }
   }
 
   /// Destino de um movimento ("moveu X para o cemitério").

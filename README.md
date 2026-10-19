@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.2.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.3.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -38,11 +38,13 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - Tutorial guiado contra dois adversários simulados, com jogadas fechadas: lês um pouco, jogas um pouco, e a mesa só deixa fazer o passo pedido (explica quando te enganas).
 - Duas versões: "Já sei jogar Magic" (só o que o Commander tem de especial: baralho de 100, identidade de cor, zona de comando, taxa, dano de comandante, jogo a vários, brackets) e "Nunca joguei" (cartas, mana, turno, combate e a pilha primeiro).
 - Pratica-se mesmo: mulligan, bloquear, responder a um feitiço na vez dos outros e cadeias de respostas na pilha.
+- Os tipos de carta a fundo (equipamentos, auras, veículos…) e um capítulo sobre planeswalkers e lealdade.
 - Termina com um jogo curto que junta tudo; progresso guardado e glossário de termos.
 
 **Mesa**
 - Goldfish, 1 contra 1 no mesmo dispositivo (mesa partilhada frente a frente, mãos abertas para ensinar). Grava-se sozinho: ao sair pergunta se fica gravado e continua-se depois, mesmo que a app feche.
 - Tap, contadores editáveis (+1/+1, lealdade, modificadores de poder/resistência), habilidades dadas por efeitos, tokens, anexar, mudar controlo, virar face, alvos em cartas ou jogadores.
+- Planeswalkers: entram com a lealdade inicial e as habilidades de lealdade (+1, −2…) usam-se no menu da carta, que soma ou tira a lealdade e escreve no registo.
 - Grimório: comprar, baralhar, scry, surveil, mill, procurar, revelar, mulligan London.
 - Vida, dano de comandante, veneno, energia, monarca, iniciativa, taxa de comandante automática.
 - Registo de eventos, desfazer, dados e moeda, histórico de jogos e estatísticas.
@@ -92,6 +94,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.3.0 | Tutorial: capítulos "Os tipos de carta a fundo" (instantâneo e feitiço, artefactos, equipamentos com prática de Equip, veículos, encantamentos, auras, sagas, lendários) e "Planeswalkers e lealdade" (com jogo); glossário maior. Mesa: os planeswalkers entram com a lealdade inicial e as habilidades +N/−N usam-se no menu da carta, com registo. Brief da landing page em `docs/` |
 | 1.2.1 | Tutorial: os custos ({1}{G}, {T}…) aparecem como símbolos de mana; a vez dos adversários vai mais devagar (cerca de 3,5 s por jogada) e o guia mostra a lista do que fizeram |
 | 1.2.0 | Introdução na primeira abertura (4 ecrãs com prints da app) que acaba no download da base de cartas; "Ver a introdução" nas Definições. O pacote "As minhas cartas" e a importação de backups descarregam as versões escolhidas nos decks |
 | 1.1.1 | Tutorial: bloquear, responder na vez dos outros e cadeias; mulligan de treino; cartas a tocar destacadas; correções de QA. Bracket deteta turnos extra e destruição de terrenos em massa |

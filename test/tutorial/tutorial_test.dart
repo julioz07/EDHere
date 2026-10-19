@@ -30,6 +30,20 @@ List<Intent> _candidates(TutorialRunner r) {
     for (final x in mine.where((x) => x.zone == Zone.battlefield && !x.isCommander)) t.movePublic(x.id, Zone.graveyard),
     for (final x in mine.where((x) => x.zone == Zone.battlefield))
       Intent(Ev.counter, {'id': x.id, 'kind': CounterKind.plus, 'delta': 1}),
+    // Lealdade: usar o +1 (habilidade) ou tirar com o −.
+    for (final x in mine.where((x) => x.zone == Zone.battlefield && x.counters.containsKey(CounterKind.loyalty)))
+      Intent(Ev.counter, {'id': x.id, 'kind': CounterKind.loyalty, 'delta': 1, 'ability': '+1'}),
+    for (final x in mine.where((x) => x.zone == Zone.battlefield && x.counters.containsKey(CounterKind.loyalty)))
+      Intent(Ev.counter, {'id': x.id, 'kind': CounterKind.loyalty, 'delta': -1}),
+    // Desvirar e anexar (equipamentos).
+    for (final x in mine.where((x) => x.zone == Zone.battlefield && x.tapped))
+      Intent(Ev.tap, {
+        'ids': [x.id],
+        'value': false
+      }),
+    for (final x in mine.where((x) => x.zone == Zone.battlefield && x.attachedTo == null))
+      for (final y in mine.where((y) => y.zone == Zone.battlefield && y.id != x.id))
+        Intent(Ev.attach, {'id': x.id, 'to': y.id}),
     t.draw(0, 1),
     t.mulligan(0),
     // Bloqueios: setas das minhas criaturas para as dos outros.

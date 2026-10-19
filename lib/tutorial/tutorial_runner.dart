@@ -218,6 +218,13 @@ class TutorialRunner extends ChangeNotifier implements TableView {
         for (final id in (p['ids'] as List).cast<num>()) {
           if (nameOf(ctrl.state.cards[id.toInt()]?.oracleId) case final n?) names.add(n);
         }
+      case Ev.attach:
+        // A carta anexada e depois aquela a que fica anexada.
+        for (final k in ['id', 'to']) {
+          if (p[k] is num) {
+            if (nameOf(ctrl.state.cards[(p[k] as num).toInt()]?.oracleId) case final n?) names.add(n);
+          }
+        }
       default:
         if (p['id'] is num) {
           if (nameOf(ctrl.state.cards[(p['id'] as num).toInt()]?.oracleId) case final n?) names.add(n);
@@ -326,6 +333,18 @@ class TutorialRunner extends ChangeNotifier implements TableView {
                 'value': true
               }));
           ctrl.sendAs(seat, Intent(Ev.arrow, {'from': c.id, 'seat': target}));
+        }
+      case AttackCard(:final seat, :final name, :final target, :final targetSeat):
+        final c = cardsNamed(name, zone: Zone.battlefield, seat: seat).where((c) => !c.tapped).firstOrNull;
+        final t = cardsNamed(target, zone: Zone.battlefield, seat: targetSeat).firstOrNull;
+        if (c != null && t != null) {
+          ctrl.sendAs(
+              seat,
+              Intent(Ev.tap, {
+                'ids': [c.id],
+                'value': true
+              }));
+          ctrl.sendAs(seat, Intent(Ev.arrow, {'from': c.id, 'to': t.id}));
         }
       case ClearTargets(:final seat):
         ctrl.sendAs(seat, const Intent(Ev.arrow, {}));
@@ -459,6 +478,25 @@ abstract final class Done {
         final d = t.cardsNamed(to, zone: Zone.battlefield).map((c) => c.id).toSet();
         return t.state.targets.any((m) => f.contains(m.from) && d.contains(m.card));
       };
+
+  /// Pelo menos [n] cartas com este nome desviradas.
+  static bool Function(TableView) untapped(String name, {int n = 1, int seat = 0}) =>
+      (t) => t.cardsNamed(name, zone: Zone.battlefield, seat: seat).where((c) => !c.tapped).length >= n;
+
+  /// [name] anexada a [to] (um equipamento numa criatura).
+  static bool Function(TableView) attached(String name, String to, {int seat = 0}) => (t) {
+        final targets = t.cardsNamed(to, zone: Zone.battlefield, seat: seat).map((c) => c.id).toSet();
+        return t
+            .cardsNamed(name, zone: Zone.battlefield, seat: seat)
+            .any((c) => targets.contains(c.attachedTo));
+      };
+
+  /// Contadores [kind] de [name] entre [min] e [max].
+  static bool Function(TableView) counters(String name, String kind, {int min = 0, int max = 1 << 30}) =>
+      (t) => t.cardsNamed(name, zone: Zone.battlefield, seat: 0).any((c) {
+            final v = c.counters[kind] ?? 0;
+            return v >= min && v <= max;
+          });
 
   static bool Function(TableView) mulliganed(int seat) => (t) => t.mulligans(seat) >= 1;
 

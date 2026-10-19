@@ -11,10 +11,22 @@ const glossary = <(String, String, String)>[
     'Carta que fica em campo com um efeito. As incolores entram em qualquer baralho.'
   ),
   (
+    'Aura',
+    'Aura',
+    'Encantamento que se lança sobre uma carta e fica anexado a ela. Se a carta sair do campo, '
+        'a aura vai para o cemitério.'
+  ),
+  (
     'Background',
     'Background',
     'Encantamento lendário que pode ser o segundo comandante de uma lenda com '
         '"Choose a Background".'
+  ),
+  (
+    'Batalha',
+    'Battle',
+    'Permanente que entra do lado de um adversário com contadores de defesa. Derrotada, vira-se e '
+        'dá uma recompensa a quem a atacou.'
   ),
   (
     'Bloquear',
@@ -61,8 +73,15 @@ const glossary = <(String, String, String)>[
         'habilidades com {T}.'
   ),
   ('Encantamento', 'Enchantment', 'Carta que fica em campo com um efeito duradouro.'),
+  (
+    'Equipamento',
+    'Equipment',
+    'Artefacto que se anexa a uma criatura tua pagando o custo de Equip (só no teu turno). Se a '
+        'criatura morrer, o equipamento fica no campo.'
+  ),
   ('Exílio', 'Exile', 'Cartas removidas do jogo. O comandante exilado pode voltar à zona de comando.'),
   ('Feitiço', 'Sorcery', 'Faz o efeito e vai para o cemitério. Só no teu turno, na fase principal.'),
+  ('Flash', 'Flash', 'Pode lançar-se a qualquer momento, como um instantâneo.'),
   ('Flying', 'Flying', 'Voa: só pode ser bloqueada por criaturas com Flying ou Reach.'),
   (
     'Game Changer',
@@ -82,6 +101,17 @@ const glossary = <(String, String, String)>[
     'Instant',
     'Faz o efeito e vai para o cemitério. Pode lançar-se a qualquer momento, até no turno '
         'dos outros.'
+  ),
+  (
+    'Lealdade',
+    'Loyalty',
+    'A "vida" de um planeswalker. As habilidades +1 sobem-na, as −N gastam-na; com 0 vai para o '
+        'cemitério.'
+  ),
+  (
+    'Lendário',
+    'Legendary',
+    'Só podes ter uma carta lendária com o mesmo nome no campo. Se entrar outra, escolhes uma.'
   ),
   ('Lifelink', 'Lifelink', 'O dano que esta criatura dá também te dá vida.'),
   (
@@ -103,6 +133,12 @@ const glossary = <(String, String, String)>[
   ),
   ('Regra zero', 'Rule 0', 'Combinar antes do jogo o tipo de jogo e qualquer mudança às regras.'),
   (
+    'Saga',
+    'Saga',
+    'Encantamento com capítulos: ganha um contador por turno e faz o capítulo seguinte. Depois do '
+        'último vai para o cemitério.'
+  ),
+  (
     'Singleton',
     'Singleton',
     'Uma cópia de cada carta, exceto terrenos básicos. É a regra do baralho de Commander.'
@@ -120,6 +156,17 @@ const glossary = <(String, String, String)>[
     'Uma "carta" criada por um efeito (por exemplo, um Goblin 1/1). Desaparece se sair do campo.'
   ),
   ('Trample', 'Trample', 'O dano que sobra depois de matar o bloqueador passa para o jogador.'),
+  (
+    'Tripular',
+    'Crew',
+    'Virar criaturas tuas com poder total N ou mais para um veículo ser uma criatura até ao fim do turno.'
+  ),
+  (
+    'Ultimate',
+    'Ultimate',
+    'A habilidade de lealdade mais cara de um planeswalker, normalmente a mais forte.'
+  ),
+  ('Veículo', 'Vehicle', 'Artefacto que só ataca e bloqueia quando é tripulado (Crew).'),
   ('Vigilance', 'Vigilance', 'Ataca sem se virar.'),
   ('Virar (tap)', 'Tap', 'Rodar a carta de lado para usar: dar mana, atacar ou usar uma habilidade {T}.'),
   (

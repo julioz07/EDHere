@@ -77,6 +77,27 @@ void main() {
     expect(dead.tapped, isFalse);
   });
 
+  test('planeswalker entra com a lealdade na mesma ação; desfazer tira tudo', () {
+    pod.send(0, pod.a.draw(0, 1));
+    final pid = pod.a.private[0]!.hand.single.pid;
+    final play = pod.a.moveHidden(0, Zone.hand, pid, Zone.battlefield);
+    pod.send(0, Intent(play.type, {...play.payload, 'ctr': {CounterKind.loyalty: 3}}));
+    pod.expectInSync();
+    final pw = pod.b.state.cards.values.singleWhere((c) => c.zone == Zone.battlefield);
+    expect(pw.counters[CounterKind.loyalty], 3);
+    pod.send(0, pod.a.undo());
+    pod.expectInSync();
+    expect(pod.a.state.cards.values.where((c) => c.zone == Zone.battlefield), isEmpty);
+    expect(pod.a.private[0]!.hand.length, 1);
+
+    // Do cemitério para o campo também entra com a lealdade; virada para baixo não.
+    pod.send(0, pod.a.moveHidden(0, Zone.hand, pid, Zone.graveyard));
+    final id = pod.a.state.cards.values.singleWhere((c) => c.zone == Zone.graveyard).id;
+    final back = pod.a.movePublic(id, Zone.battlefield);
+    pod.send(0, Intent(back.type, {...back.payload, 'ctr': {CounterKind.loyalty: 4}}));
+    expect(pod.b.state.cards[id]!.counters[CounterKind.loyalty], 4);
+  });
+
   test('carta pública que volta para a mão deixa de ser visível aos outros', () {
     pod.send(0, pod.a.draw(0, 1));
     final pid = pod.a.private[0]!.hand.single.pid;

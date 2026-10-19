@@ -107,6 +107,66 @@ ListTile _tile(IconData icon, String text, VoidCallback onTap, {String? subtitle
       onTap: onTap,
     );
 
+/// Uma habilidade de lealdade de um planeswalker: "+1: Untap two target lands."
+class LoyaltyAbility {
+  const LoyaltyAbility(this.cost, this.delta, this.text, {this.x = false});
+
+  /// Como está na carta ("+1", "−4", "0", "−X").
+  final String cost;
+  final int delta;
+  final String text;
+  final bool x;
+}
+
+final _loyaltyLine = RegExp(r'^([+−-]?)(\d+|X): (.+)$');
+
+/// As habilidades de lealdade da carta (da face visível), por ordem.
+List<LoyaltyAbility> loyaltyAbilities(db.Card? card, int faceIndex) {
+  if (card == null) return const [];
+  final face = card.faces.isNotEmpty ? card.faces[faceIndex.clamp(0, card.faces.length - 1)] : null;
+  final type = face?.typeLine ?? card.typeLine;
+  if (!type.contains('Planeswalker')) return const [];
+  return [
+    for (final line in (face?.oracleText ?? card.oracleText).split('\n'))
+      if (_loyaltyLine.firstMatch(line.trim()) case final m?)
+        LoyaltyAbility(
+          '${m[1]!.isEmpty ? '' : m[1] == '+' ? '+' : '−'}${m[2]}',
+          m[2] == 'X' ? 0 : (m[1] == '+' ? 1 : -1) * int.parse(m[2]!),
+          m[3]!,
+          x: m[2] == 'X',
+        ),
+  ];
+}
+
+Widget _loyaltyTile(BuildContext context, LoyaltyAbility a, int loyalty, VoidCallback onTap) {
+  final theme = Theme.of(context);
+  // Não se pode pagar mais lealdade do que a que o planeswalker tem.
+  final ok = a.delta >= 0 || loyalty + a.delta >= 0;
+  return ListTile(
+    dense: true,
+    enabled: ok,
+    leading: Container(
+      width: 40,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: a.delta > 0 || (a.x && a.cost.startsWith('+'))
+            ? const Color(0xFF2E7D32)
+            : a.delta < 0 || a.x
+                ? const Color(0xFFC62828)
+                : const Color(0xFF6C4BB6),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(a.cost,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+    ),
+    title: OracleText(a.text, style: theme.textTheme.bodyMedium),
+    subtitle:
+        Text(ok ? 'Usar (lealdade $loyalty → ${loyalty + a.delta})' : 'Lealdade insuficiente ($loyalty)'),
+    onTap: onTap,
+  );
+}
+
 /// Ações sobre uma carta pública (campo, cemitério, exílio, comando).
 Future<void> showCardActions(BuildContext context, GameController ctrl, CardInstance c) {
   final card = ctrl.card(c.oracleId, printId: c.printId);
@@ -150,6 +210,17 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
           ] else
             _tile(c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw, c.tapped ? 'Desvirar' : 'Virar (tap)',
                 () => done(() => ctrl.toggleTap(c))),
+          for (final a in loyaltyAbilities(card, c.faceIndex))
+            _loyaltyTile(ctx, a, c.counters[CounterKind.loyalty] ?? 0, () async {
+              Navigator.pop(ctx);
+              var delta = a.delta;
+              if (a.x) {
+                final n = await pickNumber(context, 'Valor de X', initial: 1, max: 99);
+                if (n == null) return;
+                delta = a.cost.startsWith('+') ? n : -n;
+              }
+              ctrl.loyaltyAbility(c, a.x ? a.cost.replaceAll('X', '${delta.abs()}') : a.cost, delta);
+            }),
           _tile(Icons.exposure, 'Contadores', () {
             Navigator.pop(ctx);
             showCounterSheet(context, ctrl, c);

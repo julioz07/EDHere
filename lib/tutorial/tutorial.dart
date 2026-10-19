@@ -238,6 +238,15 @@ class Attack extends Act {
   final int target;
 }
 
+/// Atacar uma carta (um planeswalker): vira a criatura e aponta-a à carta.
+class AttackCard extends Act {
+  const AttackCard(this.seat, this.name, this.target, {this.targetSeat = 0, super.say});
+  final int seat;
+  final String name;
+  final String target;
+  final int targetSeat;
+}
+
 /// Apaga as setas de um lugar.
 class ClearTargets extends Act {
   const ClearTargets(this.seat, {super.say});
@@ -290,6 +299,27 @@ abstract final class Allow {
 
   static bool Function(TAction) commanderDamage(int seat) =>
       (a) => a.type == Ev.commanderDamage && a.p['seat'] == seat;
+
+  /// Anexar [name] (um equipamento ou uma aura) a [to].
+  static bool Function(TAction) attach(String name, String to) =>
+      (a) => a.type == Ev.attach && a.names.firstOrNull == name && a.names.skip(1).contains(to);
+
+  /// Desvirar só cartas com estes nomes.
+  static bool Function(TAction) untap(List<String> names) =>
+      (a) => a.type == Ev.tap && a.p['value'] == false && a.names.isNotEmpty && a.names.every(names.contains);
+
+  /// Mexer nos contadores [kind] de [name] (inclui as habilidades de lealdade).
+  static bool Function(TAction) counter(String name, String kind) =>
+      (a) => a.type == Ev.counter && a.p['kind'] == kind && a.has(name);
+
+  /// Tirar contadores [kind] a [name] à mão (dano num planeswalker), sem usar habilidades.
+  static bool Function(TAction) counterDown(String name, String kind) => (a) {
+        if (a.type != Ev.counter || a.p['kind'] != kind || a.p['ability'] != null || !a.has(name)) {
+          return false;
+        }
+        // "−" tira um; escrever o número também serve.
+        return ((a.p['delta'] as num?) ?? 0) < 0 || a.p['value'] != null;
+      };
 
   static bool passTurn(TAction a) => a.type == Ev.passTurn;
   static bool mulligan(TAction a) => a.type == Ev.mulligan || a.type == Ev.bottom;

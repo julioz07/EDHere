@@ -7,6 +7,16 @@ import 'tutorial_runner.dart';
 const solRing = 'Sol Ring';
 const anthem = 'Glorious Anthem';
 const cultivate = 'Cultivate';
+const counterspell = 'Counterspell';
+const serra = 'Serra Angel';
+const signet = 'Arcane Signet';
+const bonesplitter = 'Bonesplitter';
+const boots = 'Swiftfoot Boots';
+const copter = "Smuggler's Copter";
+const pacifism = 'Pacifism';
+const benalia = 'History of Benalia';
+const garruk = 'Garruk Wildspeaker';
+const teferi = 'Teferi, Temporal Archmage';
 
 List<String> _many(String name, int n) => List.filled(n, name);
 
@@ -42,7 +52,8 @@ final basicsChapters = <Chapter>[
             '• **Instant** (instantâneo): faz o efeito e vai para o cemitério. Pode lançar-se a qualquer momento.\n'
             '• **Sorcery** (feitiço): como o instantâneo, mas só no teu turno, na fase principal.\n'
             '• **Artifact** e **Enchantment**: ficam em campo com um efeito.\n'
-            '• **Planeswalker**: um aliado poderoso com lealdade, que usa uma habilidade por turno.',
+            '• **Planeswalker**: um aliado poderoso com lealdade, que usa uma habilidade por turno.\n\n'
+            'Mais à frente há um capítulo sobre cada tipo, com equipamentos, auras e planeswalkers.',
         cards: [
           TCard(forest, caption: 'Land'),
           TCard(bears, caption: 'Creature'),
@@ -400,6 +411,336 @@ final basicsChapters = <Chapter>[
       ),
     ],
   ),
+  Chapter(
+    id: 'mtg-types',
+    title: 'Os tipos de carta a fundo',
+    summary: 'Instantâneo ou feitiço, criaturas, artefactos, equipamentos, encantamentos e auras',
+    minutes: 7,
+    pages: const [
+      TPage(
+        'Permanentes e feitiços',
+        'As cartas dividem-se em dois grupos:\n\n'
+            '• **Permanentes**: ficam no campo de batalha até alguém as tirar. São os terrenos, as criaturas, '
+            'os artefactos, os encantamentos, os planeswalkers e as batalhas.\n'
+            '• **Não permanentes**: o **Instant** (instantâneo) e o **Sorcery** (feitiço). Fazem o efeito uma '
+            'vez e vão logo para o cemitério.\n\n'
+            'Na app, um permanente joga-se com **Jogar para o campo**; um instantâneo ou um feitiço com '
+            '**Lançar (vai para o cemitério)**.',
+      ),
+      TPage(
+        'Instantâneo ou feitiço?',
+        'Os dois fazem o efeito e vão para o cemitério. A diferença é **quando** os podes lançar:\n\n'
+            '• **Sorcery** (feitiço): só no **teu turno**, numa **fase principal**, e com a pilha vazia.\n'
+            '• **Instant** (instantâneo): **a qualquer momento**: no turno dos outros, no meio do combate ou '
+            '**em resposta** a outro feitiço.\n\n'
+            'Por isso os feitiços costumam ser mais fortes ou mais lentos (o Cultivate vai buscar dois '
+            'terrenos), e os instantâneos servem para surpreender: matar um atacante, salvar uma criatura, '
+            'anular um feitiço com o Counterspell.\n\n'
+            'A habilidade **Flash** deixa lançar qualquer carta, até uma criatura, como se fosse um instantâneo.',
+        cards: [
+          TCard(cultivate, caption: 'Sorcery: no teu turno'),
+          TCard(bolt, caption: 'Instant: quando quiseres'),
+          TCard(counterspell, caption: 'Instant: anula um feitiço'),
+        ],
+      ),
+      TPage(
+        'Criaturas',
+        '• Uma criatura que acabou de entrar **não pode atacar** nem usar habilidades com {T} até ao teu '
+            'próximo turno: tem **enjoo de invocação** (summoning sickness).\n'
+            '• **Haste** tira esse enjoo: a criatura pode atacar logo.\n'
+            '• O dano numa criatura desaparece no fim de cada turno. Só morre se o dano chegar à resistência '
+            'no mesmo turno.\n'
+            '• Muitas têm palavras-chave: **Flying** (voa: só a bloqueia quem voa ou tem Reach), **Vigilance** '
+            '(ataca sem se virar), **Trample**, **Deathtouch**… Estão todas no glossário (o livro no canto).',
+        cards: [
+          TCard(raging, caption: 'Haste: ataca logo'),
+          TCard(serra, caption: 'Flying e Vigilance'),
+        ],
+      ),
+      TPage(
+        'Artefactos',
+        'Um **Artifact** é um objeto que fica no campo com um efeito. Quase todos são **incolores**, por '
+            'isso entram em qualquer baralho.\n\n'
+            '• Os mais comuns no Commander dão mana, como o **Sol Ring** e o **Arcane Signet**: viras e tens '
+            'mana, como num terreno.\n'
+            '• Alguns também são criaturas (**Artifact Creature**).\n'
+            '• Há dois tipos especiais de artefacto: os **equipamentos** e os **veículos**.',
+        cards: [TCard(solRing, caption: 'Dá {C}{C}'), TCard(signet, caption: 'Dá uma mana das tuas cores')],
+      ),
+      TPage(
+        'Equipamentos',
+        'Um **Equipment** entra em campo sozinho, sem fazer nada. Para o usar, pagas o custo de **Equip** '
+            'e **anexas** o equipamento a uma criatura tua, que ganha o bónus.\n\n'
+            '• Só se equipa no **teu turno**, numa fase principal (como um feitiço).\n'
+            '• Podes passá-lo para outra criatura pagando o Equip outra vez.\n'
+            '• Se a criatura morrer, **o equipamento fica** no campo, desanexado, à espera de outra.\n\n'
+            'Na app: toca no equipamento → **Anexar a…** e escolhe a criatura. Vais experimentar já a seguir.',
+        cards: [
+          TCard(bonesplitter, caption: 'Equip {1}: +2/+0'),
+          TCard(boots, caption: 'Equip {1}: Hexproof e Haste'),
+        ],
+      ),
+      TPage(
+        'Veículos',
+        'Um **Vehicle** é um artefacto que só se mexe quando alguém o **tripula**.\n\n'
+            '• **Crew N** (tripular): viras criaturas tuas com poder total N ou mais. O veículo passa a ser '
+            'uma criatura até ao fim do turno, e pode atacar e bloquear.\n'
+            '• As criaturas que tripularam ficam viradas: não atacam nesse turno.\n'
+            '• Fora disso, o veículo é só um artefacto: não ataca, não bloqueia e não sofre dano de combate.',
+        cards: [TCard(copter, caption: 'Crew 1')],
+      ),
+      TPage(
+        'Encantamentos e auras',
+        'Um **Enchantment** é magia que fica no campo.\n\n'
+            '• Muitos afetam o jogo todo, como o **Glorious Anthem** (as tuas criaturas ganham +1/+1).\n'
+            '• Uma **Aura** lança-se **sobre** uma carta (diz "Enchant creature") e fica anexada a ela. Pode '
+            'ajudar uma criatura tua ou estragar uma do adversário: com o **Pacifism**, ela não ataca nem '
+            'bloqueia.\n'
+            '• A grande diferença para o equipamento: se a criatura sair do campo, **a aura vai para o '
+            'cemitério** com ela.\n'
+            '• Uma **Saga** conta uma história em capítulos: ganha um contador por turno e faz o capítulo '
+            'seguinte. Depois do último, vai para o cemitério.\n\n'
+            'Na app, a aura também se liga com **Anexar a…**.',
+        cards: [
+          TCard(anthem, caption: 'Afeta o jogo todo'),
+          TCard(pacifism, caption: 'Aura'),
+          TCard(benalia, caption: 'Saga'),
+        ],
+      ),
+      TPage(
+        'Lendários e outros tipos',
+        '• **Legendary** (lendário): só podes ter **uma** carta com esse nome no campo. Se entrar outra, '
+            'escolhes com qual ficas e a outra vai para o cemitério. O teu comandante é lendário.\n'
+            '• **Planeswalker**: um aliado com lealdade. Tem um capítulo só para ele, a seguir a este.\n'
+            '• **Battle** (batalha): entra do lado de um adversário com contadores de defesa. Atacas a batalha '
+            'e, quando a derrotas, ela vira-se e dá-te a recompensa do outro lado.\n'
+            '• **Kindred** (antes "Tribal"): um feitiço ou artefacto com um tipo de criatura, para os efeitos '
+            'que falam de Elves, Goblins…',
+        cards: [TCard(krenko, caption: 'Legendary Creature')],
+      ),
+    ],
+    setup: TSetup(
+      turn: 5,
+      seats: [
+        TSeat(
+          name: 'Tu',
+          commander: marwyn,
+          battlefield: [..._many(forest, 3), bears, bonesplitter],
+          hand: [forest],
+          library: _many(forest, 8),
+        ),
+        TSeat(
+          name: 'Bruno',
+          commander: krenko,
+          battlefield: _many(mountain, 3),
+          hand: [bolt, mountain],
+          library: _many(mountain, 8),
+        ),
+        TSeat(
+          name: 'Carla',
+          commander: isamaru,
+          battlefield: _many(plains, 3),
+          hand: [plains],
+          library: _many(plains, 8),
+        ),
+      ],
+    ),
+    steps: [
+      TStep(
+        'Tens o **Bonesplitter** em campo, ainda sem criatura. Equipar custa **{1}**: vira um **Forest** '
+        'para pagar.',
+        allow: Allow.tap([forest]),
+        done: Done.tapped(forest),
+        hint: 'Toca num Forest e escolhe "Virar (tap)".',
+      ),
+      TStep(
+        'Agora anexa-o ao **Grizzly Bears**: toca no **Bonesplitter** → **Anexar a…** → **Grizzly Bears**.',
+        allow: Allow.attach(bonesplitter, bears),
+        done: Done.attached(bonesplitter, bears),
+        hint: 'Toca no Bonesplitter, escolhe "Anexar a…" e depois o Grizzly Bears.',
+        focus: [bonesplitter],
+      ),
+      const TStep(
+        'O Grizzly Bears é agora **4/2** (+2/+0). A app é uma mesa, não um árbitro: o bónus não muda '
+        'sozinho na carta. Se o quiseres ver, toca na criatura → **Contadores** → **Poder ±**.',
+        focus: [bears],
+      ),
+      TStep(
+        'Passa a vez, para veres o que acontece ao equipamento quando a criatura morre.',
+        allow: Allow.passTurn,
+        done: Done.turnOf(bruno),
+        hint: 'Toca em "Passar turno".',
+      ),
+      TStep(
+        'O Bruno lançou **Lightning Bolt** no Grizzly Bears: 3 de dano numa criatura com resistência 2. '
+        'Morreu. Põe o **Grizzly Bears** no **cemitério**: toca nele e escolhe **Para o cemitério**.',
+        run: const [
+          Tap(bruno, [mountain]),
+          Target(bruno, bears, targetSeat: 0),
+          Cast(bruno, bolt, say: 'O Bruno lança Lightning Bolt no teu Grizzly Bears!'),
+        ],
+        allow: Allow.move(bears, Zone.graveyard),
+        done: Done.inZone(bears, Zone.graveyard),
+        hint: 'Toca no Grizzly Bears e escolhe "Para o cemitério".',
+        focus: [bears],
+      ),
+      const TStep(
+        'Repara: o **Bonesplitter ficou no campo**, desanexado. No teu próximo turno pagas {1} outra vez e '
+        'equipas outra criatura. Se fosse uma **aura**, tinha ido para o cemitério com o urso.',
+        run: [ClearTargets(bruno)],
+        focus: [bonesplitter],
+      ),
+    ],
+  ),
+  Chapter(
+    id: 'mtg-walkers',
+    title: 'Planeswalkers e lealdade',
+    summary: 'Como usar o +1, o −1 e o −4, e como se ataca e defende um planeswalker',
+    minutes: 6,
+    pages: const [
+      TPage(
+        'O que é um planeswalker',
+        'Um **Planeswalker** é um aliado poderoso: um mago que joga do teu lado. É um permanente, por isso '
+            'fica no campo.\n\n'
+            '• Lança-se como um feitiço: no teu turno, numa fase principal.\n'
+            '• Entra com **lealdade** (loyalty): o número no canto inferior direito da carta. A lealdade é a '
+            '"vida" dele e também o que ele gasta para fazer magia.\n'
+            '• Não tem enjoo de invocação: podes usá-lo **logo no turno em que entra**.',
+        cards: [TCard(garruk, caption: 'Entra com 3 de lealdade')],
+      ),
+      TPage(
+        'As habilidades de lealdade',
+        'Na caixa de texto há várias linhas que começam com um número e um sinal. Cada uma é uma habilidade:\n\n'
+            '• **+1**: o planeswalker **ganha** 1 de lealdade e faz o efeito. As habilidades com + são as '
+            'pequenas, para ir subindo.\n'
+            '• **−1**, **−2**…: **pagas** essa lealdade para um efeito maior.\n'
+            '• **0**: faz o efeito sem mudar a lealdade.\n'
+            '• A última, com o custo negativo mais alto (−4, −8…), é a **ultimate**: o efeito mais forte, para '
+            'quando tiveres lealdade que chegue.\n\n'
+            'As regras:\n'
+            '• **Uma habilidade por planeswalker, por turno**.\n'
+            '• Só **no teu turno**, numa fase principal, com a pilha vazia.\n'
+            '• Não podes pagar mais lealdade do que a que ele tem.',
+      ),
+      TPage(
+        'Um exemplo: Garruk Wildspeaker',
+        'O Garruk entra com **3** de lealdade e tem três habilidades:\n\n'
+            '• **+1**: desvira dois terrenos (tens mais mana neste turno). Lealdade 3 → 4.\n'
+            '• **−1**: cria uma criatura Beast 3/3. Lealdade 4 → 3.\n'
+            '• **−4**: as tuas criaturas ganham +3/+3 e Trample até ao fim do turno. Precisa de 4 ou mais.\n\n'
+            'Um plano típico: no turno em que entra, usas o **+1** e ele fica com 4. No turno seguinte, ou fazes '
+            'um **Beast** para o proteger (−1, fica com 3), ou, se tiveres muitas criaturas, usas a **ultimate '
+            '−4** para um ataque enorme. Aí ele fica com 0 de lealdade e vai para o cemitério: valeu a pena.',
+        cards: [TCard(garruk)],
+      ),
+      TPage(
+        'Atacar e defender um planeswalker',
+        '• No combate, os adversários podem **atacar o teu planeswalker** em vez de ti. Cada ponto de dano '
+            'que ele leva **tira-lhe 1 de lealdade**.\n'
+            '• Também lhe podem lançar feitiços de dano, como um Lightning Bolt.\n'
+            '• Com **0 de lealdade**, vai para o cemitério.\n'
+            '• Defendes o teu planeswalker **bloqueando**, como te defendes a ti.\n'
+            '• E tu podes atacar os planeswalkers dos outros.\n\n'
+            'No Commander, um planeswalker só pode ser comandante se a carta o disser ("can be your commander").',
+        cards: [TCard(teferi, caption: 'Pode ser comandante')],
+      ),
+      TPage(
+        'Na app',
+        '• Quando o jogas, o planeswalker entra **já com a lealdade inicial** (o contador roxo na carta).\n'
+            '• Para usar uma habilidade, **toca no planeswalker**: as habilidades aparecem no menu (+1, −1, '
+            '−4…). Ao escolher uma, a app soma ou tira a lealdade e escreve no registo o que usaste.\n'
+            '• O efeito fazes tu, como numa mesa a sério: desviras os terrenos, crias o token…\n'
+            '• Se ele levar dano, tiras a lealdade em **Contadores** → **loyalty**.\n\n'
+            'Vamos experimentar com o Garruk.',
+      ),
+    ],
+    setup: TSetup(
+      turn: 5,
+      seats: [
+        TSeat(
+          name: 'Tu',
+          commander: marwyn,
+          battlefield: _many(forest, 4),
+          hand: [garruk, forest],
+          library: _many(forest, 8),
+        ),
+        TSeat(
+          name: 'Bruno',
+          commander: krenko,
+          battlefield: [..._many(mountain, 3), piker],
+          hand: [mountain],
+          library: _many(mountain, 8),
+        ),
+        TSeat(
+          name: 'Carla',
+          commander: isamaru,
+          battlefield: _many(plains, 3),
+          hand: [plains],
+          library: _many(plains, 8),
+        ),
+      ],
+    ),
+    steps: [
+      TStep(
+        'O Garruk custa {2}{G}{G}: vira os **quatro Forests** para pagar.',
+        allow: Allow.tap([forest]),
+        done: Done.tapped(forest, n: 4),
+        hint: 'Toca nos Forests e escolhe "Virar". Se estiverem juntos, viram todos de uma vez.',
+      ),
+      TStep(
+        'Joga o **Garruk Wildspeaker**: toca nele na mão e escolhe **Jogar para o campo**.',
+        allow: Allow.play(garruk),
+        done: Done.onField(garruk),
+        hint: 'Toca no Garruk Wildspeaker na tua mão e escolhe "Jogar para o campo".',
+        focus: [garruk],
+      ),
+      TStep(
+        'O Garruk entrou com **3 de lealdade** (o contador roxo). Usa já o **+1**: toca no Garruk e escolhe a '
+        'linha **+1** no menu.',
+        allow: Allow.counter(garruk, CounterKind.loyalty),
+        done: Done.counters(garruk, CounterKind.loyalty, min: 4),
+        hint: 'Toca no Garruk e escolhe a habilidade "+1" (a primeira do menu).',
+        focus: [garruk],
+      ),
+      TStep(
+        'A lealdade subiu para **4**. O efeito do +1 é desvirar dois terrenos: **desvira dois Forests** '
+        '(toca em cada um → **Desvirar**). Tens outra vez duas mana para gastar neste turno.',
+        allow: Allow.untap([forest]),
+        done: Done.untapped(forest, n: 2),
+        hint: 'Toca num Forest virado e escolhe "Desvirar". Faz o mesmo noutro.',
+      ),
+      TStep(
+        'O Garruk já usou a habilidade deste turno: só pode usar outra no teu próximo turno. Passa a vez.',
+        allow: Allow.passTurn,
+        done: Done.turnOf(bruno),
+        hint: 'Toca em "Passar turno".',
+      ),
+      TStep(
+        'O Bruno atacou o **Garruk** com o Goblin Piker (2/1), e não tinhas criaturas para bloquear. O Garruk '
+        'leva 2 de dano: **tira-lhe 2 de lealdade**. Toca no Garruk → **Contadores** e carrega duas vezes no '
+        '**−** da linha **loyalty**.',
+        run: const [
+          Pause(say: 'É o turno do Bruno…', ms: 1000),
+          AttackCard(bruno, piker, garruk, say: 'O Bruno ataca o teu Garruk com o Goblin Piker!'),
+        ],
+        allow: Allow.counterDown(garruk, CounterKind.loyalty),
+        done: Done.counters(garruk, CounterKind.loyalty, max: 2),
+        hint: 'Toca no Garruk, escolhe "Contadores" e usa o − da lealdade (loyalty) duas vezes.',
+        focus: [garruk],
+      ),
+      const TStep(
+        'O Garruk ficou com **2**. Se chegasse a 0, ia para o cemitério.\n\n'
+        'No teu próximo turno podes usar o **−1** para criar um Beast 3/3 que o defenda, ou voltar a subir com o '
+        '**+1** até chegares à ultimate **−4**.',
+        run: [ClearTargets(bruno)],
+        focus: [garruk],
+      ),
+      const TStep(
+        'Resumindo: com **+** sobes a lealdade, com **−** gastas. **Uma vez por turno**, no teu turno. E '
+        'protege os teus planeswalkers: os adversários vão querer atacá-los.',
+      ),
+    ],
+  ),
   const Chapter(
     id: 'mtg-win',
     title: 'Ganhar e perder',
@@ -416,7 +757,8 @@ final basicsChapters = <Chapter>[
       ),
       TPage(
         'E agora, o Commander',
-        'Já sabes o essencial do Magic: terrenos e mana, criaturas e combate, instantâneos e a pilha.\n\n'
+        'Já sabes o essencial do Magic: terrenos e mana, criaturas e combate, instantâneos e a pilha, os '
+            'tipos de carta e os planeswalkers.\n\n'
             'Os próximos capítulos ensinam o que o **Commander** tem de especial. Não te preocupes se ainda '
             'não sabes todas as regras: no Commander aprende-se muito a jogar com amigos.',
       ),
