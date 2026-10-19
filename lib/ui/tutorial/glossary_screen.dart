@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../widgets/responsive.dart';
 import 'tutorial_screen.dart';
 
@@ -192,14 +193,18 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final q = _q.toLowerCase();
+    // O termo e a explicação na língua da app; o nome inglês é o das cartas.
+    final terms = [
+      for (final (pt, en, text) in glossary) (tr(pt), en, tr(text)),
+    ]..sort((a, b) => a.$1.toLowerCase().compareTo(b.$1.toLowerCase()));
     final shown =
-        glossary.where((g) => q.isEmpty || '${g.$1} ${g.$2} ${g.$3}'.toLowerCase().contains(q)).toList();
+        terms.where((g) => q.isEmpty || '${g.$1} ${g.$2} ${g.$3}'.toLowerCase().contains(q)).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Glossário')),
+      appBar: AppBar(title: Text(tr('Glossário'))),
       body: MaxWidth(
         child: ListView(padding: const EdgeInsets.all(16), children: [
           TextField(
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Procurar um termo'),
+            decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('Procurar um termo')),
             onChanged: (v) => setState(() => _q = v),
           ),
           const SizedBox(height: 8),
@@ -209,7 +214,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text.rich(TextSpan(children: [
                   TextSpan(text: pt, style: theme.textTheme.titleMedium),
-                  if (en != pt)
+                  if (en.toLowerCase() != pt.toLowerCase())
                     TextSpan(
                         text: '  ·  $en',
                         style:
@@ -220,7 +225,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
               ]),
             ),
           if (shown.isEmpty)
-            const Padding(padding: EdgeInsets.all(16), child: Text('Nenhum termo encontrado.')),
+            Padding(padding: const EdgeInsets.all(16), child: Text(tr('Nenhum termo encontrado.'))),
         ]),
       ),
     );

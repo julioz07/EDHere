@@ -11,6 +11,7 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'deck_editor_screen.dart';
 import 'deck_import_screen.dart';
+import '../../l10n/l10n.dart';
 
 class DecksTab extends ConsumerWidget {
   const DecksTab({super.key, required this.onOpenData});
@@ -37,7 +38,7 @@ class DecksTab extends ConsumerWidget {
     ref.watch(printsProvider);
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Decks')),
+      appBar: AppBar(title: Text(tr('Decks'))),
       floatingActionButton: data.hasData
           ? FloatingActionButton.extended(
               onPressed: () => showModalBottomSheet<void>(
@@ -46,7 +47,7 @@ class DecksTab extends ConsumerWidget {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     ListTile(
                       leading: const Icon(Icons.add),
-                      title: const Text('Novo deck'),
+                      title: Text(tr('Novo deck')),
                       onTap: () {
                         Navigator.pop(ctx);
                         _newDeck(context, ref);
@@ -54,8 +55,8 @@ class DecksTab extends ConsumerWidget {
                     ),
                     ListTile(
                       leading: const Icon(Icons.content_paste),
-                      title: const Text('Importar lista'),
-                      subtitle: const Text('Moxfield, Archidekt, MTGO, Arena'),
+                      title: Text(tr('Importar lista')),
+                      subtitle: Text(tr('Moxfield, Archidekt, MTGO, Arena')),
                       onTap: () {
                         Navigator.pop(ctx);
                         Navigator.of(context).push(MaterialPageRoute<void>(
@@ -65,8 +66,8 @@ class DecksTab extends ConsumerWidget {
                     ),
                     ListTile(
                       leading: const Icon(Icons.file_open_outlined),
-                      title: const Text('Importar ficheiro do EDHere'),
-                      subtitle: const Text('Um deck ou backup que exportaste ou te enviaram'),
+                      title: Text(tr('Importar ficheiro do EDHere')),
+                      subtitle: Text(tr('Um deck ou backup que exportaste ou te enviaram')),
                       onTap: () {
                         Navigator.pop(ctx);
                         importBackupFile(context, ref);
@@ -76,7 +77,7 @@ class DecksTab extends ConsumerWidget {
                 ),
               ),
               icon: const Icon(Icons.add),
-              label: const Text('Deck'),
+              label: Text(tr('Deck')),
             )
           : null,
       body: !data.hasData
@@ -88,10 +89,10 @@ class DecksTab extends ConsumerWidget {
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.style_outlined, size: 56, color: theme.colorScheme.primary),
                       const SizedBox(height: 12),
-                      Text('Ainda não tens decks', style: theme.textTheme.titleLarge),
+                      Text(tr('Ainda não tens decks'), style: theme.textTheme.titleLarge),
                       const SizedBox(height: 6),
-                      const Text(
-                          'Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.',
+                      Text(
+                          tr('Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.'),
                           textAlign: TextAlign.center),
                       const SizedBox(height: 20),
                       FilledButton.icon(
@@ -99,13 +100,13 @@ class DecksTab extends ConsumerWidget {
                           builder: (_) => const DeckImportScreen(),
                         )),
                         icon: const Icon(Icons.content_paste),
-                        label: const Text('Importar lista'),
+                        label: Text(tr('Importar lista')),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: () => _newDeck(context, ref),
                         icon: const Icon(Icons.add),
-                        label: const Text('Novo deck'),
+                        label: Text(tr('Novo deck')),
                       ),
                     ]),
                   ),
@@ -161,8 +162,11 @@ class DecksTab extends ConsumerWidget {
                                         theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${format.label} · ${format.hasCommandZone ? d.playableCount : d.count(Board.main)} cartas'
-                                  '${cmds.isEmpty ? '' : ' · ${cmds.map((c) => c.frontName).join(' + ')}'}',
+                                  tr('{v} · {v2} cartas{v3}', {
+                                    'v': format.label,
+                                    'v2': format.hasCommandZone ? d.playableCount : d.count(Board.main),
+                                    'v3': cmds.isEmpty ? '' : ' · ${cmds.map((c) => c.frontName).join(' + ')}'
+                                  }),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall,
@@ -186,11 +190,11 @@ class DecksTab extends ConsumerWidget {
 
 /// Nome e formato de um deck (criar ou editar).
 class DeckSettingsDialog extends StatefulWidget {
-  const DeckSettingsDialog({super.key, this.name = '', this.format = 'commander', this.title = 'Novo deck'});
+  const DeckSettingsDialog({super.key, this.name = '', this.format = 'commander', this.title});
 
   final String name;
   final String format;
-  final String title;
+  final String? title;
 
   @override
   State<DeckSettingsDialog> createState() => _DeckSettingsDialogState();
@@ -209,18 +213,18 @@ class _DeckSettingsDialogState extends State<DeckSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: Text(widget.title ?? tr('Novo deck')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(
           controller: _name,
           autofocus: widget.name.isEmpty,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(labelText: 'Nome'),
+          decoration: InputDecoration(labelText: tr('Nome')),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _format,
-          decoration: const InputDecoration(labelText: 'Formato'),
+          decoration: InputDecoration(labelText: tr('Formato')),
           items: [
             for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
           ],
@@ -228,11 +232,11 @@ class _DeckSettingsDialogState extends State<DeckSettingsDialog> {
         ),
       ]),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Cancelar'))),
         TextButton(
           onPressed: () => Navigator.pop(
-              context, (_name.text.trim().isEmpty ? 'Deck sem nome' : _name.text.trim(), _format)),
-          child: const Text('Guardar'),
+              context, (_name.text.trim().isEmpty ? tr('Deck sem nome') : _name.text.trim(), _format)),
+          child: Text(tr('Guardar')),
         ),
       ],
     );

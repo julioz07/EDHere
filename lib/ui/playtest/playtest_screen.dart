@@ -9,6 +9,7 @@ import '../../game/game_controller.dart';
 import '../../game/solo_save.dart';
 import '../table/table_screen.dart';
 import '../table/tablet_table_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// Playtest local com os decks escolhidos, no mesmo núcleo do jogo em rede.
 /// Grava-se sozinho enquanto se joga; ao sair pergunta se fica gravado para
@@ -93,7 +94,7 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
             seat: i,
             name: widget.names != null && i < widget.names!.length
                 ? widget.names![i]
-                : (player.isEmpty ? 'Eu' : player),
+                : (player.isEmpty ? tr('Eu') : player),
             deck: _decks[i],
           ),
       ],
@@ -123,11 +124,12 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Já tens um jogo gravado'),
-        content: Text('${old.title}, turno ${old.turn}. Se jogares este, o gravado é substituído.'),
+        title: Text(tr('Já tens um jogo gravado')),
+        content: Text(tr('{title}, turno {turn}. Se jogares este, o gravado é substituído.',
+            {'title': old.title, 'turn': old.turn})),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Jogar este')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Voltar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Jogar este'))),
         ],
       ),
     );
@@ -156,7 +158,7 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
     final names = _ctrl.state.players.values.map((p) => p.name).toList();
     _saves.write(SoloSave(
       deckIds: widget.deckIds,
-      title: _decks.length == 1 ? 'Goldfish · ${_decks.first.name}' : names.join(' vs '),
+      title: _decks.length == 1 ? tr('Goldfish · {v}', {'v': _decks.first.name}) : names.join(' vs '),
       turn: _ctrl.state.turn,
       savedAt: DateTime.now(),
       game: _ctrl.saveJson(),
@@ -171,12 +173,12 @@ class _PlaytestScreenState extends ConsumerState<PlaytestScreen> {
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sair da mesa?'),
-        content: const Text('Podes gravar o jogo como está e continuar depois, em Jogar.'),
+        title: Text(tr('Sair da mesa?')),
+        content: Text(tr('Podes gravar o jogo como está e continuar depois, em Jogar.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: const Text('Ficar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: const Text('Sair sem gravar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, 'save'), child: const Text('Gravar e sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: Text(tr('Ficar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: Text(tr('Sair sem gravar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'save'), child: Text(tr('Gravar e sair'))),
         ],
       ),
     );

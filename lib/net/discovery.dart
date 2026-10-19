@@ -5,7 +5,7 @@ import 'package:bonsoir/bonsoir.dart';
 /// Tipo de serviço mDNS das salas (registado também no Info.plist do iOS).
 const String roomServiceType = '_mesa._tcp';
 
-const String appVersion = '1.3.0';
+const String appVersion = '1.4.0';
 
 /// Data do bulk do Scryfall da base local, anunciada nas salas para se
 /// ver quem tem uma base diferente. Atualizada pelo CardDataService.

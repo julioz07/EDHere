@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../data/data_tab.dart' show formatDate;
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Histórico de partidas e estatísticas locais.
 class StatsScreen extends ConsumerStatefulWidget {
@@ -58,15 +59,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Histórico e estatísticas')),
+      appBar: AppBar(title: Text(tr('Histórico e estatísticas'))),
       body: MaxWidth(
           child: games.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Text(
-                        'Ainda não há jogos guardados. No fim de uma partida, usa o menu da mesa → '
-                        '"Terminar jogo".',
+                        tr('Ainda não há jogos guardados. No fim de uma partida, usa o menu da mesa → "Terminar jogo".'),
                         textAlign: TextAlign.center),
                   ),
                 )
@@ -76,26 +76,26 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     stat('jogos', '${games.length}'),
                     const SizedBox(width: 8),
-                    stat('vitórias', solo.isEmpty ? '—' : '${(wins * 100 / solo.length).round()}%'),
+                    stat(tr('vitórias'), solo.isEmpty ? '—' : '${(wins * 100 / solo.length).round()}%'),
                     const SizedBox(width: 8),
-                    stat('min por jogo', avgMin.toStringAsFixed(0)),
+                    stat(tr('min por jogo'), avgMin.toStringAsFixed(0)),
                     const SizedBox(width: 8),
                     stat('turnos', avgTurns.toStringAsFixed(1)),
                   ])),
                   if (perDeck.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text('Por deck', style: theme.textTheme.titleMedium),
+                    Text(tr('Por deck'), style: theme.textTheme.titleMedium),
                     for (final MapEntry(key: name, value: (played, won)) in perDeck.entries)
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
                         title: Text(name),
-                        trailing: Text('$won / $played vitórias'),
+                        trailing: Text(tr('{won} / {played} vitórias', {'won': won, 'played': played})),
                       ),
                   ],
                   if (topCmd.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text('Comandantes mais jogados', style: theme.textTheme.titleMedium),
+                    Text(tr('Comandantes mais jogados'), style: theme.textTheme.titleMedium),
                     for (final e in topCmd.take(5))
                       ListTile(
                         dense: true,
@@ -105,7 +105,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       ),
                   ],
                   const SizedBox(height: 8),
-                  Text('Partidas', style: theme.textTheme.titleMedium),
+                  Text(tr('Partidas'), style: theme.textTheme.titleMedium),
                   for (final g in games)
                     Dismissible(
                       key: ValueKey(g.id),
@@ -127,10 +127,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         subtitle: Text([
                           formatDate(g.playedAt.toIso8601String()),
                           GameFormat.byId(g.format).label,
-                          '${g.turns} turnos',
-                          '${g.duration.inMinutes} min',
-                          if (g.winner != null) 'venceu ${g.winner}',
-                          if (g.network) 'em rede',
+                          tr('{turns} turnos', {'turns': g.turns}),
+                          tr('{inMinutes} min', {'inMinutes': g.duration.inMinutes}),
+                          if (g.winner != null) tr('venceu {winner}', {'winner': g.winner}),
+                          if (g.network) tr('em rede'),
                         ].join(' · ')),
                       ),
                     ),

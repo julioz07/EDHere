@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:mesa_protocol/mesa_protocol.dart';
 
 import 'room_link.dart';
+import '../l10n/l10n.dart';
 
 /// Cliente de uma sala. Liga-se ao anfitrião, aplica os eventos pela ordem
 /// de `seq` e volta a ligar-se sozinho quando a ligação cai, pedindo só os
@@ -94,7 +95,7 @@ class RoomClient implements RoomLink {
     _setStatus(LinkStatus.connecting);
     final ok = await _tryConnect();
     if (!ok) {
-      final err = lastError ?? 'Não foi possível ligar';
+      final err = lastError ?? tr('Não foi possível ligar');
       if (_currentStatus != LinkStatus.rejected) await close();
       throw RoomJoinException(err);
     }
@@ -150,9 +151,10 @@ class RoomClient implements RoomLink {
         }
         if (_currentStatus == LinkStatus.rejected) return false;
       } on SocketException catch (e) {
-        lastError = 'Sem resposta de $host:$port (${e.osError?.message ?? e.message})';
+        lastError = tr('Sem resposta de {host}:{port} ({message})',
+            {'host': host, 'port': port, 'message': e.osError?.message ?? e.message});
       } on TimeoutException {
-        lastError = 'Sem resposta de $host:$port';
+        lastError = tr('Sem resposta de {host}:{port}', {'host': host, 'port': port});
       }
     }
     return false;
@@ -178,7 +180,7 @@ class RoomClient implements RoomLink {
     try {
       await _handshake!.future.timeout(connectTimeout);
     } on TimeoutException {
-      lastError = 'O anfitrião não respondeu';
+      lastError = tr('O anfitrião não respondeu');
       socket.destroy();
       return false;
     } on RoomJoinException catch (e) {
@@ -218,7 +220,7 @@ class RoomClient implements RoomLink {
         }
       case MsgType.roomClosed:
         hostClosed = true;
-        lastError = 'O anfitrião fechou a sala.';
+        lastError = tr('O anfitrião fechou a sala.');
         close();
       case MsgType.heartbeatAck:
         final echo = (env.payload['echo'] as num?)?.toInt();
@@ -269,7 +271,7 @@ class RoomClient implements RoomLink {
     socket.destroy();
     _heartbeat?.cancel();
     if (_handshake?.isCompleted == false) {
-      _handshake!.completeError(const RoomJoinException('Ligação recusada'));
+      _handshake!.completeError(RoomJoinException(tr('Ligação recusada')));
       return;
     }
     if (_currentStatus == LinkStatus.closed || _currentStatus == LinkStatus.rejected) {
@@ -292,10 +294,10 @@ class RoomClient implements RoomLink {
   }
 
   static String _describeReject(String reason) => switch (reason) {
-        RejectReason.badPin => 'PIN errado',
-        RejectReason.roomFull => 'A sala está cheia',
-        RejectReason.versionMismatch => 'Versão da app diferente da do anfitrião',
-        _ => 'Recusado pelo anfitrião ($reason)',
+        RejectReason.badPin => tr('PIN errado'),
+        RejectReason.roomFull => tr('A sala está cheia'),
+        RejectReason.versionMismatch => tr('Versão da app diferente da do anfitrião'),
+        _ => tr('Recusado pelo anfitrião ({reason})', {'reason': reason}),
       };
 }
 

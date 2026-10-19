@@ -175,5 +175,6 @@ extension CardPrint on Card {
         isExtra: isExtra,
         gameChanger: gameChanger,
         edhrecRank: edhrecRank,
+        printed: printed,
       );
 }

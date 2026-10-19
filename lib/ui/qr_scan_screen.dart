@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../l10n/l10n.dart';
 
 /// Lê um QR code e devolve o texto dele.
 class QrScanScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ler QR code')),
+      appBar: AppBar(title: Text(tr('Ler QR code'))),
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -32,8 +33,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Não foi possível usar a câmara (${error.errorCode.name}). '
-                  'Confirma a permissão da câmara nas definições da app.',
+                  tr('Não foi possível usar a câmara ({v}). Confirma a permissão da câmara nas definições da app.',
+                      {'v': error.errorCode.name}),
                   textAlign: TextAlign.center,
                 ),
               ),

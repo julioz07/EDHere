@@ -6,6 +6,7 @@ import 'package:mesa_core/mesa_core.dart';
 
 import '../game/game_controller.dart';
 import 'tutorial.dart';
+import '../l10n/l10n.dart';
 
 /// Corre a parte jogada de um capítulo: monta a mesa, deixa o jogador fazer
 /// só o que o passo pede e faz jogar os adversários.
@@ -188,8 +189,8 @@ class TutorialRunner extends ChangeNotifier implements TableView {
     }
     hint = s.hint ??
         (s.done == null
-            ? 'Lê o texto e toca em "Continuar".'
-            : 'Ainda não: faz primeiro o que o passo pede.');
+            ? tr('Lê o texto e toca em "Continuar".')
+            : tr('Ainda não: faz primeiro o que o passo pede.'));
     notifyListeners();
     return false;
   }

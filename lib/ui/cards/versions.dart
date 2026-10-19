@@ -6,6 +6,7 @@ import '../../data/providers.dart';
 import '../widgets/card_view.dart';
 import '../widgets/set_symbol.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Resultado do seletor: uma versão, ou [isDefault] para voltar à por defeito.
 class VersionChoice {
@@ -78,7 +79,8 @@ class VersionThumb extends ConsumerWidget {
 
 /// Grelha com todas as versões de uma carta, para escolher uma.
 Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
-    {String? current, String title = 'Escolher versão'}) {
+    {String? current, String? title}) {
+  title ??= tr('Escolher versão');
   return showModalBottomSheet<VersionChoice>(
     context: context,
     isScrollControlled: true,
@@ -99,7 +101,7 @@ Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
                   Expanded(child: Text('$title · ${base.name}', style: theme.textTheme.titleMedium)),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, const VersionChoice.byDefault()),
-                    child: const Text('Por defeito'),
+                    child: Text(tr('Por defeito')),
                   ),
                 ]),
               ),
@@ -112,8 +114,8 @@ Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
                       padding: const EdgeInsets.all(32),
                       child: Text(
                         snap.data?.offline == true
-                            ? 'Sem ligação. Liga-te à internet para ver as versões desta carta.'
-                            : 'Não há outras versões.',
+                            ? tr('Sem ligação. Liga-te à internet para ver as versões desta carta.')
+                            : tr('Não há outras versões.'),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -121,13 +123,13 @@ Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
                 )
               else ...[
                 if (snap.data?.offline == true)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('Sem ligação: só as versões já vistas antes.'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(tr('Sem ligação: só as versões já vistas antes.')),
                   ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('${list.length} versões',
+                  child: Text(tr('{n} versões', {'n': list.length}),
                       style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 ),
                 Expanded(

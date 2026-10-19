@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers.dart';
 import '../widgets/responsive.dart';
 import 'playtest_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// Testar um deck sozinho (goldfish): tocar num deck começa logo.
 class GoldfishSetupScreen extends ConsumerWidget {
@@ -15,10 +16,10 @@ class GoldfishSetupScreen extends ConsumerWidget {
     final decks = ref.watch(decksProvider).decks;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Goldfish')),
+      appBar: AppBar(title: Text(tr('Goldfish'))),
       body: MaxWidth(
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text('Joga sozinho com um deck para ver como abre e como corre.',
+          Text(tr('Joga sozinho com um deck para ver como abre e como corre.'),
               style: theme.textTheme.bodyMedium),
           const SizedBox(height: 12),
           for (final d in decks)
@@ -26,7 +27,8 @@ class GoldfishSetupScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(d.name),
-                subtitle: Text('${GameFormat.byId(d.format).label} · ${d.playableCount} cartas'),
+                subtitle: Text(tr('{v} · {playableCount} cartas',
+                    {'v': GameFormat.byId(d.format).label, 'playableCount': d.playableCount})),
                 trailing: const Icon(Icons.play_arrow_rounded),
                 enabled: d.playableCount > 0,
                 onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
@@ -52,8 +54,8 @@ class DuelSetupScreen extends ConsumerStatefulWidget {
 class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
   late final _names = [
     TextEditingController(
-        text: ref.read(playerNameProvider).isEmpty ? 'Jogador 1' : ref.read(playerNameProvider)),
-    TextEditingController(text: 'Jogador 2'),
+        text: ref.read(playerNameProvider).isEmpty ? tr('Jogador 1') : ref.read(playerNameProvider)),
+    TextEditingController(text: tr('Jogador 2')),
   ];
   final List<int?> _decks = [null, null];
   bool _randomFirst = true;
@@ -68,7 +70,8 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
     super.dispose();
   }
 
-  String _name(int i) => _names[i].text.trim().isEmpty ? 'Jogador ${i + 1}' : _names[i].text.trim();
+  String _name(int i) =>
+      _names[i].text.trim().isEmpty ? tr('Jogador {v}', {'v': i + 1}) : _names[i].text.trim();
 
   @override
   Widget build(BuildContext context) {
@@ -76,17 +79,16 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
     final theme = Theme.of(context);
     final ready = _decks.every((d) => d != null);
     return Scaffold(
-      appBar: AppBar(title: const Text('1 contra 1 neste dispositivo')),
+      appBar: AppBar(title: Text(tr('1 contra 1 neste dispositivo'))),
       body: MaxWidth(
         child: ListView(padding: const EdgeInsets.all(16), children: [
           Text(
-            'Para ensinar alguém a jogar ou testar um deck contra outro, com um só dispositivo. '
-            'Para jogar a sério, cada um com o seu telemóvel, usa "Criar sala".',
+            tr('Para ensinar alguém a jogar ou testar um deck contra outro, com um só dispositivo. Para jogar a sério, cada um com o seu telemóvel, usa "Criar sala".'),
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           for (var i = 0; i < 2; i++) ...[
-            Text('Jogador ${i + 1}', style: theme.textTheme.titleSmall),
+            Text(tr('Jogador {v}', {'v': i + 1}), style: theme.textTheme.titleSmall),
             const SizedBox(height: 6),
             Row(children: [
               Expanded(
@@ -94,7 +96,7 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
                   controller: _names[i],
                   textCapitalization: TextCapitalization.words,
                   maxLength: 20,
-                  decoration: const InputDecoration(labelText: 'Nome', counterText: ''),
+                  decoration: InputDecoration(labelText: tr('Nome'), counterText: ''),
                 ),
               ),
               const SizedBox(width: 8),
@@ -103,7 +105,7 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
                 child: DropdownButtonFormField<int>(
                   value: _decks[i],
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Deck'),
+                  decoration: InputDecoration(labelText: tr('Deck')),
                   items: [
                     for (final d in decks)
                       DropdownMenuItem(value: d.id, child: Text(d.name, overflow: TextOverflow.ellipsis)),
@@ -116,21 +118,21 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
           ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Mesa partilhada (frente a frente)'),
-            subtitle: const Text('O ecrã fica dividido: cada um vê a sua metade virada para si.'),
+            title: Text(tr('Mesa partilhada (frente a frente)')),
+            subtitle: Text(tr('O ecrã fica dividido: cada um vê a sua metade virada para si.')),
             value: _shared,
             onChanged: (v) => setState(() => _shared = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Mãos abertas'),
-            subtitle: const Text('As duas mãos ficam à vista: bom para ensinar.'),
+            title: Text(tr('Mãos abertas')),
+            subtitle: Text(tr('As duas mãos ficam à vista: bom para ensinar.')),
             value: _openHands,
             onChanged: _shared ? (v) => setState(() => _openHands = v) : null,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Primeiro jogador ao acaso'),
+            title: Text(tr('Primeiro jogador ao acaso')),
             value: _randomFirst,
             onChanged: (v) => setState(() => _randomFirst = v),
           ),
@@ -148,12 +150,12 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
                       ),
                     )),
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Começar'),
+            label: Text(tr('Começar')),
           ),
           if (decks.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('Cria primeiro um deck.', style: theme.textTheme.bodySmall),
+              child: Text(tr('Cria primeiro um deck.'), style: theme.textTheme.bodySmall),
             ),
         ]),
       ),

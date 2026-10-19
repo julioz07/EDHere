@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/foundation.dart';
+import '../l10n/l10n.dart';
 
 /// Uma carta de booster em JSON (para guardar pools).
 Map<String, dynamic> packCardToJson(db.PackCard c) => {
@@ -15,7 +16,8 @@ Map<String, dynamic> packCardToJson(db.PackCard c) => {
     };
 
 db.PackCard packCardFromJson(Map<String, dynamic> j) => db.PackCard(
-      db.BoosterPrint(j['s'] as String? ?? '', j['o'] as String, j['r'] as String? ?? 'C', j['n'] as String? ?? '',
+      db.BoosterPrint(
+          j['s'] as String? ?? '', j['o'] as String, j['r'] as String? ?? 'C', j['n'] as String? ?? '',
           setCode: j['e'] as String? ?? ''),
       foil: j['f'] == 1,
     );
@@ -65,7 +67,7 @@ class LimitedBuild {
 
   static LimitedBuild fromJson(Map<String, dynamic> j) => LimitedBuild(
         id: j['id'] as String,
-        title: j['title'] as String? ?? 'Deck',
+        title: j['title'] as String? ?? tr('Deck'),
         commander: j['cmd'] == true,
         pool: [for (final c in (j['pool'] as List).cast<Map>()) packCardFromJson(c.cast<String, dynamic>())],
         deck: {for (final i in (j['deck'] as List? ?? const []).cast<num>()) i.toInt()},

@@ -10,6 +10,7 @@ import 'decks/decks_tab.dart';
 import 'play/play_tab.dart';
 import 'resume_game.dart';
 import 'widgets/responsive.dart';
+import '../l10n/l10n.dart';
 
 /// Estrutura principal: Cartas, Decks, Jogar e Definições.
 class AppShell extends ConsumerStatefulWidget {
@@ -18,12 +19,22 @@ class AppShell extends ConsumerStatefulWidget {
   /// Vindo da introdução: começa logo a descarregar a base de cartas.
   final bool startDownload;
 
+  /// Separador a abrir na próxima vez (depois de mudar de língua, a app é
+  /// refeita e volta às Definições).
+  static int? reopenTab;
+
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  late int _tab = _home;
+  late int _tab = _takeReopen() ?? _home;
+
+  static int? _takeReopen() {
+    final t = AppShell.reopenTab;
+    AppShell.reopenTab = null;
+    return t;
+  }
   DateTime? _backPressed;
 
   /// Separador de partida: Decks quando já há cartas, senão Cartas.
@@ -67,9 +78,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       return;
     }
     _backPressed = now;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Toca outra vez em retroceder para sair.'),
-      duration: Duration(seconds: 2),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(tr('Toca outra vez em retroceder para sair.')),
+      duration: const Duration(seconds: 2),
     ));
   }
 
@@ -104,11 +115,11 @@ class _AppShellState extends ConsumerState<AppShell> {
               labelType: NavigationRailLabelType.all,
               groupAlignment: -0.6,
               destinations: [
-                const NavigationRailDestination(icon: Icon(Icons.search), label: Text('Cartas')),
-                const NavigationRailDestination(icon: Icon(Icons.style_outlined), label: Text('Decks')),
-                const NavigationRailDestination(
-                    icon: Icon(Icons.table_restaurant_outlined), label: Text('Jogar')),
-                NavigationRailDestination(icon: settingsIcon, label: const Text('Definições')),
+                NavigationRailDestination(icon: const Icon(Icons.search), label: Text(tr('Cartas'))),
+                NavigationRailDestination(icon: const Icon(Icons.style_outlined), label: Text(tr('Decks'))),
+                NavigationRailDestination(
+                    icon: const Icon(Icons.table_restaurant_outlined), label: Text(tr('Jogar'))),
+                NavigationRailDestination(icon: settingsIcon, label: Text(tr('Definições'))),
               ],
             ),
           ),
@@ -123,10 +134,10 @@ class _AppShellState extends ConsumerState<AppShell> {
           selectedIndex: _tab,
           onDestinationSelected: _go,
           destinations: [
-            const NavigationDestination(icon: Icon(Icons.search), label: 'Cartas'),
-            const NavigationDestination(icon: Icon(Icons.style_outlined), label: 'Decks'),
-            const NavigationDestination(icon: Icon(Icons.table_restaurant_outlined), label: 'Jogar'),
-            NavigationDestination(icon: settingsIcon, label: 'Definições'),
+            NavigationDestination(icon: const Icon(Icons.search), label: tr('Cartas')),
+            NavigationDestination(icon: const Icon(Icons.style_outlined), label: tr('Decks')),
+            NavigationDestination(icon: const Icon(Icons.table_restaurant_outlined), label: tr('Jogar')),
+            NavigationDestination(icon: settingsIcon, label: tr('Definições')),
           ],
         ),
       );

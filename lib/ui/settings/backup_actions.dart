@@ -12,6 +12,7 @@ import '../../app/share.dart';
 import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../data/data_tab.dart';
+import '../../l10n/l10n.dart';
 
 /// Exportar um backup (todos os decks, ou só [deckIds]) para um ficheiro:
 /// guardar onde se quiser (Drive, Transferências…) ou enviar a alguém.
@@ -26,35 +27,35 @@ Future<void> exportBackup(BuildContext context, WidgetRef ref, {List<int>? deckI
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set_) => AlertDialog(
-          title: const Text('Exportar backup'),
+          title: Text(tr('Exportar backup')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Um ficheiro que podes guardar onde quiseres (Google Drive, PC…) '
-                'e voltar a importar aqui ou noutro telemóvel.'),
+            Text(tr(
+                'Um ficheiro que podes guardar onde quiseres (Google Drive, PC…) e voltar a importar aqui ou noutro telemóvel.')),
             const SizedBox(height: 8),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: decks,
               onChanged: (v) => set_(() => decks = v!),
-              title: Text('Decks ($nDecks)'),
+              title: Text(tr('Decks ({nDecks})', {'nDecks': nDecks})),
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: collection,
               onChanged: (v) => set_(() => collection = v!),
-              title: Text('As minhas cartas ($nCards)'),
+              title: Text(tr('As minhas cartas ({nCards})', {'nCards': nCards})),
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: games,
               onChanged: (v) => set_(() => games = v!),
-              title: Text('Histórico de partidas ($nGames)'),
+              title: Text(tr('Histórico de partidas ({nGames})', {'nGames': nGames})),
             ),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
             FilledButton(
               onPressed: decks || collection || games ? () => Navigator.pop(ctx, true) : null,
-              child: const Text('Continuar'),
+              child: Text(tr('Continuar')),
             ),
           ],
         ),
@@ -73,7 +74,9 @@ Future<void> exportBackup(BuildContext context, WidgetRef ref, {List<int>? deckI
   final bytes = Uint8List.fromList(utf8.encode(backup.encode()));
   final now = DateTime.now();
   final date = '${now.year}-${_two(now.month)}-${_two(now.day)}';
-  final file = name == null ? 'EDHere-backup-$date.json' : 'EDHere-${_safe(name)}.json';
+  final file = name == null
+      ? tr('EDHere-backup-{date}.json', {'date': date})
+      : tr('EDHere-{v}.json', {'v': _safe(name)});
 
   final action = await showModalBottomSheet<String>(
     context: context,
@@ -81,14 +84,14 @@ Future<void> exportBackup(BuildContext context, WidgetRef ref, {List<int>? deckI
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListTile(
           leading: const Icon(Icons.save_alt),
-          title: const Text('Guardar ficheiro…'),
-          subtitle: const Text('Escolhe a pasta: Google Drive, Transferências, cartão…'),
+          title: Text(tr('Guardar ficheiro…')),
+          subtitle: Text(tr('Escolhe a pasta: Google Drive, Transferências, cartão…')),
           onTap: () => Navigator.pop(ctx, 'save'),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),
-          title: const Text('Enviar…'),
-          subtitle: const Text('WhatsApp, email, Drive…'),
+          title: Text(tr('Enviar…')),
+          subtitle: Text(tr('WhatsApp, email, Drive…')),
           onTap: () => Navigator.pop(ctx, 'share'),
         ),
       ]),
@@ -99,16 +102,18 @@ Future<void> exportBackup(BuildContext context, WidgetRef ref, {List<int>? deckI
   try {
     if (action == 'save') {
       final path = await FilePicker.platform.saveFile(fileName: file, bytes: bytes);
-      if (path != null) messenger.showSnackBar(SnackBar(content: Text('Guardado: $file')));
+      if (path != null) {
+        messenger.showSnackBar(SnackBar(content: Text(tr('Guardado: {file}', {'file': file}))));
+      }
     } else {
       final dir = Directory(p.join(ref.read(pathsProvider).cache, 'share'))..createSync(recursive: true);
       final out = File(p.join(dir.path, file))..writeAsBytesSync(bytes);
       if (!await shareFile(out.path, subject: file)) {
-        messenger.showSnackBar(const SnackBar(content: Text('Não foi possível partilhar o ficheiro.')));
+        messenger.showSnackBar(SnackBar(content: Text(tr('Não foi possível partilhar o ficheiro.'))));
       }
     }
   } catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text('Não foi possível guardar: $e')));
+    messenger.showSnackBar(SnackBar(content: Text(tr('Não foi possível guardar: {e}', {'e': e}))));
   }
 }
 
@@ -122,15 +127,15 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
     final bytes = f.bytes ?? await File(f.path!).readAsBytes();
     backup = Backup.decode(utf8.decode(bytes, allowMalformed: true));
   } on FormatException catch (e) {
-    if (context.mounted) _info(context, 'Não foi possível importar', e.message);
+    if (context.mounted) _info(context, tr('Não foi possível importar'), e.message);
     return;
   } catch (e) {
-    if (context.mounted) _info(context, 'Não foi possível importar', '$e');
+    if (context.mounted) _info(context, tr('Não foi possível importar'), '$e');
     return;
   }
   if (!context.mounted) return;
   if (backup.isEmpty) {
-    _info(context, 'Backup vazio', 'Este ficheiro não tem decks, cartas nem partidas.');
+    _info(context, tr('Backup vazio'), tr('Este ficheiro não tem decks, cartas nem partidas.'));
     return;
   }
   var decks = backup.decks.isNotEmpty, collection = backup.collection.isNotEmpty;
@@ -140,12 +145,13 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set_) => AlertDialog(
-        title: const Text('Importar backup'),
+        title: Text(tr('Importar backup')),
         content:
             Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('${f.name}\nExportado a ${when.day}/${when.month}/${when.year}.'),
+          Text(tr('{v}\nExportado a {day}/{month}/{year}.',
+              {'v': f.name, 'day': when.day, 'month': when.month, 'year': when.year})),
           const SizedBox(height: 4),
-          const Text('Junta ao que já tens, sem apagar nada. Decks iguais não se repetem.'),
+          Text(tr('Junta ao que já tens, sem apagar nada. Decks iguais não se repetem.')),
           if (backup.decks.isNotEmpty)
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
@@ -159,21 +165,21 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
               contentPadding: EdgeInsets.zero,
               value: collection,
               onChanged: (v) => set_(() => collection = v!),
-              title: Text('As minhas cartas (${backup.collection.length})'),
+              title: Text(tr('As minhas cartas ({n})', {'n': backup.collection.length})),
             ),
           if (backup.games.isNotEmpty)
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: games,
               onChanged: (v) => set_(() => games = v!),
-              title: Text('Histórico (${backup.games.length} partidas)'),
+              title: Text(tr('Histórico ({n} partidas)', {'n': backup.games.length})),
             ),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
             onPressed: decks || collection || games ? () => Navigator.pop(ctx, true) : null,
-            child: const Text('Importar'),
+            child: Text(tr('Importar')),
           ),
         ],
       ),
@@ -202,13 +208,13 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
     if (decks)
       '${r.decksAdded} ${r.decksAdded == 1 ? 'deck novo' : 'decks novos'}'
           '${r.decksSkipped > 0 ? ' (${r.decksSkipped} já ${r.decksSkipped == 1 ? 'existia' : 'existiam'})' : ''}',
-    if (collection) '${r.cardsAdded} cartas atualizadas na coleção',
-    if (games) '${r.gamesAdded} partidas no histórico',
+    if (collection) tr('{cardsAdded} cartas atualizadas na coleção', {'cardsAdded': r.cardsAdded}),
+    if (games) tr('{gamesAdded} partidas no histórico', {'gamesAdded': r.gamesAdded}),
     if (r.missing.isNotEmpty)
-      '\nNão encontradas na base de cartas (atualiza a base e importa de novo): '
-          '${r.missing.take(10).join(', ')}${r.missing.length > 10 ? '…' : ''}',
+      tr('\nNão encontradas na base de cartas (atualiza a base e importa de novo): {v}{v2}',
+          {'v': r.missing.take(10).join(', '), 'v2': r.missing.length > 10 ? '…' : ''}),
   ];
-  _info(context, 'Importado', lines.join('\n'));
+  _info(context, tr('Importado'), lines.join('\n'));
 }
 
 void _info(BuildContext context, String title, String text) => showDialog<void>(

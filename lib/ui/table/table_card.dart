@@ -7,6 +7,7 @@ import 'package:mesa_core/mesa_core.dart';
 import '../../data/settings.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
+import '../../l10n/l10n.dart';
 
 /// Cor do brilho dos alvos (como no exemplo de referência).
 const targetGlow = Color(0xFFFF5A7A);
@@ -117,9 +118,9 @@ class TableCardView extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     Widget face;
     if (c.faceDown) {
-      face = const CardBack(label: 'Virada');
+      face = CardBack(label: tr('Virada'));
     } else if (card == null) {
-      face = _TokenFace(name: c.tokenName ?? 'Token', pt: c.tokenPt);
+      face = _TokenFace(name: c.tokenName ?? tr('Token'), pt: c.tokenPt);
     } else {
       face = CardImage(card!, face: c.faceIndex, radius: width * 0.05);
     }
@@ -324,7 +325,7 @@ class _TokenFace extends StatelessWidget {
                   style: TextStyle(
                       fontSize: c.maxWidth * 0.12, fontWeight: FontWeight.w700, color: Colors.black87)),
               const Spacer(),
-              Text('Token', style: TextStyle(fontSize: c.maxWidth * 0.09, color: Colors.black54)),
+              Text(tr('Token'), style: TextStyle(fontSize: c.maxWidth * 0.09, color: Colors.black54)),
               if (pt != null)
                 Text(pt!,
                     style: TextStyle(

@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../data/providers.dart';
 import '../data/settings.dart';
+import 'data/data_tab.dart';
 import 'shell.dart';
+import '../l10n/l10n.dart';
 
 /// Já se viu a introdução (guardado entre sessões).
 const onboardingKey = 'onboarding_done';
@@ -32,52 +34,59 @@ class _Slide {
   final IconData? icon;
 }
 
-const _slides = [
-  _Slide(
-    'Uma mesa de Magic no bolso',
-    [
-      (Icons.groups_outlined, 'Joga Commander (e outros formatos) com quem está ao teu lado.'),
-      (Icons.wifi_off_rounded, 'Sem internet, sem contas, sem servidores: funciona em modo avião.'),
-      (
-        Icons.touch_app_outlined,
-        'É uma mesa, não um árbitro: tu jogas as cartas e a app guarda vida, '
-            'contadores, zonas e o registo.'
+List<_Slide> get _slides => [
+      _Slide(
+        tr('Uma mesa de Magic no bolso'),
+        [
+          (Icons.groups_outlined, tr('Joga Commander (e outros formatos) com quem está ao teu lado.')),
+          (Icons.wifi_off_rounded, tr('Sem internet, sem contas, sem servidores: funciona em modo avião.')),
+          (
+            Icons.touch_app_outlined,
+            tr('É uma mesa, não um árbitro: tu jogas as cartas e a app guarda vida, contadores, zonas e o registo.')
+          ),
+        ],
+        image: 'assets/onboarding/table.jpg',
       ),
-    ],
-    image: 'assets/onboarding/table.jpg',
-  ),
-  _Slide(
-    'Decks, cartas e boosters',
-    [
-      (Icons.search, 'Todas as cartas pesquisáveis offline, com as versões que escolheres.'),
-      (Icons.style_outlined, 'Monta ou importa decks (Moxfield, Archidekt…) com validação e bracket.'),
-      (Icons.card_giftcard, 'Abre boosters: sealed, draft, Commander draft e JumpStart.'),
-    ],
-    image: 'assets/onboarding/deck.jpg',
-  ),
-  _Slide(
-    'Jogar juntos e aprender',
-    [
-      (Icons.router_outlined, 'Um cria a sala no Wi-Fi ou num hotspot; os outros entram pelo QR code.'),
-      (Icons.smartphone, 'Cada um joga no seu telemóvel: a tua mão nunca sai do teu.'),
-      (Icons.school_outlined, 'Nunca jogaste? O tutorial "Aprender a jogar Commander" ensina-te a jogar.'),
-    ],
-    image: 'assets/onboarding/room.jpg',
-  ),
-  _Slide(
-    'Primeiro, as cartas',
-    [
-      (
-        Icons.download_rounded,
-        'Para jogar offline, a app descarrega a base de cartas uma vez (cerca de 30 MB, '
-            'melhor em Wi-Fi).'
+      _Slide(
+        tr('Decks, cartas e boosters'),
+        [
+          (Icons.search, tr('Todas as cartas pesquisáveis offline, com as versões que escolheres.')),
+          (
+            Icons.style_outlined,
+            tr('Monta ou importa decks (Moxfield, Archidekt…) com validação e bracket.')
+          ),
+          (Icons.card_giftcard, tr('Abre boosters: sealed, draft, Commander draft e JumpStart.')),
+        ],
+        image: 'assets/onboarding/deck.jpg',
       ),
-      (Icons.image_outlined, 'As imagens descarregam-se aos poucos, ou em pacotes nas Definições.'),
-      (Icons.flight_rounded, 'Depois disso, tudo funciona sem rede.'),
-    ],
-    icon: Icons.cloud_download_outlined,
-  ),
-];
+      _Slide(
+        tr('Jogar juntos e aprender'),
+        [
+          (
+            Icons.router_outlined,
+            tr('Um cria a sala no Wi-Fi ou num hotspot; os outros entram pelo QR code.')
+          ),
+          (Icons.smartphone, tr('Cada um joga no seu telemóvel: a tua mão nunca sai do teu.')),
+          (
+            Icons.school_outlined,
+            tr('Nunca jogaste? O tutorial "Aprender a jogar Commander" ensina-te a jogar.')
+          ),
+        ],
+        image: 'assets/onboarding/room.jpg',
+      ),
+      _Slide(
+        tr('Primeiro, as cartas'),
+        [
+          (
+            Icons.download_rounded,
+            tr('Para jogar offline, a app descarrega a base de cartas uma vez (cerca de 30 MB, melhor em Wi-Fi).')
+          ),
+          (Icons.image_outlined, tr('As imagens descarregam-se aos poucos, ou em pacotes nas Definições.')),
+          (Icons.flight_rounded, tr('Depois disso, tudo funciona sem rede.')),
+        ],
+        icon: Icons.cloud_download_outlined,
+      ),
+    ];
 
 /// Introdução da primeira vez: o que é a app, como funciona e, no fim, o
 /// download da base de cartas.
@@ -132,6 +141,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: Row(children: [
               SvgPicture.asset(Brand.horizontal(theme.brightness), height: 30),
               const Spacer(),
+              // A língua: a do telemóvel por defeito, muda-se aqui ou nas Definições.
+              PopupMenuButton<AppLang>(
+                tooltip: tr('Língua'),
+                initialValue: L10n.lang,
+                onSelected: (l) => ref.read(settingsProvider).appLang = l,
+                itemBuilder: (_) => [
+                  for (final l in AppLang.values) PopupMenuItem(value: l, child: Text(l.label)),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.language, size: 20),
+                    const SizedBox(width: 4),
+                    Text(L10n.lang.code.toUpperCase(), style: theme.textTheme.labelLarge),
+                  ]),
+                ),
+              ),
               // A mesma altura em todos os passos (o logótipo não salta).
               SizedBox(
                 height: 48,
@@ -140,7 +166,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     : TextButton(
                         style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
                         onPressed: () => _go(_slides.length - 1),
-                        child: const Text('Saltar'),
+                        child: Text(tr('Saltar')),
                       ),
               ),
             ]),
@@ -177,17 +203,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                            // Em que língua vêm as cartas (nome, texto e imagem).
+                            if (!hasData) const CardLanguageTile(contentPadding: EdgeInsets.zero),
                             FilledButton.icon(
                               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                               onPressed: () => _finish(download: true),
                               icon: Icon(hasData ? Icons.check_rounded : Icons.download_rounded),
-                              label: Text(hasData ? 'Começar' : 'Descarregar as cartas e começar'),
+                              label: Text(hasData ? tr('Começar') : tr('Descarregar as cartas e começar')),
                             ),
                             if (!hasData)
                               TextButton(
                                 style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
                                 onPressed: () => _finish(download: false),
-                                child: const Text('Mais tarde (Definições → Dados)'),
+                                child: Text(tr('Mais tarde (Definições → Dados)')),
                               ),
                           ])
                     : Row(children: [
@@ -195,14 +223,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           TextButton(
                             style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
                             onPressed: () => _go(_page - 1),
-                            child: const Text('Anterior'),
+                            child: Text(tr('Anterior')),
                           ),
                         const Spacer(),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                           onPressed: () => _go(_page + 1),
                           icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Seguinte'),
+                          label: Text(tr('Seguinte')),
                         ),
                       ]),
               ),

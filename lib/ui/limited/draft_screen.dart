@@ -15,6 +15,7 @@ import '../widgets/set_symbol.dart';
 import 'limited_builder.dart';
 import 'limited_common.dart';
 import 'sealed_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// Sets feitos para commander draft (boosters de 20 cartas).
 const commanderDraftSets = {'CMR', 'CLB', 'CMM', 'MBC'};
@@ -57,21 +58,26 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
         padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
         child: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Draft', style: theme.textTheme.titleLarge),
+            Text(tr('Draft'), style: theme.textTheme.titleLarge),
             const SizedBox(height: 4),
             Text(
-              'Cada um abre um booster, tira ${picks == 1 ? 'uma carta' : 'duas cartas'} e passa o resto: '
-              'à esquerda, depois à direita, depois à esquerda. '
-              '${commander ? 'No fim, cada um escolhe um comandante entre as lendas que tirou (ou The '
-                  'Prismatic Piper) e monta um deck de 60, sem singleton, para jogar com vida 40.' : 'No fim, cada um monta um deck de 40.'}',
+              tr(
+                  'Cada um abre um booster, tira {v} e passa o resto: à esquerda, depois à direita, depois à esquerda. {v2}',
+                  {
+                    'v': picks == 1 ? tr('uma carta') : tr('duas cartas'),
+                    'v2': commander
+                        ? tr(
+                            'No fim, cada um escolhe um comandante entre as lendas que tirou (ou The Prismatic Piper) e monta um deck de 60, sem singleton, para jogar com vida 40.')
+                        : tr('No fim, cada um monta um deck de 40.')
+                  }),
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'set', label: Text('Set')),
-                ButtonSegment(value: 'commander', label: Text('Commander')),
-                ButtonSegment(value: 'cube', label: Text('Cubo')),
+              segments: [
+                ButtonSegment(value: 'set', label: Text(tr('Set'))),
+                ButtonSegment(value: 'commander', label: Text(tr('Commander'))),
+                ButtonSegment(value: 'cube', label: Text(tr('Cubo'))),
               ],
               selected: {mode},
               onSelectionChanged: (v) => set_(() {
@@ -89,10 +95,11 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                 child: ListTile(
                   leading:
                       set == null ? const Icon(Icons.style) : SetSymbol(set!.code, rarity: 'M', size: 28),
-                  title: Text(set?.name ?? 'Escolher set'),
+                  title: Text(set?.name ?? tr('Escolher set')),
                   subtitle: set == null
                       ? null
-                      : Text('${set!.code} · ${set!.year} · ${set!.size} cartas por booster'),
+                      : Text(tr('{code} · {year} · {size} cartas por booster',
+                          {'code': set!.code, 'year': set!.year, 'size': set!.size})),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
                     final s = await showSetPicker(
@@ -108,28 +115,28 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                 ),
               )
             else if (cubes.isEmpty)
-              const Text('Ainda não tens cubos (Decks → Importar lista, formato "Cubo").')
+              Text(tr('Ainda não tens cubos (Decks → Importar lista, formato "Cubo").'))
             else
               DropdownButtonFormField<int>(
                 value: cubeId,
-                decoration: const InputDecoration(labelText: 'Cubo'),
+                decoration: InputDecoration(labelText: tr('Cubo')),
                 items: [for (final d in cubes) DropdownMenuItem(value: d.id, child: Text(d.name))],
                 onChanged: (v) => set_(() => cubeId = v),
               ),
             if (!cube && set != null) SetImagesTile(set: set!),
             const SizedBox(height: 8),
             SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text('Tirar 1')),
-                ButtonSegment(value: 2, label: Text('Tirar 2 (Pick-Two)')),
+              segments: [
+                ButtonSegment(value: 1, label: Text(tr('Tirar 1'))),
+                ButtonSegment(value: 2, label: Text(tr('Tirar 2 (Pick-Two)'))),
               ],
               selected: {picks},
               onSelectionChanged: (v) => set_(() => picks = v.first),
             ),
-            stepper('Boosters por jogador', '$packs', packs > 1 ? () => set_(() => packs--) : null,
+            stepper(tr('Boosters por jogador'), '$packs', packs > 1 ? () => set_(() => packs--) : null,
                 packs < 6 ? () => set_(() => packs++) : null),
             stepper(
-                'Lugares à mesa',
+                tr('Lugares à mesa'),
                 '$seats',
                 seats > max(2, humans.length) ? () => set_(() => seats--) : null,
                 seats < 8 ? () => set_(() => seats++) : null),
@@ -137,15 +144,15 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                 seats > humans.length
                     ? '${humans.length} ${humans.length == 1 ? 'jogador' : 'jogadores'} e ${seats - humans.length} '
                         '${seats - humans.length == 1 ? 'bot' : 'bots'}'
-                    : '${humans.length} jogadores, sem bots',
+                    : tr('{n} jogadores, sem bots', {'n': humans.length}),
                 style: theme.textTheme.bodySmall),
             stepper(
-                'Tempo por escolha',
+                tr('Tempo por escolha'),
                 timer == 0 ? 'livre' : '${timer}s',
                 timer > 0 ? () => set_(() => timer = timer <= 30 ? 0 : timer - 15) : null,
                 timer < 120 ? () => set_(() => timer = timer == 0 ? 30 : timer + 15) : null),
             if (timer > 0)
-              Text('Quando o tempo acaba, a app escolhe por ti.', style: theme.textTheme.bodySmall),
+              Text(tr('Quando o tempo acaba, a app escolhe por ti.'), style: theme.textTheme.bodySmall),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: !ready
@@ -162,7 +169,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                           commander: commander);
                     },
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Começar draft'),
+              label: Text(tr('Começar draft')),
             ),
           ]),
         ),
@@ -207,7 +214,7 @@ Future<void> _start(WidgetRef ref, NetworkGame game,
           if (cards[e.oracleId] case final c?)
             db.BoosterPrint(c.printId, c.oracleId, (c.rarity.isEmpty ? 'c' : c.rarity[0]).toUpperCase(), ''),
     ]);
-    title = 'Cubo ${deck.name}';
+    title = tr('Cubo {v}', {'v': deck.name});
   }
   game.startDraft(
     DraftConfig(
@@ -302,7 +309,8 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
         child: ListView(padding: const EdgeInsets.only(bottom: 24), children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('As tuas escolhas (${cards.length})', style: Theme.of(ctx).textTheme.titleMedium),
+            child: Text(tr('As tuas escolhas ({n})', {'n': cards.length}),
+                style: Theme.of(ctx).textTheme.titleMedium),
           ),
           PoolGrid(target: 96, children: [for (final p in cards) PoolCardView(card: p)]),
         ]),
@@ -315,7 +323,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
     await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
       builder: (_) => LimitedBuilderScreen(
         pool: pool,
-        title: 'Draft · ${c.config.title}',
+        title: tr('Draft · {title}', {'title': c.config.title}),
         commander: c.config.commander,
         // Depois de guardar, volta à sala com o deck já escolhido.
         onSaved: (ctx, deck) {
@@ -334,12 +342,16 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Draft · ${cfg.title}', overflow: TextOverflow.ellipsis),
+          Text(tr('Draft · {title}', {'title': cfg.title}), overflow: TextOverflow.ellipsis),
           Text(
             c.finished
-                ? 'Terminado · ${c.pool.length} cartas'
-                : 'Booster ${c.round + 1} de ${cfg.packs} · escolha ${c.pickNo} · '
-                    'passa para a ${c.direction > 0 ? 'esquerda' : 'direita'}',
+                ? tr('Terminado · {n} cartas', {'n': c.pool.length})
+                : tr('Booster {v} de {packs} · escolha {pickNo} · passa para a {v2}', {
+                    'v': c.round + 1,
+                    'packs': cfg.packs,
+                    'pickNo': c.pickNo,
+                    'v2': c.direction > 0 ? tr('esquerda') : tr('direita')
+                  }),
             style: theme.textTheme.bodySmall,
           ),
         ]),
@@ -393,7 +405,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
             Center(
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.inventory_2_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
-                Text(' = packs à espera',
+                Text(tr(' = packs à espera'),
                     style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               ]),
             ),
@@ -405,13 +417,14 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(Icons.emoji_events_outlined, size: 48),
                     const SizedBox(height: 8),
-                    Text('Draft terminado: ${c.pool.length} cartas', style: theme.textTheme.titleLarge),
+                    Text(tr('Draft terminado: {n} cartas', {'n': c.pool.length}),
+                        style: theme.textTheme.titleLarge),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                       onPressed: _build,
                       icon: const Icon(Icons.construction),
-                      label: const Text('Montar o deck'),
+                      label: Text(tr('Montar o deck')),
                     ),
                   ]),
                 )
@@ -420,7 +433,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         const CircularProgressIndicator(),
                         const SizedBox(height: 12),
-                        Text('À espera do próximo pack…', style: theme.textTheme.titleMedium),
+                        Text(tr('À espera do próximo pack…'), style: theme.textTheme.titleMedium),
                       ]),
                     )
                   : ListView(padding: const EdgeInsets.only(bottom: 24), children: [
@@ -433,8 +446,9 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                           ],
                           Text(
                               c.picks == 1
-                                  ? 'Escolhe 1 carta (${_packCards.length} no pack)'
-                                  : 'Escolhe ${c.picks} cartas (${_packCards.length} no pack)',
+                                  ? tr('Escolhe 1 carta ({n} no pack)', {'n': _packCards.length})
+                                  : tr('Escolhe {picks} cartas ({n} no pack)',
+                                      {'picks': c.picks, 'n': _packCards.length}),
                               style: theme.textTheme.titleSmall),
                         ]),
                       ),
@@ -479,7 +493,9 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                 child: FilledButton.icon(
                   onPressed: _selected.length == c.picks ? _confirm : null,
                   icon: const Icon(Icons.check),
-                  label: Text(c.picks == 1 ? 'Escolher esta' : 'Escolher (${_selected.length}/${c.picks})'),
+                  label: Text(c.picks == 1
+                      ? tr('Escolher esta')
+                      : tr('Escolher ({n}/{picks})', {'n': _selected.length, 'picks': c.picks})),
                 ),
               ),
             ),

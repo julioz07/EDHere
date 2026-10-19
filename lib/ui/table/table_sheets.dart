@@ -8,6 +8,7 @@ import '../cards/card_detail_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import 'table_card.dart';
+import '../../l10n/l10n.dart';
 
 Future<T?> _sheet<T>(BuildContext context, WidgetBuilder builder) => showModalBottomSheet<T>(
       context: context,
@@ -35,7 +36,7 @@ Future<int?> pickNumber(BuildContext context, String title, {int initial = 1, in
               onPressed: n < max ? () => set(() => n++) : null, icon: const Icon(Icons.add)),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           TextButton(onPressed: () => Navigator.pop(ctx, n), child: const Text('OK')),
         ],
       ),
@@ -75,13 +76,16 @@ Widget _header(BuildContext context, db.Card? card, CardInstance? inst, {String?
       const SizedBox(width: 14),
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(card?.name ?? inst?.tokenName ?? 'Token',
+          Text(card?.displayName ?? inst?.tokenName ?? tr('Token'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           if (card != null) ...[
             const SizedBox(height: 4),
             ManaCost(card.manaCost),
             const SizedBox(height: 4),
-            Text(card.typeLine, style: Theme.of(context).textTheme.bodySmall),
+            Text(
+                card.displayTypeOf(
+                    card.faces.isNotEmpty ? (inst?.faceIndex ?? 0).clamp(0, card.faces.length - 1) : -1),
+                style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 6),
             OracleText(
                 card.faces.isNotEmpty
@@ -123,19 +127,24 @@ final _loyaltyLine = RegExp(r'^([+−-]?)(\d+|X): (.+)$');
 /// As habilidades de lealdade da carta (da face visível), por ordem.
 List<LoyaltyAbility> loyaltyAbilities(db.Card? card, int faceIndex) {
   if (card == null) return const [];
-  final face = card.faces.isNotEmpty ? card.faces[faceIndex.clamp(0, card.faces.length - 1)] : null;
+  final fi = card.faces.isNotEmpty ? faceIndex.clamp(0, card.faces.length - 1) : -1;
+  final face = fi >= 0 ? card.faces[fi] : null;
   final type = face?.typeLine ?? card.typeLine;
   if (!type.contains('Planeswalker')) return const [];
-  return [
-    for (final line in (face?.oracleText ?? card.oracleText).split('\n'))
-      if (_loyaltyLine.firstMatch(line.trim()) case final m?)
-        LoyaltyAbility(
-          '${m[1]!.isEmpty ? '' : m[1] == '+' ? '+' : '−'}${m[2]}',
-          m[2] == 'X' ? 0 : (m[1] == '+' ? 1 : -1) * int.parse(m[2]!),
-          m[3]!,
-          x: m[2] == 'X',
-        ),
-  ];
+  List<LoyaltyAbility> parse(String text) => [
+        for (final line in text.split('\n'))
+          if (_loyaltyLine.firstMatch(line.trim()) case final m?)
+            LoyaltyAbility(
+              '${m[1]!.isEmpty ? '' : m[1] == '+' ? '+' : '−'}${m[2]}',
+              m[2] == 'X' ? 0 : (m[1] == '+' ? 1 : -1) * int.parse(m[2]!),
+              m[3]!,
+              x: m[2] == 'X',
+            ),
+      ];
+  // Em inglês e na língua das cartas: usa a tradução se tiver as mesmas habilidades.
+  final oracle = parse(face?.oracleText ?? card.oracleText);
+  final shown = parse(card.displayTextOf(fi));
+  return shown.length == oracle.length ? shown : oracle;
 }
 
 Widget _loyaltyTile(BuildContext context, LoyaltyAbility a, int loyalty, VoidCallback onTap) {
@@ -161,8 +170,9 @@ Widget _loyaltyTile(BuildContext context, LoyaltyAbility a, int loyalty, VoidCal
           style: theme.textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
     ),
     title: OracleText(a.text, style: theme.textTheme.bodyMedium),
-    subtitle:
-        Text(ok ? 'Usar (lealdade $loyalty → ${loyalty + a.delta})' : 'Lealdade insuficiente ($loyalty)'),
+    subtitle: Text(ok
+        ? tr('Usar (lealdade {loyalty} → {delta})', {'loyalty': loyalty, 'delta': loyalty + a.delta})
+        : tr('Lealdade insuficiente ({loyalty})', {'loyalty': loyalty})),
     onTap: onTap,
   );
 }
@@ -183,16 +193,17 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
     return ListView(shrinkWrap: true, children: [
       _header(ctx, card, c,
           subtitle: [
-            '${c.zone.label} · dono: ${pl?.name ?? '?'}',
-            if (c.controller != c.owner) 'controlado por ${ctrl.state.players[c.controller]?.name}',
-            if (tax != null) 'Taxa de comandante: +$tax',
+            tr('{v} · dono: {v2}', {'v': c.zone.label, 'v2': pl?.name ?? '?'}),
+            if (c.controller != c.owner)
+              tr('controlado por {v}', {'v': ctrl.state.players[c.controller]?.name}),
+            if (tax != null) tr('Taxa de comandante: +{tax}', {'tax': tax}),
           ].join(' · ')),
       if (card != null)
-        _tile(Icons.zoom_in, 'Ver carta', () {
+        _tile(Icons.zoom_in, tr('Ver carta'), () {
           Navigator.pop(ctx);
           Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
         }),
-      _tile(Icons.highlight, ctrl.state.highlight == c.id ? 'Tirar destaque' : 'Destacar para todos',
+      _tile(Icons.highlight, ctrl.state.highlight == c.id ? tr('Tirar destaque') : tr('Destacar para todos'),
           () => done(() => ctrl.highlight(ctrl.state.highlight == c.id ? null : c))),
       if (mine) ...[
         if (onField) ...[
@@ -200,57 +211,57 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
             _tile(
                 c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw,
                 c.tapped
-                    ? 'Desvirar os ${ctrl.landStack(c).length} terrenos'
-                    : 'Virar os ${ctrl.landStack(c).length} terrenos (tap)',
+                    ? tr('Desvirar os {n} terrenos', {'n': ctrl.landStack(c).length})
+                    : tr('Virar os {n} terrenos (tap)', {'n': ctrl.landStack(c).length}),
                 () => done(() => ctrl.toggleTap(c))),
             _tile(
                 c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw,
-                c.tapped ? 'Desvirar só esta' : 'Virar só esta',
+                c.tapped ? tr('Desvirar só esta') : tr('Virar só esta'),
                 () => done(() => ctrl.toggleTap(c, single: true))),
           ] else
-            _tile(c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw, c.tapped ? 'Desvirar' : 'Virar (tap)',
-                () => done(() => ctrl.toggleTap(c))),
+            _tile(c.tapped ? Icons.undo : Icons.rotate_90_degrees_cw,
+                c.tapped ? tr('Desvirar') : tr('Virar (tap)'), () => done(() => ctrl.toggleTap(c))),
           for (final a in loyaltyAbilities(card, c.faceIndex))
             _loyaltyTile(ctx, a, c.counters[CounterKind.loyalty] ?? 0, () async {
               Navigator.pop(ctx);
               var delta = a.delta;
               if (a.x) {
-                final n = await pickNumber(context, 'Valor de X', initial: 1, max: 99);
+                final n = await pickNumber(context, tr('Valor de X'), initial: 1, max: 99);
                 if (n == null) return;
                 delta = a.cost.startsWith('+') ? n : -n;
               }
               ctrl.loyaltyAbility(c, a.x ? a.cost.replaceAll('X', '${delta.abs()}') : a.cost, delta);
             }),
-          _tile(Icons.exposure, 'Contadores', () {
+          _tile(Icons.exposure, tr('Contadores'), () {
             Navigator.pop(ctx);
             showCounterSheet(context, ctrl, c);
           }),
           if ((card?.faces.length ?? 0) > 1)
-            _tile(Icons.flip, 'Transformar (outra face)',
+            _tile(Icons.flip, tr('Transformar (outra face)'),
                 () => done(() => ctrl.send(Intent(Ev.flip, {'id': c.id})))),
-          _tile(Icons.flip_to_back, c.faceDown ? 'Virar para cima' : 'Virar para baixo',
+          _tile(Icons.flip_to_back, c.faceDown ? tr('Virar para cima') : tr('Virar para baixo'),
               () => done(() => ctrl.send(Intent(Ev.faceDown, {'id': c.id, 'value': !c.faceDown})))),
-          _tile(Icons.link, c.attachedTo == null ? 'Anexar a…' : 'Desanexar', () async {
+          _tile(Icons.link, c.attachedTo == null ? tr('Anexar a…') : tr('Desanexar'), () async {
             Navigator.pop(ctx);
             if (c.attachedTo != null) {
               ctrl.send(Intent(Ev.attach, {'id': c.id, 'to': null}));
               return;
             }
-            final target = await _pickFieldCard(context, ctrl, exclude: c.id, title: 'Anexar a');
+            final target = await _pickFieldCard(context, ctrl, exclude: c.id, title: tr('Anexar a'));
             if (target != null) ctrl.send(Intent(Ev.attach, {'id': c.id, 'to': target.id}));
           }),
-          _tile(Icons.gps_fixed, 'Apontar para… (carta ou jogador)', () {
+          _tile(Icons.gps_fixed, tr('Apontar para… (carta ou jogador)'), () {
             Navigator.pop(ctx);
             showTargetPicker(context, ctrl, from: c.id);
           }),
-          _tile(Icons.swap_horiz, 'Dar o controlo a…', () async {
+          _tile(Icons.swap_horiz, tr('Dar o controlo a…'), () async {
             Navigator.pop(ctx);
-            final seat = await pickPlayer(context, ctrl, 'Novo controlador');
+            final seat = await pickPlayer(context, ctrl, tr('Novo controlador'));
             if (seat != null) ctrl.send(Intent(Ev.control, {'id': c.id, 'seat': seat}));
           }),
           _tile(
               Icons.content_copy,
-              'Duplicar como token',
+              tr('Duplicar como token'),
               () => done(() => ctrl.send(ctrl.table.createToken(ctrl.actor,
                   oracleId: c.oracleId,
                   name: c.tokenName,
@@ -259,30 +270,30 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
                   y: (c.y + 0.05).clamp(0, 1),
                   copyOf: c.id)))),
           if (c.isToken)
-            _tile(Icons.layers, 'Quantidade (${c.stackQty})', () async {
+            _tile(Icons.layers, tr('Quantidade ({stackQty})', {'stackQty': c.stackQty}), () async {
               Navigator.pop(ctx);
-              final n = await pickNumber(context, 'Quantidade', initial: c.stackQty, max: 999);
+              final n = await pickNumber(context, tr('Quantidade'), initial: c.stackQty, max: 999);
               if (n != null) ctrl.send(Intent(Ev.tokenQty, {'id': c.id, 'qty': n}));
             }),
           if (c.isToken && c.stackQty > 1)
-            _tile(Icons.call_split, 'Separar da pilha…', () async {
+            _tile(Icons.call_split, tr('Separar da pilha…'), () async {
               Navigator.pop(ctx);
-              final n = await pickNumber(context, 'Quantos separar?', initial: 1, max: c.stackQty - 1);
+              final n = await pickNumber(context, tr('Quantos separar?'), initial: 1, max: c.stackQty - 1);
               if (n != null) ctrl.splitStack(c, n);
-            }, subtitle: 'Por exemplo, para atacar só com alguns'),
+            }, subtitle: tr('Por exemplo, para atacar só com alguns')),
         ],
         const Divider(),
         for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
           if (z != c.zone && (z != Zone.command || c.isCommander || ctrl.state.format == 'free'))
-            _tile(_zoneIcon(z), 'Para ${_zoneWithArticle(z)}', () {
+            _tile(_zoneIcon(z), _moveTo(z), () {
               Navigator.pop(ctx);
               moveMaybeToCommand(context, ctrl, c, z);
             }),
-        _tile(Icons.vertical_align_top, 'Para o topo do grimório', () {
+        _tile(Icons.vertical_align_top, tr('Para o topo do grimório'), () {
           Navigator.pop(ctx);
           moveMaybeToCommand(context, ctrl, c, Zone.library);
         }),
-        _tile(Icons.vertical_align_bottom, 'Para o fundo do grimório', () {
+        _tile(Icons.vertical_align_bottom, tr('Para o fundo do grimório'), () {
           Navigator.pop(ctx);
           moveMaybeToCommand(context, ctrl, c, Zone.library, pos: 'bottom');
         }),
@@ -301,16 +312,16 @@ Future<void> moveMaybeToCommand(BuildContext context, GameController ctrl, CardI
     ctrl.moveCard(c, to, pos: pos);
     return;
   }
-  final name = ctrl.card(c.oracleId, printId: c.printId)?.frontName ?? 'O comandante';
+  final name = ctrl.card(c.oracleId, printId: c.printId)?.displayFrontName ?? tr('O comandante');
   final command = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       icon: const Icon(Icons.star_rounded, color: Colors.amber),
-      title: Text('$name vai para ${_zoneWithArticle(to)}'),
-      content: const Text('Na regra do Commander, o dono pode pô-lo na zona de comando em vez disso.'),
+      title: Text(_goesTo(name, to)),
+      content: Text(tr('Na regra do Commander, o dono pode pô-lo na zona de comando em vez disso.')),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Para ${_zoneWithArticle(to)}')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Zona de comando')),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_moveTo(to))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Zona de comando'))),
       ],
     ),
   );
@@ -318,13 +329,23 @@ Future<void> moveMaybeToCommand(BuildContext context, GameController ctrl, CardI
   ctrl.moveCard(c, command ? Zone.command : to, pos: pos);
 }
 
-String _zoneWithArticle(Zone z) => switch (z) {
-      Zone.battlefield => 'o campo',
-      Zone.hand => 'a mão',
-      Zone.graveyard => 'o cemitério',
-      Zone.exile => 'o exílio',
-      Zone.command => 'a zona de comando',
-      Zone.library => 'o grimório',
+/// "Para o cemitério"… (frases inteiras: a preposição muda com a língua).
+String _moveTo(Zone z) => switch (z) {
+      Zone.battlefield => tr('Para o campo'),
+      Zone.hand => tr('Para a mão'),
+      Zone.graveyard => tr('Para o cemitério'),
+      Zone.exile => tr('Para o exílio'),
+      Zone.command => tr('Para a zona de comando'),
+      Zone.library => tr('Para o grimório'),
+    };
+
+String _goesTo(String name, Zone z) => switch (z) {
+      Zone.battlefield => tr('{name} vai para o campo', {'name': name}),
+      Zone.hand => tr('{name} vai para a mão', {'name': name}),
+      Zone.graveyard => tr('{name} vai para o cemitério', {'name': name}),
+      Zone.exile => tr('{name} vai para o exílio', {'name': name}),
+      Zone.command => tr('{name} vai para a zona de comando', {'name': name}),
+      Zone.library => tr('{name} vai para o grimório', {'name': name}),
     };
 
 IconData _zoneIcon(Zone z) => switch (z) {
@@ -356,7 +377,7 @@ Future<CardInstance?> _pickFieldCard(BuildContext context, GameController ctrl,
                         card: ctrl.card(c.oracleId, printId: c.printId),
                         width: 36,
                         showTapped: false)),
-                title: Text(ctrl.card(c.oracleId, printId: c.printId)?.name ?? c.tokenName ?? 'Token'),
+                title: Text(ctrl.card(c.oracleId, printId: c.printId)?.name ?? c.tokenName ?? tr('Token')),
                 subtitle: Text(ctrl.state.players[c.controller]?.name ?? ''),
                 onTap: () => Navigator.pop(ctx, c),
               ),
@@ -378,9 +399,9 @@ Future<void> showTargetPicker(BuildContext context, GameController ctrl, {int? f
     return SizedBox(
       height: MediaQuery.of(ctx).size.height * 0.75,
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), children: [
-        Text('Apontar para…', style: theme.textTheme.titleMedium),
+        Text(tr('Apontar para…'), style: theme.textTheme.titleMedium),
         const SizedBox(height: 10),
-        Text('Jogadores', style: theme.textTheme.labelLarge),
+        Text(tr('Jogadores'), style: theme.textTheme.labelLarge),
         const SizedBox(height: 6),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final seat in seats)
@@ -393,7 +414,7 @@ Future<void> showTargetPicker(BuildContext context, GameController ctrl, {int? f
         for (final seat in seats)
           if (s.zoneCards(seat, Zone.battlefield).where((c) => c.id != from).isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Campo de ${s.players[seat]!.name}', style: theme.textTheme.labelLarge),
+            Text(tr('Campo de {v}', {'v': s.players[seat]!.name}), style: theme.textTheme.labelLarge),
             const SizedBox(height: 6),
             GridView.count(
               shrinkWrap: true,
@@ -533,17 +554,17 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
                 final kind = await showDialog<String>(
                   context: ctx,
                   builder: (d) => AlertDialog(
-                    title: const Text('Outro contador'),
+                    title: Text(tr('Outro contador')),
                     content: TextField(
                       controller: text,
                       autofocus: true,
-                      decoration: const InputDecoration(hintText: 'Ex.: page, verse, fuse'),
+                      decoration: InputDecoration(hintText: tr('Ex.: page, verse, fuse')),
                     ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
+                      TextButton(onPressed: () => Navigator.pop(d), child: Text(tr('Cancelar'))),
                       TextButton(
                         onPressed: () => Navigator.pop(d, text.text.trim().toLowerCase()),
-                        child: const Text('Juntar'),
+                        child: Text(tr('Juntar')),
                       ),
                     ],
                   ),
@@ -558,8 +579,8 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                     child: Row(children: [
                       Expanded(
-                        child:
-                            Text(card?.name ?? cur.tokenName ?? 'Carta', style: theme.textTheme.titleMedium),
+                        child: Text(card?.displayName ?? cur.tokenName ?? tr('Carta'),
+                            style: theme.textTheme.titleMedium),
                       ),
                       if (pt != null)
                         Container(
@@ -578,15 +599,16 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Text('Poder e resistência (equipamentos, efeitos)',
+                    child: Text(tr('Poder e resistência (equipamentos, efeitos)'),
                         style: theme.textTheme.labelLarge),
                   ),
-                  stepper(CounterKind.modPower, 'Poder ±', signed: true, leading: const Icon(Icons.flash_on)),
-                  stepper(CounterKind.modToughness, 'Resistência ±',
+                  stepper(CounterKind.modPower, tr('Poder ±'),
+                      signed: true, leading: const Icon(Icons.flash_on)),
+                  stepper(CounterKind.modToughness, tr('Resistência ±'),
                       signed: true, leading: const Icon(Icons.shield_outlined)),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Text('Contadores', style: theme.textTheme.labelLarge),
+                    child: Text(tr('Contadores'), style: theme.textTheme.labelLarge),
                   ),
                   for (final k in [...kinds, ...extra]) stepper(k, k, leading: icon(k)),
                   Padding(
@@ -596,13 +618,13 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
                       child: TextButton.icon(
                         onPressed: addOther,
                         icon: const Icon(Icons.add),
-                        label: const Text('Outro contador'),
+                        label: Text(tr('Outro contador')),
                       ),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Text('Habilidades dadas por efeitos', style: theme.textTheme.labelLarge),
+                    child: Text(tr('Habilidades dadas por efeitos'), style: theme.textTheme.labelLarge),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -642,7 +664,7 @@ Future<int?> pickValue(BuildContext context, String title, {int initial = 0, boo
         onSubmitted: (v) => Navigator.pop(ctx, parse(v)),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
         TextButton(onPressed: () => Navigator.pop(ctx, parse(ctrl.text)), child: const Text('OK')),
       ],
     ),
@@ -663,24 +685,25 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
     return ListView(shrinkWrap: true, children: [
       _header(ctx, card, null),
       if (isInstant)
-        _tile(Icons.flash_on, 'Lançar (vai para o cemitério)',
+        _tile(Icons.flash_on, tr('Lançar (vai para o cemitério)'),
             () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard, cast: true))),
-      _tile(Icons.dashboard_outlined, 'Jogar para o campo', () => done(() => ctrl.playFromHand(pc))),
-      _tile(Icons.flip_to_back, 'Jogar virada para baixo',
+      _tile(Icons.dashboard_outlined, tr('Jogar para o campo'), () => done(() => ctrl.playFromHand(pc))),
+      _tile(Icons.flip_to_back, tr('Jogar virada para baixo'),
           () => done(() => ctrl.playFromHand(pc, faceDown: true))),
-      _tile(Icons.delete_outline, 'Descartar', () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard))),
-      _tile(Icons.block, 'Exilar', () => done(() => ctrl.playFromHand(pc, to: Zone.exile))),
-      _tile(Icons.vertical_align_top, 'Pôr no topo do grimório',
+      _tile(
+          Icons.delete_outline, tr('Descartar'), () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard))),
+      _tile(Icons.block, tr('Exilar'), () => done(() => ctrl.playFromHand(pc, to: Zone.exile))),
+      _tile(Icons.vertical_align_top, tr('Pôr no topo do grimório'),
           () => done(() => ctrl.playFromHand(pc, to: Zone.library))),
-      _tile(Icons.vertical_align_bottom, 'Pôr no fundo do grimório',
+      _tile(Icons.vertical_align_bottom, tr('Pôr no fundo do grimório'),
           () => done(() => ctrl.playFromHand(pc, to: Zone.library, pos: 'bottom'))),
       _tile(
           Icons.visibility,
-          'Revelar a todos',
-          () => done(() =>
-              ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))),
+          tr('Revelar a todos'),
+          () => done(() => ctrl
+              .send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: tr('uma carta da mão'))))),
       if (card != null)
-        _tile(Icons.zoom_in, 'Ver carta', () {
+        _tile(Icons.zoom_in, tr('Ver carta'), () {
           Navigator.pop(ctx);
           Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
         }),
@@ -702,39 +725,42 @@ Future<void> showLibraryMenu(BuildContext context, GameController ctrl) {
     return ListView(shrinkWrap: true, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: Text('Grimório (${ctrl.state.players[seat]?.libraryCount ?? 0})',
+        child: Text(tr('Grimório ({v})', {'v': ctrl.state.players[seat]?.libraryCount ?? 0}),
             style: Theme.of(ctx).textTheme.titleMedium),
       ),
-      _tile(Icons.add_card, 'Comprar 1', () {
+      _tile(Icons.add_card, tr('Comprar 1'), () {
         Navigator.pop(ctx);
         ctrl.draw();
       }),
-      _tile(Icons.library_add, 'Comprar N…', () => withN('Comprar', ctrl.draw)),
-      _tile(Icons.shuffle, 'Baralhar', () {
+      _tile(Icons.library_add, tr('Comprar N…'), () => withN(tr('Comprar'), ctrl.draw)),
+      _tile(Icons.shuffle, tr('Baralhar'), () {
         Navigator.pop(ctx);
         ctrl.send(t.shuffle(seat));
       }),
-      _tile(Icons.remove_red_eye_outlined, 'Scry N…',
-          () => withN('Scry', (n) => showScrySheet(context, ctrl, n, kind: 'scry'))),
-      _tile(Icons.manage_search, 'Surveil N…',
-          () => withN('Surveil', (n) => showScrySheet(context, ctrl, n, kind: 'surveil'))),
-      _tile(Icons.visibility_outlined, 'Ver o topo (só eu)…',
-          () => withN('Ver o topo', (n) => showScrySheet(context, ctrl, n, kind: 'look'))),
-      _tile(Icons.campaign_outlined, 'Revelar o topo a todos', () {
+      _tile(Icons.remove_red_eye_outlined, tr('Scry N…'),
+          () => withN(tr('Scry'), (n) => showScrySheet(context, ctrl, n, kind: 'scry'))),
+      _tile(Icons.manage_search, tr('Surveil N…'),
+          () => withN(tr('Surveil'), (n) => showScrySheet(context, ctrl, n, kind: 'surveil'))),
+      _tile(Icons.visibility_outlined, tr('Ver o topo (só eu)…'),
+          () => withN(tr('Ver o topo'), (n) => showScrySheet(context, ctrl, n, kind: 'look'))),
+      _tile(Icons.campaign_outlined, tr('Revelar o topo a todos'), () {
         Navigator.pop(ctx);
         final top = ctrl.zones(seat).library.firstOrNull;
-        if (top != null) ctrl.send(t.revealHidden(seat, Zone.library, [top.pid], what: 'o topo do grimório'));
+        if (top != null) {
+          ctrl.send(t.revealHidden(seat, Zone.library, [top.pid], what: tr('o topo do grimório')));
+        }
       }),
-      _tile(Icons.delete_sweep_outlined, 'Mill N…', () => withN('Mill', (n) => ctrl.send(t.mill(seat, n)))),
-      _tile(Icons.block, 'Exilar o topo', () {
+      _tile(Icons.delete_sweep_outlined, tr('Mill N…'),
+          () => withN(tr('Mill'), (n) => ctrl.send(t.mill(seat, n)))),
+      _tile(Icons.block, tr('Exilar o topo'), () {
         Navigator.pop(ctx);
         ctrl.send(t.mill(seat, 1, to: Zone.exile));
       }),
-      _tile(Icons.search, 'Procurar uma carta', () {
+      _tile(Icons.search, tr('Procurar uma carta'), () {
         Navigator.pop(ctx);
         showLibrarySearch(context, ctrl);
       }),
-      _tile(Icons.refresh, 'Mulligan (London)', () async {
+      _tile(Icons.refresh, tr('Mulligan (London)'), () async {
         Navigator.pop(ctx);
         ctrl.mulligan();
         final count = ctrl.mulligans[seat] ?? 0;
@@ -759,7 +785,7 @@ Future<void> showBottomPicker(BuildContext context, GameController ctrl, int n) 
         builder: (ctx, _) => StatefulBuilder(builder: (ctx, set) {
               final hand = ctrl.zones(ctrl.actor).hand;
               return AlertDialog(
-                title: Text('Escolhe $n para o fundo'),
+                title: Text(tr('Escolhe {n} para o fundo', {'n': n})),
                 content: SizedBox(
                   width: double.maxFinite,
                   child: GridView.count(
@@ -792,7 +818,7 @@ Future<void> showBottomPicker(BuildContext context, GameController ctrl, int n) 
                             ctrl.send(ctrl.table.bottom(ctrl.actor, chosen.toList()));
                           }
                         : null,
-                    child: Text('Confirmar (${chosen.length}/$n)'),
+                    child: Text(tr('Confirmar ({n}/{n2})', {'n': chosen.length, 'n2': n})),
                   ),
                 ],
               );
@@ -809,14 +835,15 @@ Future<void> showScrySheet(BuildContext context, GameController ctrl, int n, {re
   return _sheet<void>(
       context,
       (ctx) => StatefulBuilder(builder: (ctx, set) {
-            final altLabel = kind == 'surveil' ? 'Cemitério' : 'Fundo';
+            final altLabel = kind == 'surveil' ? tr('Cemitério') : tr('Fundo');
             return Column(mainAxisSize: MainAxisSize.min, children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: Text(
                   kind == 'look'
-                      ? 'Topo do grimório (só tu vês)'
-                      : '${kind == 'scry' ? 'Scry' : 'Surveil'} $n · arrasta para ordenar (o primeiro fica no topo)',
+                      ? tr('Topo do grimório (só tu vês)')
+                      : tr('{v} {n} · arrasta para ordenar (o primeiro fica no topo)',
+                          {'v': kind == 'scry' ? tr('Scry') : tr('Surveil'), 'n': n}),
                   style: Theme.of(ctx).textTheme.titleSmall,
                 ),
               ),
@@ -843,7 +870,7 @@ Future<void> showScrySheet(BuildContext context, GameController ctrl, int n, {re
                             : SegmentedButton<String>(
                                 showSelectedIcon: false,
                                 segments: [
-                                  const ButtonSegment(value: 'top', label: Text('Topo')),
+                                  ButtonSegment(value: 'top', label: Text(tr('Topo'))),
                                   ButtonSegment(value: 'alt', label: Text(altLabel)),
                                 ],
                                 selected: {where[pc.pid] == 'top' ? 'top' : 'alt'},
@@ -875,7 +902,7 @@ Future<void> showScrySheet(BuildContext context, GameController ctrl, int n, {re
                         ? ctrl.table.scryDone(seat, top: keep, graveyard: alt, kind: 'surveil')
                         : ctrl.table.scryDone(seat, top: keep, bottom: alt));
                   },
-                  child: const Text('Concluir'),
+                  child: Text(tr('Concluir')),
                 ),
               ),
             ]);
@@ -908,8 +935,8 @@ Future<void> showLibrarySearch(BuildContext context, GameController ctrl) {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: TextField(
-                    decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search), hintText: 'Nome ou tipo (ex.: land)'),
+                    decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search), hintText: tr('Nome ou tipo (ex.: land)')),
                     onChanged: (v) => set(() => filter = v),
                   ),
                 ),
@@ -920,13 +947,13 @@ Future<void> showLibrarySearch(BuildContext context, GameController ctrl) {
                         CardTile(card, onTap: () async {
                           final to = await showDialog<String>(
                             context: ctx,
-                            builder: (d) => SimpleDialog(title: Text(card.name), children: [
-                              for (final (k, l) in const [
-                                ('hand', 'Para a mão'),
-                                ('battlefield', 'Para o campo'),
-                                ('top', 'Para o topo'),
-                                ('graveyard', 'Para o cemitério'),
-                                ('exile', 'Para o exílio'),
+                            builder: (d) => SimpleDialog(title: Text(card.displayName), children: [
+                              for (final (k, l) in [
+                                ('hand', tr('Para a mão')),
+                                ('battlefield', tr('Para o campo')),
+                                ('top', tr('Para o topo')),
+                                ('graveyard', tr('Para o cemitério')),
+                                ('exile', tr('Para o exílio')),
                               ])
                                 SimpleDialogOption(onPressed: () => Navigator.pop(d, k), child: Text(l)),
                             ]),
@@ -968,12 +995,14 @@ Future<void> showZoneList(BuildContext context, GameController ctrl, int seat, Z
               return SizedBox(
                 height: MediaQuery.of(ctx).size.height * 0.6,
                 child: Column(children: [
-                  Text('${zone.label} de ${ctrl.state.players[seat]?.name} (${cards.length})',
+                  Text(
+                      tr('{v} de {v2} ({n})',
+                          {'v': zone.label, 'v2': ctrl.state.players[seat]?.name, 'n': cards.length}),
                       style: Theme.of(ctx).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Expanded(
                     child: cards.isEmpty
-                        ? const Center(child: Text('Vazio'))
+                        ? Center(child: Text(tr('Vazio')))
                         : GridView.count(
                             padding: const EdgeInsets.all(12),
                             crossAxisCount: 4,
@@ -1058,7 +1087,8 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                 if (enemyCommanders.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Text('Dano de comandante (desconta na vida)', style: theme.textTheme.titleSmall),
+                    child:
+                        Text(tr('Dano de comandante (desconta na vida)'), style: theme.textTheme.titleSmall),
                   ),
                   for (final c in enemyCommanders)
                     stepper(
@@ -1070,17 +1100,17 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                     ),
                 ],
                 const Divider(),
-                for (final (k, l) in const [
-                  (PlayerCounter.poison, 'Veneno'),
-                  (PlayerCounter.energy, 'Energia'),
-                  (PlayerCounter.experience, 'Experiência'),
-                  (PlayerCounter.rad, 'Rad'),
+                for (final (k, l) in [
+                  (PlayerCounter.poison, tr('Veneno')),
+                  (PlayerCounter.energy, tr('Energia')),
+                  (PlayerCounter.experience, tr('Experiência')),
+                  (PlayerCounter.rad, tr('Rad')),
                 ])
                   stepper(l, p.counters[k] ?? 0, (d) => ctrl.playerCounter(seat, k, d)),
                 ListTile(
                   dense: true,
                   leading: const Icon(Icons.gps_fixed, color: targetGlow),
-                  title: const Text('Apontar para este jogador'),
+                  title: Text(tr('Apontar para este jogador')),
                   onTap: () {
                     Navigator.pop(ctx);
                     ctrl.send(Intent(Ev.arrow, {'seat': seat}));
@@ -1088,25 +1118,25 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                 ),
                 SwitchListTile(
                   dense: true,
-                  title: const Text('Monarca'),
+                  title: Text(tr('Monarca')),
                   value: s.monarch == seat,
                   onChanged: (v) => ctrl.send(Intent(Ev.monarch, {'seat': v ? seat : null})),
                 ),
                 SwitchListTile(
                   dense: true,
-                  title: const Text('Iniciativa'),
+                  title: Text(tr('Iniciativa')),
                   value: s.initiative == seat,
                   onChanged: (v) => ctrl.send(Intent(Ev.initiative, {'seat': v ? seat : null})),
                 ),
                 SwitchListTile(
                   dense: true,
-                  title: const Text("Bênção da cidade (City's Blessing)"),
+                  title: Text(tr("Bênção da cidade (City's Blessing)")),
                   value: (p.counters[PlayerCounter.blessing] ?? 0) > 0,
                   onChanged: (v) => ctrl.playerCounter(seat, PlayerCounter.blessing, v ? 1 : -1),
                 ),
                 SwitchListTile(
                   dense: true,
-                  title: const Text('Derrotado'),
+                  title: Text(tr('Derrotado')),
                   value: p.defeated,
                   onChanged: (v) => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v})),
                 ),
@@ -1135,7 +1165,7 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
             // Há muitas versões do mesmo token: mostra uma por nome, tipo, P/R e texto.
             final results = <String, db.Card>{};
             if (query.trim().isNotEmpty) {
-              for (final c in ctrl.repo.search('$query is:token', limit: 80).cards) {
+              for (final c in ctrl.repo.search(tr('{query} is:token', {'query': query}), limit: 80).cards) {
                 results.putIfAbsent('${c.name}|${c.typeLine}|${ptOf(c)}|${c.oracleText}', () => c);
               }
             }
@@ -1165,9 +1195,9 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
             return SizedBox(
               height: MediaQuery.of(ctx).size.height * 0.85,
               child: Column(children: [
-                Text('Criar token', style: theme.textTheme.titleMedium),
+                Text(tr('Criar token'), style: theme.textTheme.titleMedium),
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Text('Quantidade'),
+                  Text(tr('Quantidade')),
                   IconButton(
                       onPressed: qty > 1 ? () => set(() => qty--) : null, icon: const Icon(Icons.remove)),
                   Text('$qty', style: theme.textTheme.titleMedium),
@@ -1176,16 +1206,17 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
-                    decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search), hintText: 'Procurar token (ex.: treasure, soldier)'),
+                    decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: tr('Procurar token (ex.: treasure, soldier)')),
                     onChanged: (v) => set(() => query = v),
                   ),
                 ),
                 Expanded(
                   child: ListView(children: [
                     if (query.trim().isEmpty) ...[
-                      if (fromDeck.isNotEmpty) chips('Do teu deck', fromDeck),
-                      if (common.isNotEmpty) chips('Comuns', common),
+                      if (fromDeck.isNotEmpty) chips(tr('Do teu deck'), fromDeck),
+                      if (common.isNotEmpty) chips(tr('Comuns'), common),
                     ],
                     for (final c in results.values)
                       CardTile(c,
@@ -1202,15 +1233,14 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
                   child: Row(children: [
                     Expanded(
                         child: TextField(
-                            controller: name, decoration: const InputDecoration(labelText: 'Personalizado'))),
+                            controller: name, decoration: InputDecoration(labelText: tr('Personalizado')))),
                     const SizedBox(width: 8),
                     SizedBox(
                         width: 72,
-                        child:
-                            TextField(controller: pt, decoration: const InputDecoration(labelText: 'P/R'))),
+                        child: TextField(controller: pt, decoration: InputDecoration(labelText: tr('P/R')))),
                     IconButton.filled(
                       onPressed: () => create(
-                          n: name.text.trim().isEmpty ? 'Token' : name.text.trim(),
+                          n: name.text.trim().isEmpty ? tr('Token') : name.text.trim(),
                           p: pt.text.trim().isEmpty ? null : pt.text.trim()),
                       icon: const Icon(Icons.add),
                     ),
@@ -1231,7 +1261,7 @@ Future<void> showLogSheet(BuildContext context, GameController ctrl) {
               return SizedBox(
                 height: MediaQuery.of(ctx).size.height * 0.7,
                 child: Column(children: [
-                  Text('Registo', style: Theme.of(ctx).textTheme.titleMedium),
+                  Text(tr('Registo'), style: Theme.of(ctx).textTheme.titleMedium),
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(12),
@@ -1261,7 +1291,7 @@ Future<void> showRevealDialog(BuildContext context, GameController ctrl, Reveal 
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('${ctrl.state.players[r.seat]?.name} revelou ${r.what}'),
+      title: Text(tr('{v} revelou {what}', {'v': ctrl.state.players[r.seat]?.name, 'what': r.what})),
       content: SizedBox(
         width: double.maxFinite,
         child: GridView.count(

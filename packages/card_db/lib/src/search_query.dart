@@ -37,7 +37,7 @@ class _Sql {
 /// - `is:commander|token|dfc|split|gamechanger|reserved|legendary`
 /// - `-` para negar, `or` entre termos, `order:name|mv|edhrec|power`
 /// - `include:extras` (tokens, planos...) e `include:digital`
-CompiledQuery compileSearch(String input) {
+CompiledQuery compileSearch(String input, {bool localized = false}) {
   final tokens = _tokenize(input);
   final errors = <String>[];
   var orderBy = 'name_norm';
@@ -102,9 +102,14 @@ CompiledQuery compileSearch(String input) {
     if (text.isEmpty) continue;
     final norm = normalizeName(text);
     final sql = exact
-        ? _Sql('oracle_id IN (SELECT oracle_id FROM card_names WHERE name_norm = ?)',
-            [norm])
-        : _Sql(r"name_norm LIKE ? ESCAPE '\'", ['%${_escapeLike(norm)}%']);
+        ? (localized
+            ? _Sql('(cards.oracle_id IN (SELECT oracle_id FROM card_names WHERE name_norm = ?) OR l_name_norm = ?)',
+                [norm, norm])
+            : _Sql('cards.oracle_id IN (SELECT oracle_id FROM card_names WHERE name_norm = ?)', [norm]))
+        : (localized
+            ? _Sql(r"(name_norm LIKE ? ESCAPE '\' OR l_name_norm LIKE ? ESCAPE '\')",
+                ['%${_escapeLike(norm)}%', '%${_escapeLike(norm)}%'])
+            : _Sql(r"name_norm LIKE ? ESCAPE '\'", ['%${_escapeLike(norm)}%']));
     groups.last.add(negate ? _Sql('NOT (${sql.sql})', sql.args) : sql);
   }
 

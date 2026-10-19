@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import 'image_service.dart';
 import 'scryfall.dart';
+import '../l10n/l10n.dart';
 
 /// Versões alternativas (impressões) das cartas.
 ///
@@ -104,7 +105,9 @@ class PrintService extends ChangeNotifier {
         scryfallHeaders.forEach(req.headers.set);
         final res = await req.close().timeout(const Duration(seconds: 20));
         final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
-        if (res.statusCode != 200) throw StateError('Scryfall ${res.statusCode}');
+        if (res.statusCode != 200) {
+          throw StateError(tr('Scryfall {statusCode}', {'statusCode': res.statusCode}));
+        }
         for (final c in (body['data'] as List).cast<Map<String, dynamic>>()) {
           if (c['lang'] == 'en' || c['lang'] == null) out.add(PrintInfo.fromScryfall(c));
         }
@@ -153,7 +156,9 @@ class PrintService extends ChangeNotifier {
         }));
         final res = await req.close().timeout(const Duration(seconds: 30));
         final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
-        if (res.statusCode != 200) throw StateError('Scryfall ${res.statusCode}');
+        if (res.statusCode != 200) {
+          throw StateError(tr('Scryfall {statusCode}', {'statusCode': res.statusCode}));
+        }
         out.addAll([
           for (final c in (body['data'] as List).cast<Map<String, dynamic>>()) PrintInfo.fromScryfall(c),
         ]);

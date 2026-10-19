@@ -1,0 +1,16 @@
+[
+["=português", "Portuguese", "portugués", "portoghese"],
+["=inglês", "English", "inglés", "inglese"],
+["=espanhol", "Spanish", "español", "spagnolo"],
+["=italiano", "Italian", "italiano", "italiano"],
+["=A descarregar as cartas em {lang}…", "Downloading the cards in {lang}…", "Descargando las cartas en {lang}…", "Download delle carte in {lang}…"],
+["=A descarregar as cartas em {lang}… {n} de {total}", "Downloading the cards in {lang}… {n} of {total}", "Descargando las cartas en {lang}… {n} de {total}", "Download delle carte in {lang}… {n} di {total}"],
+["=Cartas em inglês.", "Cards in English.", "Cartas en inglés.", "Carte in inglese."],
+["=Cartas em {lang}: {n} traduzidas.", "Cards in {lang}: {n} translated.", "Cartas en {lang}: {n} traducidas.", "Carte in {lang}: {n} tradotte."],
+["=Descarrega-se com a base de cartas.", "Downloaded together with the card database.", "Se descarga junto con la base de cartas.", "Si scarica insieme al database delle carte."],
+["=Ainda em {lang}: falta descarregar (~20 MB).", "Still in {lang}: needs downloading (~20 MB).", "Aún en {lang}: falta descargar (~20 MB).", "Ancora in {lang}: da scaricare (~20 MB)."],
+["=O texto oficial (Oracle).", "The official text (Oracle).", "El texto oficial (Oracle).", "Il testo ufficiale (Oracle)."],
+["={n} cartas em {lang}; as que não existem nessa língua ficam em inglês.", "{n} cards in {lang}; those not printed in that language stay in English.", "{n} cartas en {lang}; las que no existen en ese idioma quedan en inglés.", "{n} carte in {lang}; quelle che non esistono in quella lingua restano in inglese."],
+["=Língua das cartas", "Card language", "Idioma de las cartas", "Lingua delle carte"],
+["=Descarregar as cartas em {lang}", "Download the cards in {lang}", "Descargar las cartas en {lang}", "Scarica le carte in {lang}"]
+]

@@ -7,6 +7,7 @@ import '../net/room_client.dart';
 import '../room/room_session.dart';
 import 'lobby_screen.dart';
 import 'playtest/playtest_screen.dart';
+import '../l10n/l10n.dart';
 
 /// Volta ao jogo em rede guardado: liga-se com o mesmo token (o anfitrião
 /// devolve o mesmo lugar) e repõe a mão e o grimório.
@@ -16,11 +17,11 @@ Future<void> resumeGame(BuildContext context, WidgetRef ref, ResumeInfo info) as
   showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const AlertDialog(
+    builder: (_) => AlertDialog(
       content: Row(children: [
-        SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5)),
-        SizedBox(width: 16),
-        Expanded(child: Text('A voltar ao jogo…')),
+        const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5)),
+        const SizedBox(width: 16),
+        Expanded(child: Text(tr('A voltar ao jogo…'))),
       ]),
     ),
   );
@@ -38,7 +39,7 @@ Future<void> resumeGame(BuildContext context, WidgetRef ref, ResumeInfo info) as
       // O anfitrião já não conhece este lugar (a sala é outra ou recomeçou).
       await client.leave();
       ref.read(resumeProvider).clear();
-      messenger.showSnackBar(const SnackBar(content: Text('Esse jogo já não existe.')));
+      messenger.showSnackBar(SnackBar(content: Text(tr('Esse jogo já não existe.'))));
       return;
     }
     final session = RoomSession.client(client: client, roomName: client.roomName ?? info.room);
@@ -49,8 +50,8 @@ Future<void> resumeGame(BuildContext context, WidgetRef ref, ResumeInfo info) as
   } on RoomJoinException catch (e) {
     navigator.pop();
     messenger.showSnackBar(SnackBar(
-      content: Text('Não foi possível voltar ao jogo: ${e.message}'),
-      action: SnackBarAction(label: 'Esquecer', onPressed: () => ref.read(resumeProvider).clear()),
+      content: Text(tr('Não foi possível voltar ao jogo: {message}', {'message': e.message})),
+      action: SnackBarAction(label: tr('Esquecer'), onPressed: () => ref.read(resumeProvider).clear()),
     ));
   }
 }
@@ -69,14 +70,14 @@ class ResumeCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 20),
       child: ListTile(
         leading: const Icon(Icons.replay_circle_filled_rounded),
-        title: Text('Jogo em curso: ${info.room}'),
-        subtitle: const Text('A app fechou a meio do jogo. A tua mão e o grimório ficaram guardados.'),
+        title: Text(tr('Jogo em curso: {room}', {'room': info.room})),
+        subtitle: Text(tr('A app fechou a meio do jogo. A tua mão e o grimório ficaram guardados.')),
         isThreeLine: true,
         trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
             onPressed: () => resumeGame(context, ref, info),
-            child: const Text('Voltar'),
+            child: Text(tr('Voltar')),
           ),
         ]),
         onLongPress: () => ref.read(resumeProvider).clear(),
@@ -93,19 +94,19 @@ Future<void> offerResume(BuildContext context, WidgetRef ref) async {
     context: context,
     builder: (ctx) => AlertDialog(
       icon: const Icon(Icons.replay_circle_filled_rounded),
-      title: const Text('Voltar ao jogo?'),
-      content: Text('A app fechou durante o jogo em "${info.room}". '
-          'A tua mão e o grimório ficaram guardados.'),
+      title: Text(tr('Voltar ao jogo?')),
+      content: Text(tr('A app fechou durante o jogo em "{room}". A tua mão e o grimório ficaram guardados.',
+          {'room': info.room})),
       actions: [
         TextButton(
           onPressed: () {
             ref.read(resumeProvider).clear();
             Navigator.pop(ctx, false);
           },
-          child: const Text('Esquecer'),
+          child: Text(tr('Esquecer')),
         ),
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Agora não')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Voltar')),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Agora não'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Voltar'))),
       ],
     ),
   );
@@ -122,27 +123,28 @@ class SoloResumeCard extends ConsumerWidget {
     if (save == null || ref.watch(cardRepoProvider) == null) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
     final d = save.savedAt;
-    final when = '${d.day}/${d.month} às ${d.hour}:${d.minute.toString().padLeft(2, '0')}';
+    final when = tr('{day}/{month} às {hour}:{v}',
+        {'day': d.day, 'month': d.month, 'hour': d.hour, 'v': d.minute.toString().padLeft(2, '0')});
     return Card(
       color: scheme.secondaryContainer,
       margin: const EdgeInsets.only(bottom: 20),
       child: ListTile(
         leading: const Icon(Icons.bookmark_rounded),
         title: Text(save.title),
-        subtitle: Text('Jogo gravado · turno ${save.turn} · $when'),
+        subtitle: Text(tr('Jogo gravado · turno {turn} · {when}', {'turn': save.turn, 'when': when})),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
-            tooltip: 'Apagar',
+            tooltip: tr('Apagar'),
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Apagar o jogo gravado?'),
-                  content: Text('${save.title}, turno ${save.turn}.'),
+                  title: Text(tr('Apagar o jogo gravado?')),
+                  content: Text(tr('{title}, turno {turn}.', {'title': save.title, 'turn': save.turn})),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Apagar'))),
                   ],
                 ),
               );
@@ -154,7 +156,7 @@ class SoloResumeCard extends ConsumerWidget {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => PlaytestScreen.resume(save),
             )),
-            child: const Text('Continuar'),
+            child: Text(tr('Continuar')),
           ),
         ]),
       ),

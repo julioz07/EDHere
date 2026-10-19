@@ -3,5 +3,6 @@
 library;
 
 export 'src/events.dart';
+export 'src/i18n.dart';
 export 'src/model.dart';
 export 'src/table.dart';

@@ -1,24 +1,31 @@
 import 'package:mesa_core/mesa_core.dart';
 
+import '../l10n/l10n.dart';
+
 /// Um tutorial é uma lista de capítulos. Cada capítulo tem páginas para ler
 /// e, quase sempre, um bocado de jogo guiado: os passos dizem o que fazer,
 /// a mesa só deixa fazer isso e os adversários jogam por guião.
+///
+/// Os textos estão em português e traduzem-se ao serem lidos (os getters).
 class Chapter {
   const Chapter({
     required this.id,
-    required this.title,
-    required this.summary,
+    required String title,
+    required String summary,
     this.pages = const [],
     this.setup,
     this.steps = const [],
     this.minutes = 3,
-  });
+  })  : _title = title,
+        _summary = summary;
 
   final String id;
-  final String title;
+  final String _title;
+  final String _summary;
+  String get title => tr(_title);
 
   /// Uma frase para a lista de capítulos.
-  final String summary;
+  String get summary => tr(_summary);
   final List<TPage> pages;
 
   /// A mesa no início da parte jogada (null = só páginas).
@@ -31,20 +38,25 @@ class Chapter {
 
 /// Uma página de explicação, com cartas de exemplo opcionais.
 class TPage {
-  const TPage(this.title, this.body, {this.cards = const []});
-  final String title;
+  const TPage(String title, String body, {this.cards = const []})
+      : _title = title,
+        _body = body;
+  final String _title;
+  final String _body;
+  String get title => tr(_title);
 
   /// Texto; **assim** fica a negrito. Linhas começadas por "• " são listas.
-  final String body;
+  String get body => tr(_body);
   final List<TCard> cards;
 }
 
 /// Uma carta de exemplo numa página: [ok] mostra um visto (pode) ou uma cruz
 /// (não pode); null não mostra nada.
 class TCard {
-  const TCard(this.name, {this.caption, this.ok});
+  const TCard(this.name, {String? caption, this.ok}) : _caption = caption;
   final String name;
-  final String? caption;
+  final String? _caption;
+  String? get caption => _caption == null ? null : tr(_caption);
   final bool? ok;
 }
 
@@ -102,11 +114,23 @@ class TAction {
 /// Um passo: o texto do guia, o que se pode fazer e quando está feito.
 /// Sem [done], o passo é só para ler (botão "Continuar").
 class TStep {
-  const TStep(this.text,
-      {this.allow, this.done, this.hint, this.run = const [], this.focus = const [], this.view, this.title});
+  const TStep(String text,
+      {this.allow,
+      this.done,
+      String? hint,
+      this.run = const [],
+      this.focus = const [],
+      this.view,
+      String? title})
+      : _text = text,
+        _hint = hint,
+        _title = title;
 
-  final String? title;
-  final String text;
+  final String? _title;
+  final String _text;
+  final String? _hint;
+  String? get title => _title == null ? null : tr(_title);
+  String get text => tr(_text);
 
   /// Ações do jogador aceites neste passo; as outras são bloqueadas.
   final bool Function(TAction a)? allow;
@@ -115,7 +139,7 @@ class TStep {
   final bool Function(TableView t)? done;
 
   /// O que dizer quando o jogador faz outra coisa.
-  final String? hint;
+  String? get hint => _hint == null ? null : tr(_hint);
 
   /// O que acontece antes do texto aparecer (os adversários jogam).
   final List<Act> run;
@@ -130,8 +154,9 @@ class TStep {
 /// Uma ação com guião, feita por um lugar (normalmente um adversário).
 /// [say] aparece no guia enquanto acontece.
 sealed class Act {
-  const Act({this.say});
-  final String? say;
+  const Act({String? say}) : _say = say;
+  final String? _say;
+  String? get say => _say == null ? null : tr(_say);
 }
 
 /// Jogar uma carta da mão (ou do grimório) para o campo.

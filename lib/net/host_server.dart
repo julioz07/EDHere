@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:mesa_protocol/mesa_protocol.dart';
 
 import 'room_link.dart';
+import '../l10n/l10n.dart';
 
 /// Anfitrião da sala: aceita ligações TCP, atribui `seq` a cada intenção,
 /// guarda o registo e difunde os eventos a todos.
@@ -227,7 +228,7 @@ class HostServer implements RoomLink {
       peer
         ..seat = knownSeat
         ..token = token
-        ..name = old?.name ?? p['name'] as String? ?? 'Jogador';
+        ..name = old?.name ?? p['name'] as String? ?? tr('Jogador');
       _peers[knownSeat] = peer;
       _sendWelcome(peer, since: lastSeq);
       _sequence(
@@ -242,8 +243,9 @@ class HostServer implements RoomLink {
     peer
       ..seat = seat
       ..token = newToken
-      ..name = _uniqueName(
-          (p['name'] as String?)?.trim().isNotEmpty == true ? (p['name'] as String).trim() : 'Jogador $seat');
+      ..name = _uniqueName((p['name'] as String?)?.trim().isNotEmpty == true
+          ? (p['name'] as String).trim()
+          : tr('Jogador {seat}', {'seat': seat}));
     _peers[seat] = peer;
     _tokens[newToken] = seat;
     _sendWelcome(peer, since: 0);

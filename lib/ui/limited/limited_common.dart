@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import '../cards/card_detail_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Uma carta de um booster já com a carta da base e a arte certa.
 class PoolCard {
@@ -218,27 +219,27 @@ class _SetImagesTileState extends ConsumerState<SetImagesTile> {
       child: ListTile(
         leading: const Icon(Icons.download_for_offline_outlined),
         title: Text(refs == null
-            ? 'Imagens do set…'
+            ? tr('Imagens do set…')
             : missing == 0
-                ? 'Imagens do set já estão offline'
-                : 'Imagens offline: ${refs.length - missing!} de ${refs.length}'),
+                ? tr('Imagens do set já estão offline')
+                : tr('Imagens offline: {v} de {n}', {'v': refs.length - missing!, 'n': refs.length})),
         subtitle: running
             ? LinearProgressIndicator(value: job.total == 0 ? null : job.done / job.total)
             : Text(
                 missing == null || missing == 0
-                    ? 'Os boosters abrem com arte mesmo sem rede.'
-                    : 'Descarrega agora (cerca de ${(missing * avgImageBytes['small']! / 1048576).ceil()} MB) '
-                        'para abrir os boosters sem rede.',
+                    ? tr('Os boosters abrem com arte mesmo sem rede.')
+                    : tr('Descarrega agora (cerca de {v} MB) para abrir os boosters sem rede.',
+                        {'v': (missing * avgImageBytes['small']! / 1048576).ceil()}),
                 style: theme.textTheme.bodySmall),
         trailing: refs == null || missing == 0 || running
             ? null
             : IconButton(
-                tooltip: 'Descarregar',
+                tooltip: tr('Descarregar'),
                 icon: const Icon(Icons.download),
                 onPressed: job != null
                     ? null
                     : () => images.download(
-                        ImagePack('set_${widget.set.code}', widget.set.name, 'Imagens do set', null),
+                        ImagePack('set_${widget.set.code}', widget.set.name, tr('Imagens do set'), null),
                         'small',
                         refs),
               ),

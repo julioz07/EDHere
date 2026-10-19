@@ -1,3 +1,5 @@
+import 'i18n.dart';
+
 /// Que tipo de cartas vão para a zona de comando num formato.
 enum CommandZone { none, commander, oathbreaker }
 
@@ -6,7 +8,7 @@ enum CommandZone { none, commander, oathbreaker }
 class GameFormat {
   const GameFormat({
     required this.id,
-    required this.label,
+    required String label,
     this.legalityKey,
     required this.startingLife,
     this.multiplayerLife,
@@ -16,10 +18,13 @@ class GameFormat {
     this.maxSideboard,
     this.commandZone = CommandZone.none,
     this.commanderMayBePlaneswalker = false,
-  });
+  }) : _label = label;
 
   final String id;
-  final String label;
+  final String _label;
+
+  /// O nome do formato na língua da app.
+  String get label => cardDbTr(_label);
 
   /// Chave de legalidade no Scryfall; null = sem verificação de banidas.
   final String? legalityKey;

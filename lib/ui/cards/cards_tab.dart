@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import 'card_detail_screen.dart';
 import 'card_search.dart';
 import 'collection_import_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// Cartas: pesquisa em toda a base e "As minhas cartas" (a coleção).
 class CardsTab extends ConsumerWidget {
@@ -23,7 +24,7 @@ class CardsTab extends ConsumerWidget {
     final collection = ref.watch(collectionProvider);
     if (!data.hasData) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Cartas')),
+        appBar: AppBar(title: Text(tr('Cartas'))),
         body: NoDataMessage(onOpenData: onOpenData),
       );
     }
@@ -32,20 +33,22 @@ class CardsTab extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Cartas'),
+          title: Text(tr('Cartas')),
           actions: [
             IconButton(
-              tooltip: 'Importar para as minhas cartas',
+              tooltip: tr('Importar para as minhas cartas'),
               icon: const Icon(Icons.file_download_outlined),
               onPressed: () => Navigator.of(context)
                   .push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
             ),
           ],
           bottom: TabBar(tabs: [
-            const Tab(icon: Icon(Icons.search), text: 'Pesquisa'),
+            Tab(icon: const Icon(Icons.search), text: tr('Pesquisa')),
             Tab(
               icon: const Icon(Icons.inventory_2_outlined),
-              text: collection.isEmpty ? 'As minhas cartas' : 'As minhas cartas ($total)',
+              text: collection.isEmpty
+                  ? tr('As minhas cartas')
+                  : tr('As minhas cartas ({total})', {'total': total}),
             ),
           ]),
         ),
@@ -55,7 +58,7 @@ class CardsTab extends ConsumerWidget {
               ? const _EmptyCollection()
               : CardSearchView(
                   onlyOwned: true,
-                  hint: 'Filtrar as minhas cartas (t:creature, id:rg…)',
+                  hint: tr('Filtrar as minhas cartas (t:creature, id:rg…)'),
                   onTap: (c) => _open(context, c),
                 ),
         ]),
@@ -76,12 +79,10 @@ class _EmptyCollection extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.inventory_2_outlined, size: 56, color: theme.colorScheme.primary),
           const SizedBox(height: 16),
-          Text('Ainda não tens cartas aqui', style: theme.textTheme.titleLarge),
+          Text(tr('Ainda não tens cartas aqui'), style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
-          const Text(
-            'Junta as cartas que tens para criares decks só com elas. É só indicativo: '
-            'não é um inventário. Podes importar do ManaBox, Moxfield, Deckbox ou de uma '
-            'lista de texto, ou usar "Tenho esta carta" na ficha de cada carta.',
+          Text(
+            tr('Junta as cartas que tens para criares decks só com elas. É só indicativo: não é um inventário. Podes importar do ManaBox, Moxfield, Deckbox ou de uma lista de texto, ou usar "Tenho esta carta" na ficha de cada carta.'),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -89,7 +90,7 @@ class _EmptyCollection extends StatelessWidget {
             onPressed: () => Navigator.of(context)
                 .push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
             icon: const Icon(Icons.file_download_outlined),
-            label: const Text('Importar lista'),
+            label: Text(tr('Importar lista')),
           ),
         ]),
       ),
@@ -119,14 +120,14 @@ class NoDataMessage extends ConsumerWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.cloud_download_outlined, size: 56, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text(busy ? 'A preparar as cartas…' : 'Ainda não há cartas offline',
+            Text(busy ? tr('A preparar as cartas…') : tr('Ainda não há cartas offline'),
                 style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Text(
               busy
-                  ? 'Podes continuar a usar a app: a descarga continua sozinha.'
-                  : 'Descarrega a base de cartas uma vez (cerca de 30 MB). Depois a pesquisa, os '
-                      'decks e os jogos funcionam sem internet.',
+                  ? tr('Podes continuar a usar a app: a descarga continua sozinha.')
+                  : tr(
+                      'Descarrega a base de cartas uma vez (cerca de 30 MB). Depois a pesquisa, os decks e os jogos funcionam sem internet.'),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -135,7 +136,7 @@ class NoDataMessage extends ConsumerWidget {
                   value: data.progress, minHeight: 6, borderRadius: BorderRadius.circular(3)),
               const SizedBox(height: 8),
               Text(data.message, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-              TextButton(onPressed: data.cancel, child: const Text('Cancelar')),
+              TextButton(onPressed: data.cancel, child: Text(tr('Cancelar'))),
             ] else ...[
               if (data.phase == DataPhase.error)
                 Padding(
@@ -146,9 +147,9 @@ class NoDataMessage extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: () => data.update(includeRulings: true),
                 icon: const Icon(Icons.download),
-                label: const Text('Descarregar cartas'),
+                label: Text(tr('Descarregar cartas')),
               ),
-              TextButton(onPressed: onOpenData, child: const Text('Opções de dados')),
+              TextButton(onPressed: onOpenData, child: Text(tr('Opções de dados'))),
             ],
           ]),
         ),

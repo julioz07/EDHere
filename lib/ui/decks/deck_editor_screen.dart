@@ -20,6 +20,7 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'decks_tab.dart';
 import 'hand_simulator_screen.dart';
+import '../../l10n/l10n.dart';
 
 class DeckEditorScreen extends ConsumerStatefulWidget {
   const DeckEditorScreen({super.key, required this.deckId});
@@ -83,12 +84,12 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     // O que o filtro faz, dito por palavras (aparece como chip).
     final label = [
       if (!commander && f.hasCommandZone && _deck.count(Board.command) > 0)
-        'Identidade ${identity == 0 ? 'incolor' : idLetters}',
-      if (f.legalityKey != null) 'legal em ${f.label}',
+        tr('Identidade {v}', {'v': identity == 0 ? tr('incolor') : idLetters}),
+      if (f.legalityKey != null) tr('legal em {v}', {'v': f.label}),
     ].join(' · ');
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => _AddCardsScreen(
-        title: commander ? 'Escolher comandante' : 'Juntar cartas',
+        title: commander ? tr('Escolher comandante') : tr('Juntar cartas'),
         fixedFilter: filters.join(' '),
         filterLabel: label,
         initialQuery: '',
@@ -114,7 +115,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     final current = _deck.inBoard(Board.command).toList();
     final cards = _cards();
     if (current.any((e) => e.oracleId == c.oracleId)) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${c.name} já é o comandante.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('{v} já é o comandante.', {'v': c.displayName}))));
       return false;
     }
     if (current.isEmpty) {
@@ -126,15 +128,16 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
       _update(_deck.add(c.oracleId, board: Board.command));
       return true;
     }
-    final names = [for (final e in current) cards[e.oracleId]?.name ?? '?'].join(' e ');
+    final names = [for (final e in current) cards[e.oracleId]?.displayName ?? '?'].join(' + ');
     final swap = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Trocar de comandante?'),
-        content: Text('${c.name} não pode ser parceiro de $names. Queres que passe a ser o comandante?'),
+        title: Text(tr('Trocar de comandante?')),
+        content: Text(tr('{v} não pode ser parceiro de {names}. Queres que passe a ser o comandante?',
+            {'v': c.displayName, 'names': names})),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Trocar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Trocar'))),
         ],
       ),
     );
@@ -156,8 +159,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     }
     ref.read(collectionProvider).addAll(cards, atLeast: true);
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('${cards.length} cartas juntas às minhas cartas.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('{n} cartas juntas às minhas cartas.', {'n': cards.length}))));
     }
   }
 
@@ -175,7 +178,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                 leading: SizedBox(
                     width: 36,
                     child: CardImage(ref.read(printsProvider).resolve(card, printId: e.printId), radius: 3)),
-                title: Text(card.name),
+                title: Text(card.displayName),
                 subtitle: Text('${e.qty} × ${e.board.label}${e.category == null ? '' : ' · ${e.category}'}'),
               ),
               const Divider(),
@@ -200,7 +203,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
               ]),
               ListTile(
                 leading: const Icon(Icons.visibility_outlined),
-                title: const Text('Ver carta'),
+                title: Text(tr('Ver carta')),
                 onTap: () {
                   close();
                   Navigator.of(context).push(MaterialPageRoute<void>(
@@ -214,10 +217,10 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.collections_outlined),
-                title: const Text('Escolher versão'),
+                title: Text(tr('Escolher versão')),
                 subtitle: Text(e.printId == null
-                    ? 'A preferida ou a por defeito'
-                    : (ref.read(printsProvider).info(e.printId!)?.label ?? 'Versão escolhida')),
+                    ? tr('A preferida ou a por defeito')
+                    : (ref.read(printsProvider).info(e.printId!)?.label ?? tr('Versão escolhida'))),
                 onTap: () async {
                   close();
                   final prints = ref.read(printsProvider);
@@ -234,9 +237,9 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                     leading: Icon(b == Board.command ? Icons.star_outline : Icons.drive_file_move_outline),
                     title: Text(b == Board.command
                         ? (f.commandZone == CommandZone.oathbreaker
-                            ? 'Pôr na zona de comando'
-                            : 'Definir como comandante')
-                        : 'Mover para ${b.label}'),
+                            ? tr('Pôr na zona de comando')
+                            : tr('Definir como comandante'))
+                        : tr('Mover para {v}', {'v': b.label})),
                     onTap: () {
                       close();
                       _update(_deck.move(e.oracleId, e.board, b));
@@ -244,8 +247,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                   ),
               ListTile(
                 leading: const Icon(Icons.label_outline),
-                title: const Text('Categoria'),
-                subtitle: Text(e.category ?? 'Sem categoria (agrupa por tipo)'),
+                title: Text(tr('Categoria')),
+                subtitle: Text(e.category ?? tr('Sem categoria (agrupa por tipo)')),
                 onTap: () async {
                   close();
                   final cat = await _askCategory(e.category);
@@ -256,7 +259,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.delete_outline, color: Theme.of(ctx).colorScheme.error),
-                title: const Text('Remover'),
+                title: Text(tr('Remover')),
                 onTap: () {
                   close();
                   _update(_deck.setQty(e.oracleId, e.board, 0));
@@ -273,19 +276,19 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     final existing = {
       for (final e in _deck.entries)
         if (e.category != null) e.category!,
-      'Ramp',
-      'Draw',
-      'Remoção',
-      'Wipes',
-      'Terrenos',
-      'Proteção',
-      'Win cons',
+      tr('Ramp'),
+      tr('Draw'),
+      tr('Remoção'),
+      tr('Wipes'),
+      tr('Terrenos'),
+      tr('Proteção'),
+      tr('Win cons'),
     }.toList();
     final ctrl = TextEditingController(text: current ?? '');
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Categoria'),
+        title: Text(tr('Categoria')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: ctrl, autofocus: true),
           const SizedBox(height: 12),
@@ -294,7 +297,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           ]),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, ''), child: const Text('Sem categoria')),
+          TextButton(onPressed: () => Navigator.pop(ctx, ''), child: Text(tr('Sem categoria'))),
           TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('OK')),
         ],
       ),
@@ -309,14 +312,14 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
             leading: const Icon(Icons.copy),
-            title: const Text('Copiar lista (Moxfield / Archidekt)'),
-            subtitle: const Text('Com secções Commander, Deck, Sideboard e as versões escolhidas'),
+            title: Text(tr('Copiar lista (Moxfield / Archidekt)')),
+            subtitle: Text(tr('Com secções Commander, Deck, Sideboard e as versões escolhidas')),
             onTap: () => _copy(ctx, exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info)),
           ),
           ListTile(
             leading: const Icon(Icons.qr_code_2),
-            title: const Text('Mostrar QR do deck'),
-            subtitle: const Text('Para outro telemóvel ler em Decks → Importar lista'),
+            title: Text(tr('Mostrar QR do deck')),
+            subtitle: Text(tr('Para outro telemóvel ler em Decks → Importar lista')),
             onTap: () {
               Navigator.pop(ctx);
               final code = SharedDeck(_deck.name, _deck.format, exportDeckText(_deck, cards)).encode();
@@ -333,21 +336,21 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                       child: QrImageView(data: code, errorCorrectionLevel: QrErrorCorrectLevel.L),
                     ),
                   ),
-                  actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Fechar'))],
+                  actions: [TextButton(onPressed: () => Navigator.pop(d), child: Text(tr('Fechar')))],
                 ),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.copy_all),
-            title: const Text('Copiar lista (MTGO)'),
-            subtitle: const Text('Deck, linha em branco, sideboard'),
+            title: Text(tr('Copiar lista (MTGO)')),
+            subtitle: Text(tr('Deck, linha em branco, sideboard')),
             onTap: () => _copy(ctx, exportDeckText(_deck, cards, style: ExportStyle.mtgo)),
           ),
           ListTile(
             leading: const Icon(Icons.insert_drive_file_outlined),
-            title: const Text('Exportar ficheiro do EDHere…'),
-            subtitle: const Text('Com versões das cartas e notas; guardar ou enviar a alguém'),
+            title: Text(tr('Exportar ficheiro do EDHere…')),
+            subtitle: Text(tr('Com versões das cartas e notas; guardar ou enviar a alguém')),
             onTap: () {
               Navigator.pop(ctx);
               exportBackup(context, ref, deckIds: [_deck.id!], name: _deck.name);
@@ -355,8 +358,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.share_outlined),
-            title: const Text('Partilhar lista…'),
-            subtitle: const Text('WhatsApp, email, notas…'),
+            title: Text(tr('Partilhar lista…')),
+            subtitle: Text(tr('WhatsApp, email, notas…')),
             onTap: () {
               Navigator.pop(ctx);
               shareText(exportDeckText(_deck, cards, printOf: ref.read(printsProvider).info),
@@ -366,8 +369,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           if (ref.read(collectionProvider).owned.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.shopping_cart_outlined),
-              title: const Text('Copiar as cartas que me faltam'),
-              subtitle: const Text('Lista de compras (sem terrenos básicos)'),
+              title: Text(tr('Copiar as cartas que me faltam')),
+              subtitle: Text(tr('Lista de compras (sem terrenos básicos)')),
               onTap: () => _copy(ctx, _missingList(cards)),
             ),
         ]),
@@ -395,13 +398,13 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     if (!sheet.mounted) return;
     Navigator.pop(sheet);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lista copiada.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Lista copiada.'))));
   }
 
   Future<void> _editSettings() async {
     final r = await showDialog<(String, String)>(
       context: context,
-      builder: (_) => DeckSettingsDialog(name: _deck.name, format: _deck.format, title: 'Editar deck'),
+      builder: (_) => DeckSettingsDialog(name: _deck.name, format: _deck.format, title: tr('Editar deck')),
     );
     if (r != null) _update(_deck.copyWith(name: r.$1, format: r.$2));
   }
@@ -410,11 +413,11 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Apagar "${_deck.name}"?'),
-        content: const Text('Esta ação não se pode desfazer.'),
+        title: Text(tr('Apagar "{v}"?', {'v': _deck.name})),
+        content: Text(tr('Esta ação não se pode desfazer.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Apagar'))),
         ],
       ),
     );
@@ -440,12 +443,14 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
         appBar: AppBar(
           title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(_deck.name, overflow: TextOverflow.ellipsis),
-            Text('${f.label} · $size${target == null ? '' : '/$target'} cartas',
+            Text(
+                tr('{v} · {size}{v2} cartas',
+                    {'v': f.label, 'size': size, 'v2': target == null ? '' : '/$target'}),
                 style: Theme.of(context).textTheme.bodySmall),
           ]),
           actions: [
             IconButton(
-              tooltip: 'Testar (goldfish)',
+              tooltip: tr('Testar (goldfish)'),
               icon: const Icon(Icons.play_arrow_rounded),
               onPressed: _deck.playableCount == 0
                   ? null
@@ -454,14 +459,14 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                       )),
             ),
             IconButton(
-              tooltip: _grid ? 'Ver em lista' : 'Ver em grelha',
+              tooltip: _grid ? tr('Ver em lista') : tr('Ver em grelha'),
               icon: Icon(_grid ? Icons.view_list : Icons.grid_view),
               onPressed: () {
                 setState(() => _grid = !_grid);
                 ref.read(deckStoreProvider).setSetting('deck_view', _grid ? 'grid' : 'list');
               },
             ),
-            IconButton(tooltip: 'Exportar', icon: const Icon(Icons.ios_share), onPressed: _export),
+            IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
             PopupMenuButton<String>(
               onSelected: (v) => switch (v) {
                 'edit' => _editSettings(),
@@ -472,20 +477,20 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                 'delete' => _delete(),
                 _ => null,
               },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'hands', child: Text('Simular mãos iniciais')),
-                PopupMenuItem(value: 'own', child: Text('Tenho este deck (juntar às minhas cartas)')),
-                PopupMenuItem(value: 'edit', child: Text('Nome e formato')),
-                PopupMenuItem(value: 'delete', child: Text('Apagar deck')),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'hands', child: Text(tr('Simular mãos iniciais'))),
+                PopupMenuItem(value: 'own', child: Text(tr('Tenho este deck (juntar às minhas cartas)'))),
+                PopupMenuItem(value: 'edit', child: Text(tr('Nome e formato'))),
+                PopupMenuItem(value: 'delete', child: Text(tr('Apagar deck'))),
               ],
             ),
           ],
           bottom: TabBar(tabs: [
-            const Tab(text: 'Cartas'),
-            const Tab(text: 'Estatísticas'),
+            Tab(text: tr('Cartas')),
+            Tab(text: tr('Estatísticas')),
             Tab(
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Text('Validação'),
+                Text(tr('Validação')),
                 const SizedBox(width: 6),
                 if (!f.validates)
                   const Icon(Icons.remove_circle_outline, size: 16)
@@ -498,7 +503,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
           ]),
         ),
         floatingActionButton: FloatingActionButton(
-          tooltip: 'Juntar cartas',
+          tooltip: tr('Juntar cartas'),
           onPressed: () => _addCards(),
           child: const Icon(Icons.add),
         ),
@@ -592,8 +597,8 @@ class _CardListState extends State<_CardList> {
     final have = owned[e.oracleId] ?? 0;
     final c = cards[e.oracleId];
     if (c != null && c.isBasicLand) return null;
-    if (have == 0) return 'não tens';
-    if (have < e.qty) return 'tens $have';
+    if (have == 0) return tr('não tens');
+    if (have < e.qty) return tr('tens {have}', {'have': have});
     return null;
   }
 
@@ -604,7 +609,10 @@ class _CardListState extends State<_CardList> {
     bool matches(DeckEntry e) {
       if (q.isEmpty) return true;
       final c = cards[e.oracleId];
-      return c != null && (normalizeName(c.name).contains(q) || normalizeName(c.typeLine).contains(q));
+      return c != null &&
+          (normalizeName(c.name).contains(q) ||
+              normalizeName(c.displayName).contains(q) ||
+              normalizeName(c.typeLine).contains(q));
     }
 
     final flagged = {
@@ -612,7 +620,7 @@ class _CardListState extends State<_CardList> {
         if (i.oracleId != null) i.oracleId!
     };
     final sections = <(String, List<DeckEntry>)>[];
-    String nameOf(DeckEntry e) => cards[e.oracleId]?.name ?? '';
+    String nameOf(DeckEntry e) => cards[e.oracleId]?.displayName ?? '';
     List<DeckEntry> sorted(Iterable<DeckEntry> es) => es.toList()
       ..sort((a, b) {
         final ca = cards[a.oracleId], cb = cards[b.oracleId];
@@ -622,7 +630,7 @@ class _CardListState extends State<_CardList> {
 
     if (format.hasCommandZone) {
       sections.add((
-        format.commandZone == CommandZone.oathbreaker ? 'Zona de comando' : 'Comandante',
+        format.commandZone == CommandZone.oathbreaker ? tr('Zona de comando') : tr('Comandante'),
         sorted(deck.inBoard(Board.command).where(matches))
       ));
     }
@@ -634,23 +642,24 @@ class _CardListState extends State<_CardList> {
       if (_group == _Group.mv) {
         // Terrenos à parte; o resto pelo valor de mana.
         key = (c?.isLand ?? false)
-            ? 'Land'
-            : 'Custo ${(c?.mv ?? 0).round() >= 7 ? '7+' : (c?.mv ?? 0).round()}';
+            ? tr('Land')
+            : tr('Custo {v}', {'v': (c?.mv ?? 0).round() >= 7 ? '7+' : (c?.mv ?? 0).round()});
       } else {
         key = e.category ??
-            DeckStats.typeOrder.firstWhere((t) => c?.frontType.contains(t) ?? false, orElse: () => 'Outros');
+            DeckStats.typeOrder
+                .firstWhere((t) => c?.frontType.contains(t) ?? false, orElse: () => tr('Outros'));
       }
       groups.putIfAbsent(key, () => []).add(e);
     }
-    const typeNames = {
-      'Creature': 'Criaturas',
-      'Instant': 'Instantâneos',
-      'Sorcery': 'Feitiços',
-      'Artifact': 'Artefactos',
-      'Enchantment': 'Encantamentos',
-      'Planeswalker': 'Planeswalkers',
-      'Battle': 'Batalhas',
-      'Land': 'Terrenos',
+    final typeNames = {
+      'Creature': tr('Criaturas'),
+      'Instant': tr('Instantâneos'),
+      'Sorcery': tr('Feitiços'),
+      'Artifact': tr('Artefactos'),
+      'Enchantment': tr('Encantamentos'),
+      'Planeswalker': tr('Planeswalkers'),
+      'Battle': tr('Batalhas'),
+      'Land': tr('Terrenos'),
     };
     final keys = groups.keys.toList()
       ..sort((a, b) {
@@ -670,10 +679,10 @@ class _CardListState extends State<_CardList> {
       sections.add((typeNames[k] ?? k, sorted(groups[k]!)));
     }
     if (!format.hasCommandZone || deck.count(Board.side) > 0) {
-      sections.add(('Sideboard', sorted(deck.inBoard(Board.side).where(matches))));
+      sections.add((tr('Sideboard'), sorted(deck.inBoard(Board.side).where(matches))));
     }
     if (deck.count(Board.maybe) > 0) {
-      sections.add(('Talvez', sorted(deck.inBoard(Board.maybe).where(matches))));
+      sections.add((tr('Talvez'), sorted(deck.inBoard(Board.maybe).where(matches))));
     }
 
     return ListView(
@@ -685,7 +694,7 @@ class _CardListState extends State<_CardList> {
             child: FilledButton.icon(
               onPressed: onChooseCommander,
               icon: const Icon(Icons.star),
-              label: const Text('Escolher comandante'),
+              label: Text(tr('Escolher comandante')),
             ),
           ),
         if (owned.isNotEmpty)
@@ -699,7 +708,8 @@ class _CardListState extends State<_CardList> {
               child: Row(children: [
                 Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.primary),
                 const SizedBox(width: 6),
-                Text('Tens $have de $need cartas (sem terrenos básicos)', style: theme.textTheme.bodySmall),
+                Text(tr('Tens {have} de {need} cartas (sem terrenos básicos)', {'have': have, 'need': need}),
+                    style: theme.textTheme.bodySmall),
               ]),
             );
           }),
@@ -717,7 +727,7 @@ class _CardListState extends State<_CardList> {
                 decoration: InputDecoration(
                   isDense: true,
                   prefixIcon: const Icon(Icons.search, size: 20),
-                  hintText: 'Procurar no deck',
+                  hintText: tr('Procurar no deck'),
                   suffixIcon: _filter.isEmpty
                       ? null
                       : IconButton(
@@ -736,9 +746,9 @@ class _CardListState extends State<_CardList> {
             SegmentedButton<_Group>(
               showSelectedIcon: false,
               style: const ButtonStyle(visualDensity: VisualDensity.compact),
-              segments: const [
-                ButtonSegment(value: _Group.type, label: Text('Tipo')),
-                ButtonSegment(value: _Group.mv, label: Text('Custo')),
+              segments: [
+                ButtonSegment(value: _Group.type, label: Text(tr('Tipo'))),
+                ButtonSegment(value: _Group.mv, label: Text(tr('Custo'))),
               ],
               selected: {_group},
               onSelectionChanged: (v) => setState(() => _group = v.first),
@@ -746,7 +756,7 @@ class _CardListState extends State<_CardList> {
           ]),
         ),
         for (final (title, entries) in sections)
-          if (entries.isNotEmpty || title == 'Comandante') ...[
+          if (entries.isNotEmpty || title == tr('Comandante')) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
@@ -815,15 +825,15 @@ class _StatsView extends StatelessWidget {
     final theme = Theme.of(context);
     final maxCurve = s.curve.fold(1, (m, v) => v > m ? v : m);
     final library = deck.count(Board.main);
-    const typeNames = {
-      'Creature': 'Criaturas',
-      'Instant': 'Instantâneos',
-      'Sorcery': 'Feitiços',
-      'Artifact': 'Artefactos',
-      'Enchantment': 'Encantamentos',
-      'Planeswalker': 'Planeswalkers',
-      'Battle': 'Batalhas',
-      'Land': 'Terrenos',
+    final typeNames = {
+      'Creature': tr('Criaturas'),
+      'Instant': tr('Instantâneos'),
+      'Sorcery': tr('Feitiços'),
+      'Artifact': tr('Artefactos'),
+      'Enchantment': tr('Encantamentos'),
+      'Planeswalker': tr('Planeswalkers'),
+      'Battle': tr('Batalhas'),
+      'Land': tr('Terrenos'),
     };
     Widget title(String t) => Padding(
           padding: const EdgeInsets.only(top: 20, bottom: 8),
@@ -832,9 +842,9 @@ class _StatsView extends StatelessWidget {
 
     final bracket = BracketEstimate.of(deck, cards);
     final curve = <Widget>[
-      title('Curva de mana'),
-      Text('Valor de mana médio: ${s.averageMv.toStringAsFixed(2)} · '
-          '${s.nonLands} não-terrenos, ${s.lands} terrenos'),
+      title(tr('Curva de mana')),
+      Text(tr('Valor de mana médio: {v} · {nonLands} não-terrenos, {lands} terrenos',
+          {'v': s.averageMv.toStringAsFixed(2), 'nonLands': s.nonLands, 'lands': s.lands})),
       const SizedBox(height: 12),
       SizedBox(
         height: 140,
@@ -860,7 +870,7 @@ class _StatsView extends StatelessWidget {
             ),
         ]),
       ),
-      title('Tipos'),
+      title(tr('Tipos')),
       for (final t in DeckStats.typeOrder)
         if ((s.types[t] ?? 0) > 0)
           Padding(
@@ -874,41 +884,42 @@ class _StatsView extends StatelessWidget {
     String plural(int n, String one, String many) => n == 1 ? '1 $one' : '$n $many';
     final colors = <Widget>[
       if (format.hasCommandZone) ...[
-        title('Bracket (regra zero)'),
+        title(tr('Bracket (regra zero)')),
         Card(
           margin: EdgeInsets.zero,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Bracket mínimo: ${bracket.label}', style: theme.textTheme.titleSmall),
+              Text(tr('Bracket mínimo: {v}', {'v': bracket.label}), style: theme.textTheme.titleSmall),
               const SizedBox(height: 4),
               Text(bracket.count == 0
-                  ? 'Sem Game Changers.'
+                  ? tr('Sem Game Changers.')
                   : '${plural(bracket.count, 'Game Changer', 'Game Changers')}: ${bracket.gameChangers.join(', ')}'),
               if (bracket.landDenial.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text('Destruição de terrenos em massa (só nos brackets 4–5): ${bracket.landDenial.join(', ')}',
+                Text(
+                    tr('Destruição de terrenos em massa (só nos brackets 4–5): {v}',
+                        {'v': bracket.landDenial.join(', ')}),
                     style: TextStyle(color: theme.colorScheme.error)),
               ],
               if (bracket.extraTurns.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
-                    '${plural(bracket.extraTurns.length, 'carta de turno extra', 'cartas de turno extra')}: '
+                    '${plural(bracket.extraTurns.length, tr('carta de turno extra'), tr('cartas de turno extra'))}: '
                     '${bracket.extraTurns.join(', ')}'
-                    '${bracket.chainsExtraTurns ? '. Nos brackets 1–3 não se encadeiam turnos extra.' : ''}',
+                    '${bracket.chainsExtraTurns ? tr('. Nos brackets 1–3 não se encadeiam turnos extra.') : ''}',
                     style: bracket.chainsExtraTurns ? TextStyle(color: theme.colorScheme.error) : null),
               ],
               const SizedBox(height: 4),
               Text(
-                'Combos de duas cartas também contam para o bracket e não se detetam pela lista: '
-                'fala disso com a mesa.',
+                tr('Combos de duas cartas também contam para o bracket e não se detetam pela lista: fala disso com a mesa.'),
                 style: theme.textTheme.bodySmall,
               ),
             ]),
           ),
         ),
       ],
-      title('Cores: símbolos e fontes'),
+      title(tr('Cores: símbolos e fontes')),
       for (final c in 'WUBRG'.split(''))
         if ((s.pips[c] ?? 0) > 0 || (s.sources[c] ?? 0) > 0)
           Padding(
@@ -916,17 +927,22 @@ class _StatsView extends StatelessWidget {
             child: Row(children: [
               ManaSymbol(c, size: 20),
               const SizedBox(width: 10),
-              Expanded(child: Text('${plural(s.pips[c] ?? 0, 'símbolo', 'símbolos')} nos custos')),
-              Text(plural(s.sources[c] ?? 0, 'terreno', 'terrenos')),
+              Expanded(
+                  child: Text(
+                      tr('{v} nos custos', {'v': plural(s.pips[c] ?? 0, tr('símbolo'), tr('símbolos'))}))),
+              Text(plural(s.sources[c] ?? 0, tr('terreno'), tr('terrenos'))),
             ]),
           ),
       if (library > 0 && s.lands > 0) ...[
-        title('Mão inicial (7 cartas)'),
+        title(tr('Mão inicial (7 cartas)')),
         for (final k in [2, 3, 4])
-          Text('Pelo menos $k terrenos: '
-              '${(probabilityAtLeast(library, s.lands - _commandLands(), 7, k) * 100).toStringAsFixed(0)}%'),
+          Text(tr('Pelo menos {k} terrenos: {v}%', {
+            'k': k,
+            'v': (probabilityAtLeast(library, s.lands - _commandLands(), 7, k) * 100).toStringAsFixed(0)
+          })),
         const SizedBox(height: 4),
-        Text('Calculado sobre as $library cartas do grimório.', style: theme.textTheme.bodySmall),
+        Text(tr('Calculado sobre as {library} cartas do grimório.', {'library': library}),
+            style: theme.textTheme.bodySmall),
       ],
     ];
 
@@ -964,21 +980,21 @@ class _IssuesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (!format.validates) {
-      return const Center(child: Text('Formato livre: sem validação.'));
+      return Center(child: Text(tr('Formato livre: sem validação.')));
     }
     if (issues.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.check_circle, color: EdhColors.ok, size: 48),
           const SizedBox(height: 8),
-          Text('Deck legal em ${format.label}.', style: theme.textTheme.titleMedium),
+          Text(tr('Deck legal em {v}.', {'v': format.label}), style: theme.textTheme.titleMedium),
         ]),
       );
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
       children: [
-        Text('Avisos: a app nunca impede de jogar.', style: theme.textTheme.bodySmall),
+        Text(tr('Avisos: a app nunca impede de jogar.'), style: theme.textTheme.bodySmall),
         const SizedBox(height: 8),
         for (final i in issues)
           ListTile(
@@ -1041,8 +1057,8 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
     if (!force && limit != null && have >= limit) {
       // Singleton: avisa em vez de juntar uma segunda cópia sem querer.
       messenger.showSnackBar(SnackBar(
-        content: Text('Já tens ${c.name}: este formato só permite $limit.'),
-        action: SnackBarAction(label: 'Juntar na mesma', onPressed: () => _add(c, force: true)),
+        content: Text(tr('Já tens {v}: este formato só permite {limit}.', {'v': c.displayName, 'limit': limit})),
+        action: SnackBarAction(label: tr('Juntar na mesma'), onPressed: () => _add(c, force: true)),
       ));
       return;
     }
@@ -1054,7 +1070,7 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
     }
     setState(() {});
     messenger.showSnackBar(SnackBar(
-      content: Text('${c.name} (${widget.qtyOf(c.oracleId)})'),
+      content: Text('${c.displayName} (${widget.qtyOf(c.oracleId)})'),
       duration: const Duration(milliseconds: 900),
     ));
   }
@@ -1066,7 +1082,7 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
       appBar: AppBar(title: Text(widget.title)),
       body: CardSearchView(
         onlyOwned: _onlyOwned,
-        hint: _onlyOwned ? 'Só as minhas cartas…' : 'Nome ou filtros (t:dragon id:rg)',
+        hint: _onlyOwned ? tr('Só as minhas cartas…') : tr('Nome ou filtros (t:dragon id:rg)'),
         autofocus: widget.initialQuery.isEmpty && widget.defaultOrder == 'name',
         initialQuery: widget.initialQuery,
         defaultOrder: widget.defaultOrder,
@@ -1078,15 +1094,16 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
             if (hasFilter)
               FilterChip(
                 avatar: Icon(_filtered ? Icons.filter_alt : Icons.filter_alt_off, size: 16),
-                label: Text(
-                    _filtered && widget.filterLabel.isNotEmpty ? widget.filterLabel : 'Sem filtros do deck'),
+                label: Text(_filtered && widget.filterLabel.isNotEmpty
+                    ? widget.filterLabel
+                    : tr('Sem filtros do deck')),
                 selected: _filtered,
                 showCheckmark: false,
                 onSelected: (v) => setState(() => _filtered = v),
               ),
             FilterChip(
               avatar: Icon(_onlyOwned ? Icons.inventory_2 : Icons.inventory_2_outlined, size: 16),
-              label: const Text('Só as que tenho'),
+              label: Text(tr('Só as que tenho')),
               selected: _onlyOwned,
               showCheckmark: false,
               onSelected: (v) => setState(() => _onlyOwned = v),
@@ -1101,8 +1118,9 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
                 _add(c);
               },
               icon: const Icon(Icons.add),
-              label:
-                  Text(widget.title == 'Escolher comandante' ? 'Escolher como comandante' : 'Juntar ao deck'),
+              label: Text(widget.title == tr('Escolher comandante')
+                  ? tr('Escolher como comandante')
+                  : tr('Juntar ao deck')),
             ),
           ]),
         )),

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../l10n/l10n.dart';
 
 /// Rede criada pelo hotspot local do Android.
 class HotspotInfo {
@@ -27,7 +28,7 @@ class Hotspot {
   /// Pede as permissões necessárias e liga o hotspot.
   static Future<HotspotInfo> start() async {
     if (!isSupported) {
-      throw const HotspotException('Só disponível no Android');
+      throw HotspotException(tr('Só disponível no Android'));
     }
     await _requestPermissions();
     try {
@@ -60,18 +61,18 @@ class Hotspot {
     final location = statuses[Permission.locationWhenInUse];
     final granted = (nearby?.isGranted ?? false) || (location?.isGranted ?? false);
     if (!granted) {
-      throw const HotspotException('Sem permissão para criar o hotspot. Autoriza "Dispositivos próximos" '
-          'ou "Localização" nas definições da app.');
+      throw HotspotException(tr(
+          'Sem permissão para criar o hotspot. Autoriza "Dispositivos próximos" ou "Localização" nas definições da app.'));
     }
   }
 
   static String _describe(PlatformException e) => switch (e.code) {
-        'incompatible_mode' => 'O hotspot normal do telemóvel está ligado. Desliga-o e tenta outra vez, '
-            'ou usa-o diretamente: os outros ligam-se a ele.',
-        'no_channel' => 'Sem canal Wi-Fi livre para o hotspot.',
-        'tethering_disallowed' => 'O sistema não permite criar hotspots.',
-        'location_off' => 'Liga a Localização do telemóvel para criar o hotspot.',
-        'unsupported' => 'Precisa de Android 8 ou mais recente.',
-        _ => e.message ?? 'Não foi possível criar o hotspot (${e.code}).',
+        'incompatible_mode' => tr(
+            'O hotspot normal do telemóvel está ligado. Desliga-o e tenta outra vez, ou usa-o diretamente: os outros ligam-se a ele.'),
+        'no_channel' => tr('Sem canal Wi-Fi livre para o hotspot.'),
+        'tethering_disallowed' => tr('O sistema não permite criar hotspots.'),
+        'location_off' => tr('Liga a Localização do telemóvel para criar o hotspot.'),
+        'unsupported' => tr('Precisa de Android 8 ou mais recente.'),
+        _ => e.message ?? tr('Não foi possível criar o hotspot ({code}).', {'code': e.code}),
       };
 }

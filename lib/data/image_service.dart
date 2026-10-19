@@ -6,14 +6,18 @@ import 'package:flutter/foundation.dart';
 
 import 'app_paths.dart';
 import 'scryfall.dart';
+import '../l10n/l10n.dart';
 
 /// Pacote de imagens: uma lista de cartas calculada a partir da base local.
 /// As imagens guardam-se uma vez por carta; os pacotes só as listam.
 class ImagePack {
-  const ImagePack(this.id, this.label, this.description, this.where);
+  const ImagePack(this.id, this._label, this._description, this.where);
   final String id;
-  final String label;
-  final String description;
+  final String _label;
+  final String _description;
+
+  String get label => tr(_label);
+  String get description => tr(_description);
 
   /// Condição SQL sobre `cards`; null = cartas dos meus decks.
   final String? where;

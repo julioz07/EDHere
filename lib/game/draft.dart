@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mesa_protocol/mesa_protocol.dart';
 
 import '../net/room_link.dart';
+import '../l10n/l10n.dart';
 
 /// Mensagens diretas do draft (fora do registo da sala: os packs são
 /// privados de cada jogador).
@@ -98,7 +99,7 @@ class DraftConfig {
       };
 
   static DraftConfig fromJson(Map<String, dynamic> j) => DraftConfig(
-        title: j['title'] as String? ?? 'Draft',
+        title: j['title'] as String? ?? tr('Draft'),
         setCode: j['set'] as String?,
         packs: (j['packs'] as num?)?.toInt() ?? 3,
         picks: (j['picks'] as num?)?.toInt() ?? 1,

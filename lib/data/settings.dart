@@ -6,12 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_paths.dart';
 import 'providers.dart';
+import '../l10n/l10n.dart';
 
 /// Fundos da área de jogo que vêm com a app.
 class TableBackground {
-  const TableBackground(this.id, this.label, this.asset);
+  const TableBackground(this.id, this._label, this.asset);
   final String id;
-  final String label;
+  final String _label;
+  String get label => tr(_label);
   final String asset;
 
   static const _dir = 'assets/Fundos para area de jogo/edhere-fundos';
@@ -52,6 +54,16 @@ class Settings extends ChangeNotifier {
   static const _kSortHand = 'sort_hand';
   static const _kKeepOn = 'keep_screen_on';
   static const _kConfirmLeave = 'confirm_leave';
+
+  /// Língua da app (código), guardada quando o utilizador a escolhe.
+  static const langKey = 'app_lang';
+
+  /// Língua da app: a escolhida, ou a do telemóvel (inglês se não houver).
+  AppLang get appLang => AppLang.byCode(_prefs.getString(langKey)) ?? L10n.fromSystem();
+  set appLang(AppLang l) {
+    L10n.use(l);
+    _set(langKey, l.code);
+  }
 
   ThemeMode get themeMode => switch (_prefs.getString(_kTheme)) {
         'light' => ThemeMode.light,

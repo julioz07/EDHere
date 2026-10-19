@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/card_view.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Gera mãos iniciais seguidas para ver se o deck abre bem.
 class HandSimulatorScreen extends StatefulWidget {
@@ -62,10 +63,10 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
       byCount[l] = (byCount[l] ?? 0) + 1;
     }
     return Scaffold(
-      appBar: AppBar(title: Text('Mãos de ${widget.deck.name}')),
+      appBar: AppBar(title: Text(tr('Mãos de {v}', {'v': widget.deck.name}))),
       body: MaxWidth(
           child: ListView(padding: const EdgeInsets.all(16), children: [
-        Text('${_lands(_hand)} terrenos nesta mão', style: theme.textTheme.titleMedium),
+        Text(tr('{v} terrenos nesta mão', {'v': _lands(_hand)}), style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         GridView.count(
           shrinkWrap: true,
@@ -83,25 +84,26 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
         Row(children: [
           Expanded(
               child: FilledButton(
-                  onPressed: _library.length < 7 ? null : _newHand, child: const Text('Nova mão'))),
+                  onPressed: _library.length < 7 ? null : _newHand, child: Text(tr('Nova mão')))),
           const SizedBox(width: 8),
           Expanded(
             child: OutlinedButton(
               onPressed: _library.length < 7 ? null : () => _batch(1000),
-              child: const Text('+1000 mãos'),
+              child: Text(tr('+1000 mãos')),
             ),
           ),
         ]),
         const SizedBox(height: 20),
-        Text('$total mãos simuladas', style: theme.textTheme.titleSmall),
-        Text('Média de terrenos: ${avg.toStringAsFixed(2)}'),
-        Text('Mãos com 2 a 4 terrenos: ${total == 0 ? 0 : (good * 100 / total).toStringAsFixed(0)}%'),
+        Text(tr('{total} mãos simuladas', {'total': total}), style: theme.textTheme.titleSmall),
+        Text(tr('Média de terrenos: {v}', {'v': avg.toStringAsFixed(2)})),
+        Text(tr('Mãos com 2 a 4 terrenos: {v}%',
+            {'v': total == 0 ? 0 : (good * 100 / total).toStringAsFixed(0)})),
         const SizedBox(height: 8),
         for (final k in (byCount.keys.toList()..sort()))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Row(children: [
-              SizedBox(width: 90, child: Text('$k terrenos')),
+              SizedBox(width: 90, child: Text(tr('{k} terrenos', {'k': k}))),
               Expanded(
                 child: LinearProgressIndicator(
                   value: byCount[k]! / total,

@@ -16,6 +16,7 @@ import '../room/room_session.dart';
 import 'draft.dart';
 import 'game_controller.dart';
 import 'resume_store.dart';
+import '../l10n/l10n.dart';
 
 /// Eventos do lobby (antes do jogo começar).
 abstract final class LobbyEv {
@@ -168,7 +169,8 @@ class NetworkGame extends ChangeNotifier {
     int seat() => (p['seat'] as num).toInt();
     switch (e.type) {
       case MsgType.join:
-        players[seat()] = LobbyPlayer(seat(), p['name'] as String? ?? 'Jogador', isHost: p['host'] == true);
+        players[seat()] =
+            LobbyPlayer(seat(), p['name'] as String? ?? tr('Jogador'), isHost: p['host'] == true);
       case MsgType.leave:
         players.remove(seat());
       case MsgType.playerStatus:

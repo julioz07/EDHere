@@ -94,6 +94,10 @@ Cores da app:
 - Commander draft (Commander Legends, Commander Masters…).
 - JumpStart com 570 pacotes temáticos.
 
+**Em quatro línguas**
+- A app em português, inglês, espanhol e italiano (escolhe sozinha a do telemóvel).
+- As cartas também: nome, texto e imagem na língua escolhida, e a pesquisa encontra-as pelos dois nomes.
+
 **Aprender a jogar**
 - Tutorial guiado contra dois adversários simulados: lês um pouco e jogas um pouco.
 - Duas versões: "Nunca joguei" e "Já sei jogar Magic" (só o que muda no Commander).
@@ -128,7 +132,7 @@ Um bloco curto a explicar a filosofia:
 - **Os outros jogadores precisam da app?** Sim. Cada um joga no seu telemóvel, na mesma rede Wi-Fi ou no hotspot de quem cria a sala.
 - **A app aplica as regras?** Não. É uma mesa: guarda o estado do jogo e os jogadores jogam como numa mesa física.
 - **E iPhone?** Está nos planos e depende do apoio da comunidade (ver "Apoia o EDHere").
-- **Em que línguas?** Por agora em português. Inglês, espanhol e italiano estão a caminho.
+- **Em que línguas?** Português, inglês, espanhol e italiano: a app e as próprias cartas (nome, texto e imagem), na língua que escolheres.
 
 ### 5.8 Rodapé (obrigatório)
 Deve incluir o aviso legal:
@@ -143,12 +147,12 @@ Deve incluir também:
 
 - **Não usar** logótipos, marcas nem arte oficial da Wizards de forma que pareça uma app oficial. Imagens de cartas, só dentro dos screenshots da app.
 - Não dizer que a app é open source: o código é privado.
-- Não prometer datas para o iOS nem para as outras línguas.
+- Não prometer datas para o iOS.
 
 ## 7. Por definir (pelo Júlio)
 
 - **Link do open beta.** Opções: um teste aberto do Google Play, um link direto para o APK, ou um formulário de inscrição.
 - **Plataforma de doações.** Por exemplo Ko-fi, Buy Me a Coffee, PayPal ou GitHub Sponsors. Decidir também se a página mostra o objetivo do iOS com uma barra de progresso.
 - **Domínio e alojamento** da página.
-- **Línguas da página.** Sugestão: começar em português e inglês e acrescentar espanhol e italiano quando a app os tiver.
+- **Línguas da página.** A app já está em português, inglês, espanhol e italiano; a página pode seguir as mesmas quatro.
 - **Contacto.** Email ou Discord para sugestões e para reportar problemas.

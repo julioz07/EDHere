@@ -1,3 +1,5 @@
+import 'i18n.dart';
+
 /// Zonas da mesa. Grimório e mão são ocultas: vivem só no dispositivo do dono.
 enum Zone {
   library('library', 'Grimório', hidden: true),
@@ -7,10 +9,13 @@ enum Zone {
   exile('exile', 'Exílio'),
   command('command', 'Zona de comando');
 
-  const Zone(this.id, this.label, {this.hidden = false});
+  const Zone(this.id, this._label, {this.hidden = false});
   final String id;
-  final String label;
+  final String _label;
   final bool hidden;
+
+  /// O nome da zona na língua da app.
+  String get label => mesaTr(_label);
 
   static Zone byId(String id) => values.firstWhere((z) => z.id == id);
 }

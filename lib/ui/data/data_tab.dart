@@ -7,11 +7,12 @@ import '../../data/image_service.dart';
 import '../../data/providers.dart';
 import '../about_screen.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 String formatBytes(int b) {
-  if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(0)} KB';
-  if (b < 1024 * 1024 * 1024) return '${(b / 1024 / 1024).toStringAsFixed(0)} MB';
-  return '${(b / 1024 / 1024 / 1024).toStringAsFixed(1)} GB';
+  if (b < 1024 * 1024) return tr('{v} KB', {'v': (b / 1024).toStringAsFixed(0)});
+  if (b < 1024 * 1024 * 1024) return tr('{v} MB', {'v': (b / 1024 / 1024).toStringAsFixed(0)});
+  return tr('{v} GB', {'v': (b / 1024 / 1024 / 1024).toStringAsFixed(1)});
 }
 
 String formatDate(String? iso) {
@@ -48,10 +49,10 @@ class _DataTabState extends ConsumerState<DataTab> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dados offline'),
+        title: Text(tr('Dados offline')),
         actions: [
           IconButton(
-            tooltip: 'Sobre',
+            tooltip: tr('Sobre'),
             icon: const Icon(Icons.info_outline),
             onPressed: () =>
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
@@ -69,20 +70,26 @@ class _DataTabState extends ConsumerState<DataTab> {
                 Row(children: [
                   Icon(Icons.storage_rounded, color: theme.colorScheme.primary),
                   const SizedBox(width: 10),
-                  Text('Base de cartas', style: theme.textTheme.titleMedium),
+                  Text(tr('Base de cartas'), style: theme.textTheme.titleMedium),
                 ]),
                 const SizedBox(height: 10),
                 if (data.hasData) ...[
-                  Text('${data.cardCount} cartas · dados do Scryfall de ${formatDate(data.localDate)}'),
-                  Text(data.hasRulings ? 'Com rulings' : 'Sem rulings', style: theme.textTheme.bodySmall),
+                  Text(tr('{cardCount} cartas · dados do Scryfall de {v}',
+                      {'cardCount': data.cardCount, 'v': formatDate(data.localDate)})),
+                  Text(data.hasRulings ? tr('Com rulings') : tr('Sem rulings'),
+                      style: theme.textTheme.bodySmall),
                 ] else
-                  const Text('Ainda não descarregada.'),
+                  Text(tr('Ainda não descarregada.')),
                 if (data.remoteOracle != null) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'No Scryfall: ${formatDate(data.remoteOracle!.updatedAt)} · '
-                    '${formatBytes(data.remoteOracle!.compressedSize)}'
-                    '${_rulings && data.remoteRulings != null ? ' + rulings ${formatBytes(data.remoteRulings!.compressedSize)}' : ''}',
+                    tr('No Scryfall: {v} · {v2}{v3}', {
+                      'v': formatDate(data.remoteOracle!.updatedAt),
+                      'v2': formatBytes(data.remoteOracle!.compressedSize),
+                      'v3': _rulings && data.remoteRulings != null
+                          ? tr(' + rulings {v}', {'v': formatBytes(data.remoteRulings!.compressedSize)})
+                          : ''
+                    }),
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -91,9 +98,10 @@ class _DataTabState extends ConsumerState<DataTab> {
                   contentPadding: EdgeInsets.zero,
                   value: _rulings,
                   onChanged: data.busy ? null : (v) => setState(() => _rulings = v ?? true),
-                  title: const Text('Incluir rulings'),
-                  subtitle: const Text('Esclarecimentos oficiais sobre cada carta'),
+                  title: Text(tr('Incluir rulings')),
+                  subtitle: Text(tr('Esclarecimentos oficiais sobre cada carta')),
                 ),
+                const CardLanguageTile(contentPadding: EdgeInsets.zero),
                 if (data.busy || data.phase == DataPhase.error || data.message.isNotEmpty) ...[
                   if (data.busy) ...[
                     LinearProgressIndicator(value: data.progress),
@@ -107,19 +115,19 @@ class _DataTabState extends ConsumerState<DataTab> {
                 Row(children: [
                   Expanded(
                     child: data.busy && data.phase == DataPhase.downloading
-                        ? OutlinedButton(onPressed: data.cancel, child: const Text('Cancelar'))
+                        ? OutlinedButton(onPressed: data.cancel, child: Text(tr('Cancelar')))
                         : FilledButton(
                             onPressed: data.busy ? null : () => data.update(includeRulings: _rulings),
                             child: Text(!data.hasData
-                                ? 'Descarregar'
+                                ? tr('Descarregar')
                                 : data.updateAvailable
-                                    ? 'Atualizar'
-                                    : 'Descarregar outra vez'),
+                                    ? tr('Atualizar')
+                                    : tr('Descarregar outra vez')),
                           ),
                   ),
                   const SizedBox(width: 8),
                   IconButton.outlined(
-                    tooltip: 'Verificar novidades',
+                    tooltip: tr('Verificar novidades'),
                     onPressed: data.busy ? null : data.checkRemote,
                     icon: const Icon(Icons.refresh),
                   ),
@@ -129,11 +137,11 @@ class _DataTabState extends ConsumerState<DataTab> {
           ),
           const SizedBox(height: 24),
           Row(children: [
-            Expanded(child: Text('Pacotes de imagens', style: theme.textTheme.titleMedium)),
+            Expanded(child: Text(tr('Pacotes de imagens'), style: theme.textTheme.titleMedium)),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'small', label: Text('Pequena')),
-                ButtonSegment(value: 'normal', label: Text('Normal')),
+              segments: [
+                ButtonSegment(value: 'small', label: Text(tr('Pequena'))),
+                ButtonSegment(value: 'normal', label: Text(tr('Normal'))),
               ],
               selected: {_size},
               showSelectedIcon: false,
@@ -143,17 +151,17 @@ class _DataTabState extends ConsumerState<DataTab> {
           const SizedBox(height: 4),
           Text(
             _size == 'small'
-                ? 'Pequena (146×204): listas e campo de batalha. ~15 KB por carta.'
-                : 'Normal (488×680): zoom e leitura. ~108 KB por carta.',
+                ? tr('Pequena (146×204): listas e campo de batalha. ~15 KB por carta.')
+                : tr('Normal (488×680): zoom e leitura. ~108 KB por carta.'),
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 4),
           Text(
-            'Sem imagem, a carta aparece como carta de texto e tudo continua a funcionar.',
+            tr('Sem imagem, a carta aparece como carta de texto e tudo continua a funcionar.'),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
-          if (!data.hasData) const Text('Descarrega primeiro a base de cartas.') else _Packs(size: _size),
+          if (!data.hasData) Text(tr('Descarrega primeiro a base de cartas.')) else _Packs(size: _size),
           if (data.hasData) ...[
             const SizedBox(height: 8),
             const _VersionsPack(),
@@ -208,20 +216,26 @@ class _Packs extends ConsumerWidget {
                           ],
                         ]),
                         Text(
-                          '${st.total} cartas · ${complete ? 'completo' : 'faltam ${st.missing} (~${formatBytes(st.estimateBytes(size))})'}',
+                          tr('{total} cartas · {v}', {
+                            'total': st.total,
+                            'v': complete
+                                ? 'completo'
+                                : tr('faltam {missing} (~{v})',
+                                    {'missing': st.missing, 'v': formatBytes(st.estimateBytes(size))})
+                          }),
                           style: theme.textTheme.bodySmall,
                         ),
                       ]),
                     ),
                     if (running)
-                      TextButton(onPressed: images.cancel, child: const Text('Parar'))
+                      TextButton(onPressed: images.cancel, child: Text(tr('Parar')))
                     else if (!complete && st.total > 0)
                       TextButton(
                         onPressed: job != null
                             ? null
                             : () => images.download(pack, size, refs,
                                 onDone: () => store.markPackInstalled(pack.id, size)),
-                        child: const Text('Descarregar'),
+                        child: Text(tr('Descarregar')),
                       ),
                   ]),
                   if (running) ...[
@@ -237,7 +251,7 @@ class _Packs extends ConsumerWidget {
           );
         }),
       if (images.lastError != null && job == null)
-        Text('Último erro: ${images.lastError}',
+        Text(tr('Último erro: {lastError}', {'lastError': images.lastError}),
             style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
     ]);
   }
@@ -266,18 +280,22 @@ class _StorageState extends ConsumerState<_Storage> {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Espaço usado', style: theme.textTheme.titleSmall),
+          Text(tr('Espaço usado'), style: theme.textTheme.titleSmall),
           const SizedBox(height: 6),
-          Text('Pequenas: ${images.count('small')} imagens'
-              '${_usage == null ? '' : ' · ${formatBytes(_usage!['small']!)}'}'),
-          Text('Normais: ${images.count('normal')} imagens'
-              '${_usage == null ? '' : ' · ${formatBytes(_usage!['normal']!)}'}'),
+          Text(tr('Pequenas: {v} imagens{v2}', {
+            'v': images.count('small'),
+            'v2': _usage == null ? '' : ' · ${formatBytes(_usage!['small']!)}'
+          })),
+          Text(tr('Normais: {v} imagens{v2}', {
+            'v': images.count('normal'),
+            'v2': _usage == null ? '' : ' · ${formatBytes(_usage!['normal']!)}'
+          })),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
             OutlinedButton(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
               onPressed: _measure,
-              child: const Text('Medir'),
+              child: Text(tr('Medir')),
             ),
             for (final size in ['small', 'normal'])
               OutlinedButton(
@@ -288,12 +306,13 @@ class _StorageState extends ConsumerState<_Storage> {
                         final ok = await showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
-                            title: Text('Apagar imagens ${size == 'small' ? 'pequenas' : 'normais'}?'),
-                            content: const Text('Podes voltar a descarregá-las depois.'),
+                            title: Text(
+                                tr('Apagar imagens {v}?', {'v': size == 'small' ? 'pequenas' : 'normais'})),
+                            content: Text(tr('Podes voltar a descarregá-las depois.')),
                             actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+                              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
                               TextButton(
-                                  onPressed: () => Navigator.pop(ctx, true), child: const Text('Apagar')),
+                                  onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Apagar'))),
                             ],
                           ),
                         );
@@ -306,7 +325,7 @@ class _StorageState extends ConsumerState<_Storage> {
                         _usage = null;
                         if (mounted) setState(() {});
                       },
-                child: Text('Apagar ${size == 'small' ? 'pequenas' : 'normais'}'),
+                child: Text(tr('Apagar {v}', {'v': size == 'small' ? 'pequenas' : 'normais'})),
               ),
           ]),
         ]),
@@ -335,27 +354,29 @@ class _VersionsPack extends ConsumerWidget {
           Row(children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Versões alternativas dos meus decks', style: theme.textTheme.titleSmall),
+                Text(tr('Versões alternativas dos meus decks'), style: theme.textTheme.titleSmall),
                 Text(
-                  '${ids.length} cartas · todas as versões, imagem pequena. Precisa de internet. '
-                  'Escolher uma versão descarrega sempre só essa.',
+                  tr('{n} cartas · todas as versões, imagem pequena. Precisa de internet. Escolher uma versão descarrega sempre só essa.',
+                      {'n': ids.length}),
                   style: theme.textTheme.bodySmall,
                 ),
               ]),
             ),
             if (progress != null)
-              TextButton(onPressed: prints.cancelPack, child: const Text('Parar'))
+              TextButton(onPressed: prints.cancelPack, child: Text(tr('Parar')))
             else
               TextButton(
                 onPressed: ids.isEmpty ? null : () => prints.downloadVersionsFor(repo.getMany(ids)),
-                child: const Text('Descarregar'),
+                child: Text(tr('Descarregar')),
               ),
           ]),
           if (progress != null) ...[
             const SizedBox(height: 6),
             LinearProgressIndicator(value: progress.total == 0 ? null : progress.done / progress.total),
             const SizedBox(height: 4),
-            Text('${progress.done}/${progress.total} cartas · ${progress.images} imagens',
+            Text(
+                tr('{done}/{total} cartas · {images} imagens',
+                    {'done': progress.done, 'total': progress.total, 'images': progress.images}),
                 style: theme.textTheme.bodySmall),
           ],
         ]),
@@ -379,4 +400,74 @@ List<db.Card> deckCardsWithPrints(WidgetRef ref) {
               when seen.add('${shown.oracleId}|${shown.printId}'))
             shown,
   ];
+}
+
+/// A língua em que as cartas aparecem (nome, texto e imagem), com o estado
+/// do download. Mudar descarrega a língua nova (ou volta ao inglês).
+class CardLanguageTile extends ConsumerWidget {
+  const CardLanguageTile({super.key, this.contentPadding, this.icon = true});
+  final EdgeInsetsGeometry? contentPadding;
+  final bool icon;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(cardDataProvider);
+    final theme = Theme.of(context);
+    final wanted = data.wantedCardLang;
+    final label = langName(wanted);
+    final status = !data.hasData
+        ? tr('Descarrega-se com a base de cartas.')
+        : data.languagePending
+            ? tr('Ainda em {lang}: falta descarregar (~20 MB).', {'lang': langName(data.cardLang)})
+            : wanted == 'en'
+                ? tr('O texto oficial (Oracle).')
+                : tr('{n} cartas em {lang}; as que não existem nessa língua ficam em inglês.',
+                    {'n': data.localizedCount, 'lang': label});
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ListTile(
+        contentPadding: contentPadding,
+        leading: icon ? const Icon(Icons.translate) : null,
+        title: Text(tr('Língua das cartas')),
+        subtitle: Text(status),
+        trailing: DropdownButton<String>(
+          value: wanted,
+          underline: const SizedBox.shrink(),
+          items: [
+            for (final l in AppLang.values) DropdownMenuItem(value: l.code, child: Text(l.label)),
+          ],
+          onChanged: data.busy ? null : (code) => code == null ? null : data.setCardLang(code),
+        ),
+      ),
+      if (data.languagePending && !data.busy)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: contentPadding == EdgeInsets.zero
+                ? const EdgeInsets.only(bottom: 8)
+                : const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: OutlinedButton.icon(
+              onPressed: data.syncLanguage,
+              icon: const Icon(Icons.download_rounded),
+              label: Text(tr('Descarregar as cartas em {lang}', {'lang': label})),
+            ),
+          ),
+        ),
+      if (!data.busy && data.phase == DataPhase.error && contentPadding != EdgeInsets.zero)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child:
+              Text(data.message, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+        ),
+      if (data.busy && contentPadding != EdgeInsets.zero) ...[
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: LinearProgressIndicator(value: data.progress),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Text(data.message, style: theme.textTheme.bodySmall),
+        ),
+      ],
+    ]);
+  }
 }

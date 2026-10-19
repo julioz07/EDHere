@@ -15,6 +15,7 @@ import '../resume_game.dart';
 import '../stats/stats_screen.dart';
 import '../tutorial/tutorial_home.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 class PlayTab extends ConsumerStatefulWidget {
   const PlayTab({super.key});
@@ -39,7 +40,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     _nameFocus.canRequestFocus = true;
   }
 
-  String get _playerName => _name.text.trim().isEmpty ? 'Jogador' : _name.text.trim();
+  String get _playerName => _name.text.trim().isEmpty ? tr('Jogador') : _name.text.trim();
 
   Future<void> _go(Widget Function(String name) screen, {bool needsName = false}) async {
     // Numa sala os outros veem o nome: sem ele, ficam todos "Jogador".
@@ -60,20 +61,20 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Como te chamas?'),
+        title: Text(tr('Como te chamas?')),
         content: TextField(
           controller: c,
           autofocus: true,
           maxLength: 24,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'O nome que os outros veem na mesa', counterText: ''),
+          decoration: InputDecoration(hintText: tr('O nome que os outros veem na mesa'), counterText: ''),
           onSubmitted: (v) => Navigator.pop(ctx, v.trim().isEmpty ? null : v.trim()),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, c.text.trim().isEmpty ? null : c.text.trim()),
-            child: const Text('Continuar'),
+            child: Text(tr('Continuar')),
           ),
         ],
       ),
@@ -102,7 +103,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SvgPicture.asset(Brand.horizontal(theme.brightness), height: 56),
               const SizedBox(height: 6),
-              Text('Joga com quem está aqui',
+              Text(tr('Joga com quem está aqui'),
                   style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
             ]),
             const SizedBox(height: 24),
@@ -118,42 +119,42 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               onSubmitted: (_) => _nameFocus.unfocus(),
               textCapitalization: TextCapitalization.words,
               maxLength: 24,
-              decoration: const InputDecoration(
-                labelText: 'O teu nome',
-                helperText: 'É o nome que os outros veem na mesa',
-                prefixIcon: Icon(Icons.person_outline),
+              decoration: InputDecoration(
+                labelText: tr('O teu nome'),
+                helperText: tr('É o nome que os outros veem na mesa'),
+                prefixIcon: const Icon(Icons.person_outline),
                 counterText: '',
               ),
             ),
             const SizedBox(height: 24),
-            Text('Com outros, cada um com o seu telemóvel', style: theme.textTheme.titleSmall),
+            Text(tr('Com outros, cada um com o seu telemóvel'), style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: hasData ? () => _go((n) => CreateRoomScreen(playerName: n), needsName: true) : null,
               icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Criar sala'),
+              label: Text(tr('Criar sala')),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => _go((n) => JoinScreen(playerName: n), needsName: true),
               icon: const Icon(Icons.wifi_find_rounded),
-              label: const Text('Entrar numa sala'),
+              label: Text(tr('Entrar numa sala')),
             ),
             if (!hasData)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Descarrega primeiro a base de cartas (Definições → Dados).',
+                child: Text(tr('Descarrega primeiro a base de cartas (Definições → Dados).'),
                     style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 24),
-            Text('Abrir boosters', style: theme.textTheme.titleSmall),
+            Text(tr('Abrir boosters'), style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Row(children: [
               Expanded(
                 child: FilledButton.tonalIcon(
                   onPressed: hasData ? () => _go((_) => const SealedSetupScreen()) : null,
                   icon: const Icon(Icons.card_giftcard),
-                  label: const Text('Sealed'),
+                  label: Text(tr('Sealed')),
                 ),
               ),
               const SizedBox(width: 8),
@@ -161,46 +162,45 @@ class _PlayTabState extends ConsumerState<PlayTab> {
                 child: FilledButton.tonalIcon(
                   onPressed: hasData ? () => _go((_) => const JumpstartScreen()) : null,
                   icon: const Icon(Icons.bolt),
-                  label: const Text('JumpStart'),
+                  label: Text(tr('JumpStart')),
                 ),
               ),
             ]),
             const SizedBox(height: 24),
-            Text('Testar e ensinar', style: theme.textTheme.titleSmall),
+            Text(tr('Testar e ensinar'), style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: () => _go((_) => const TutorialHome()),
               icon: const Icon(Icons.school_outlined),
-              label: const Text('Aprender a jogar Commander'),
+              label: Text(tr('Aprender a jogar Commander')),
             ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
               onPressed: hasDecks ? () => _go((_) => const GoldfishSetupScreen()) : null,
               icon: const Icon(Icons.science_outlined),
-              label: const Text('Goldfish (testar um deck sozinho)'),
+              label: Text(tr('Goldfish (testar um deck sozinho)')),
             ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
               onPressed: hasDecks ? () => _go((_) => const DuelSetupScreen()) : null,
               icon: const Icon(Icons.people_alt_outlined),
-              label: const Text('1 contra 1 neste dispositivo'),
+              label: Text(tr('1 contra 1 neste dispositivo')),
             ),
             if (!hasDecks)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Cria primeiro um deck.', style: theme.textTheme.bodySmall),
+                child: Text(tr('Cria primeiro um deck.'), style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: () =>
-                  _push(const StatsScreen()),
+              onPressed: () => _push(const StatsScreen()),
               icon: const Icon(Icons.bar_chart),
-              label: const Text('Histórico e estatísticas'),
+              label: Text(tr('Histórico e estatísticas')),
             ),
             const SizedBox(height: 32),
             Text(
-              'EDHere v$appVersion · conteúdo de fãs não oficial, permitido pela Fan Content '
-              'Policy. Não aprovado/endossado pela Wizards.',
+              tr('EDHere v{appVersion} · conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não aprovado/endossado pela Wizards.',
+                  {'appVersion': appVersion}),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant, fontSize: 11),
             ),

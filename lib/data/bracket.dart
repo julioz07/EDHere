@@ -1,4 +1,5 @@
 import 'package:card_db/card_db.dart';
+import '../l10n/l10n.dart';
 
 /// Estimativa do bracket de Commander a partir das cartas do deck.
 ///
@@ -31,16 +32,16 @@ class BracketEstimate {
   }
 
   String get label => switch (minimum) {
-        2 => '1–2 (Exhibition / Core)',
-        3 => '3 (Upgraded)',
-        _ => '4+ (Optimized / cEDH)',
+        2 => tr('1–2 (Exhibition / Core)'),
+        3 => tr('3 (Upgraded)'),
+        _ => tr('4+ (Optimized / cEDH)'),
       };
 
   /// Rótulo curto, para o lobby.
   String get short => switch (minimum) {
-        2 => 'bracket 1–2',
-        3 => 'bracket 3',
-        _ => 'bracket 4+',
+        2 => tr('bracket 1–2'),
+        3 => tr('bracket 3'),
+        _ => tr('bracket 4+'),
       };
 
   static final _extraTurn = RegExp(r'takes? an extra turn|extra turn after this one', caseSensitive: false);
@@ -67,9 +68,18 @@ class BracketEstimate {
         if (cards[e.oracleId] case final c?) c,
     ];
     return BracketEstimate(
-      [for (final c in list) if (c.gameChanger) c.name],
-      extraTurns: [for (final c in list) if (isExtraTurn(c)) c.name],
-      landDenial: [for (final c in list) if (isLandDenial(c)) c.name],
+      [
+        for (final c in list)
+          if (c.gameChanger) c.name
+      ],
+      extraTurns: [
+        for (final c in list)
+          if (isExtraTurn(c)) c.name
+      ],
+      landDenial: [
+        for (final c in list)
+          if (isLandDenial(c)) c.name
+      ],
     );
   }
 }

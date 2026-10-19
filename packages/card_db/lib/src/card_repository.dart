@@ -45,10 +45,22 @@ class CardRepository {
       db.dispose();
       return null;
     }
-    return CardRepository._(db);
+    final localized = db
+        .select("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'card_i18n'")
+        .isNotEmpty;
+    return CardRepository._(db).._localized = localized;
   }
 
   final Database _db;
+
+  /// Há cartas numa língua (tabela card_i18n): junta-se às consultas.
+  bool _localized = false;
+
+  /// `cards`, com o texto e a impressão da língua quando há.
+  String get _from => _localized ? 'cards LEFT JOIN card_i18n ON l_oracle_id = cards.oracle_id' : 'cards';
+
+  /// A língua das cartas na base ("en" sem traduções).
+  String get cardLang => meta['card_lang'] ?? 'en';
   final Map<String, Card> _cache = {};
 
   void close() => _db.dispose();
@@ -60,17 +72,17 @@ class CardRepository {
   /// Pesquisa. Com [restrictTo], só entre essas cartas (por exemplo a
   /// coleção); nesse caso uma pesquisa vazia devolve-as todas.
   SearchResult search(String query, {int limit = 60, int offset = 0, Iterable<String>? restrictTo}) {
-    final q = compileSearch(query);
+    final q = compileSearch(query, localized: _localized);
     if (q.isEmpty && restrictTo == null) return SearchResult(const [], 0, q.errors);
     var where = q.where;
     final args = [...q.args];
     if (restrictTo != null) {
-      where = '($where) AND oracle_id IN (SELECT value FROM json_each(?))';
+      where = '($where) AND cards.oracle_id IN (SELECT value FROM json_each(?))';
       args.add(jsonEncode(restrictTo.toList()));
     }
-    final total = _db.select('SELECT COUNT(*) AS n FROM cards WHERE $where', args).first['n'] as int;
+    final total = _db.select('SELECT COUNT(*) AS n FROM $_from WHERE $where', args).first['n'] as int;
     final rows = _db.select(
-      'SELECT * FROM cards WHERE $where ORDER BY ${q.orderBy} LIMIT ? OFFSET ?',
+      'SELECT * FROM $_from WHERE $where ORDER BY ${q.orderBy} LIMIT ? OFFSET ?',
       [...args, limit, offset],
     );
     return SearchResult([for (final r in rows) _remember(Card.fromRow(r))], total, q.errors);
@@ -79,7 +91,7 @@ class CardRepository {
   Card? get(String oracleId) {
     final hit = _cache[oracleId];
     if (hit != null) return hit;
-    final rows = _db.select('SELECT * FROM cards WHERE oracle_id = ?', [oracleId]);
+    final rows = _db.select('SELECT * FROM $_from WHERE cards.oracle_id = ?', [oracleId]);
     return rows.isEmpty ? null : _remember(Card.fromRow(rows.first));
   }
 
@@ -93,7 +105,7 @@ class CardRepository {
     for (var i = 0; i < missing.length; i += 500) {
       final chunk = missing.sublist(i, (i + 500).clamp(0, missing.length));
       final rows = _db.select(
-        'SELECT * FROM cards WHERE oracle_id IN (${chunk.map((_) => '?').join(',')})',
+        'SELECT * FROM $_from WHERE cards.oracle_id IN (${chunk.map((_) => '?').join(',')})',
         chunk,
       );
       for (final r in rows) {
@@ -108,19 +120,25 @@ class CardRepository {
   /// acentos). Aceita o nome completo ou o de uma face. Prefere cartas de
   /// jogo a tokens com o mesmo nome.
   Card? findByName(String name) {
-    final rows = _db.select('''
-      SELECT c.* FROM card_names n JOIN cards c ON c.oracle_id = n.oracle_id
+    final norm = normalizeName(name);
+    var rows = _db.select('''
+      SELECT c.oracle_id FROM card_names n JOIN cards c ON c.oracle_id = n.oracle_id
       WHERE n.name_norm = ?
       ORDER BY (c.name_norm = n.name_norm) DESC, c.is_extra, c.is_paper DESC
-      LIMIT 1''', [normalizeName(name)]);
-    return rows.isEmpty ? null : _remember(Card.fromRow(rows.first));
+      LIMIT 1''', [norm]);
+    // Também pelo nome impresso na língua das cartas ("Orsi Grizzly").
+    if (rows.isEmpty && _localized) {
+      rows = _db.select('SELECT l_oracle_id AS oracle_id FROM card_i18n WHERE l_name_norm = ? LIMIT 1', [norm]);
+    }
+    if (rows.isEmpty) return null;
+    return get(rows.first['oracle_id'] as String);
   }
 
   /// O token oficial com este nome (e P/R, se dado). Entre vários, prefere
   /// o mais simples (menos texto), que é o que as cartas costumam criar.
   Card? tokenNamed(TokenHint hint) {
     final rows = _db.select('''
-      SELECT * FROM cards WHERE is_token = 1 AND name_norm = ?
+      SELECT * FROM $_from WHERE is_token = 1 AND name_norm = ?
       ORDER BY length(coalesce(oracle_text, '')), print_id LIMIT 30''', [normalizeName(hint.name)]);
     final cards = [for (final r in rows) Card.fromRow(r)];
     if (cards.isEmpty) return null;
@@ -151,10 +169,11 @@ class CardRepository {
   List<Card> suggest(String prefix, {int limit = 8}) {
     final p = normalizeName(prefix);
     if (p.isEmpty) return const [];
-    final rows = _db.select(r'''
-      SELECT * FROM cards WHERE name_norm LIKE ? ESCAPE '\' AND is_extra = 0
-      ORDER BY edhrec_rank IS NULL, edhrec_rank LIMIT ?''',
-        ['${p.replaceAll('%', r'\%').replaceAll('_', r'\_')}%', limit]);
+    final like = '${p.replaceAll('%', r'\%').replaceAll('_', r'\_')}%';
+    final rows = _db.select('''
+      SELECT * FROM $_from WHERE (name_norm LIKE ? ESCAPE '\\'${_localized ? " OR l_name_norm LIKE ? ESCAPE '\\'" : ''})
+      AND is_extra = 0
+      ORDER BY edhrec_rank IS NULL, edhrec_rank LIMIT ?''', [like, if (_localized) like, limit]);
     return [for (final r in rows) _remember(Card.fromRow(r))];
   }
 
@@ -197,20 +216,11 @@ class CardRepository {
   /// Impressões (uma por carta) que correspondem a uma condição SQL sobre
   /// `cards`, para calcular os pacotes de imagens.
   List<ImageRef> imageRefs(String where, [List<Object?> args = const []]) {
-    final rows = _db.select(
-        'SELECT oracle_id, print_id, img_small, img_normal, faces_json FROM cards '
-        'WHERE $where',
-        args);
+    final rows = _db.select('SELECT * FROM $_from WHERE $where', args);
     final out = <ImageRef>[];
     for (final r in rows) {
-      final card = Card.fromRow({
-        'oracle_id': r['oracle_id'],
-        'name': '',
-        'print_id': r['print_id'],
-        'img_small': r['img_small'],
-        'img_normal': r['img_normal'],
-        'faces_json': r['faces_json'],
-      });
+      // As imagens da língua das cartas, quando há impressão nela.
+      final card = Card.fromRow(r);
       out.addAll(ImageRef.allOf(card));
     }
     return out;

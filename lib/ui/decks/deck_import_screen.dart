@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../qr_scan_screen.dart';
 import 'deck_editor_screen.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Importar uma lista colada (Moxfield, Archidekt, MTGO, Arena).
 class DeckImportScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,7 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     final shared = SharedDeck.tryDecode(raw);
     if (shared == null) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Este QR não é de um deck do EDHere.')));
+          .showSnackBar(SnackBar(content: Text(tr('Este QR não é de um deck do EDHere.'))));
       return;
     }
     setState(() {
@@ -94,7 +95,7 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
         ? _name.text.trim()
         : commanders.isNotEmpty
             ? commanders.join(' + ')
-            : 'Deck importado';
+            : tr('Deck importado');
     var entries = r.entries;
     String? warning;
     // As versões da lista (coleção e número): as que já se conhecem saem
@@ -102,11 +103,14 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     if (_usePrints && r.printings.isNotEmpty) {
       setState(() {
         _busy = true;
-        _progress = 'A buscar as versões das cartas…';
+        _progress = tr('A buscar as versões das cartas…');
       });
       final cards = repo.getMany(r.printings.keys);
       final res = await ref.read(printsProvider).listPrints(r.printings, cards, onProgress: (done, total) {
-        if (mounted) setState(() => _progress = 'A buscar as versões das cartas… $done/$total');
+        if (mounted) {
+          setState(() => _progress =
+              tr('A buscar as versões das cartas… {done}/{total}', {'done': done, 'total': total}));
+        }
       });
       if (!mounted) return;
       entries = [
@@ -114,10 +118,12 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           res.prints[e.oracleId] != null ? e.copyWith(printId: res.prints[e.oracleId]) : e,
       ];
       if (res.offline) {
-        warning = 'Sem internet: ${res.missing} cartas ficaram com a versão base. '
-            'Podes trocar a versão de cada carta no deck.';
+        warning = tr(
+            'Sem internet: {missing} cartas ficaram com a versão base. Podes trocar a versão de cada carta no deck.',
+            {'missing': res.missing});
       } else if (res.missing > 0) {
-        warning = '${res.missing} versões não foram encontradas no Scryfall; ficaram as versões base.';
+        warning = tr('{missing} versões não foram encontradas no Scryfall; ficaram as versões base.',
+            {'missing': res.missing});
       }
       setState(() {
         _busy = false;
@@ -130,7 +136,8 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           entries: entries,
           notes: r.unresolved.isEmpty
               ? ''
-              : 'Não encontradas na importação:\n${r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')}',
+              : tr('Não encontradas na importação:\n{v}',
+                  {'v': r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')}),
         ));
     if (warning != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(warning)));
@@ -145,9 +152,10 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Importar lista'),
+        title: Text(tr('Importar lista')),
         actions: [
-          IconButton(tooltip: 'Ler QR de um deck', onPressed: _scan, icon: const Icon(Icons.qr_code_scanner)),
+          IconButton(
+              tooltip: tr('Ler QR de um deck'), onPressed: _scan, icon: const Icon(Icons.qr_code_scanner)),
         ],
       ),
       body: MaxWidth(
@@ -157,12 +165,12 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Nome do deck'),
+            decoration: InputDecoration(labelText: tr('Nome do deck')),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _format,
-            decoration: const InputDecoration(labelText: 'Formato'),
+            decoration: InputDecoration(labelText: tr('Formato')),
             items: [
               for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
             ],
@@ -176,10 +184,10 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
             style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
             decoration: InputDecoration(
               alignLabelWithHint: true,
-              labelText: 'Lista',
-              hintText: 'Commander\n1 Atraxa, Praetors\' Voice\n\nDeck\n1 Sol Ring\n35 Forest\n…',
+              labelText: tr('Lista'),
+              hintText: tr('Commander\n1 Atraxa, Praetors\' Voice\n\nDeck\n1 Sol Ring\n35 Forest\n…'),
               suffixIcon: IconButton(
-                tooltip: 'Colar',
+                tooltip: tr('Colar'),
                 icon: const Icon(Icons.content_paste),
                 onPressed: _paste,
               ),
@@ -187,29 +195,29 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Aceita "1 Nome", "1x Nome (SET) 123 *F* [Categoria]" e secções Commander, '
-            'Deck, Sideboard e Maybeboard. Sem secções, uma linha em branco separa o '
-            'sideboard (estilo MTGO).',
+            tr('Aceita "1 Nome", "1x Nome (SET) 123 *F* [Categoria]" e secções Commander, Deck, Sideboard e Maybeboard. Sem secções, uma linha em branco separa o sideboard (estilo MTGO).'),
             style: theme.textTheme.bodySmall,
           ),
           if (_unresolved != null) ...[
             const SizedBox(height: 12),
-            Text('$_found cartas reconhecidas.', style: theme.textTheme.titleSmall),
+            Text(tr('{found} cartas reconhecidas.', {'found': _found}), style: theme.textTheme.titleSmall),
             if (_withPrint > 0)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _usePrints,
                 onChanged: (v) => setState(() => _usePrints = v!),
-                title: const Text('Usar as versões da lista'),
-                subtitle: Text('$_withPrint cartas trazem coleção e número: ficam com essa arte '
-                    '(as que não estão no telemóvel vêm do Scryfall).'),
+                title: Text(tr('Usar as versões da lista')),
+                subtitle: Text(tr(
+                    '{withPrint} cartas trazem coleção e número: ficam com essa arte (as que não estão no telemóvel vêm do Scryfall).',
+                    {'withPrint': _withPrint})),
               ),
             if (_unresolved!.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text('Não encontradas (${_unresolved!.length}):',
+              Text(tr('Não encontradas ({n}):', {'n': _unresolved!.length}),
                   style: TextStyle(color: theme.colorScheme.error)),
               for (final l in _unresolved!.take(30))
-                Text('linha ${l.line}: ${l.qty} ${l.name}', style: theme.textTheme.bodySmall),
+                Text(tr('linha {line}: {qty} {v}', {'line': l.line, 'qty': l.qty, 'v': l.name}),
+                    style: theme.textTheme.bodySmall),
             ],
           ],
           const SizedBox(height: 16),
@@ -220,9 +228,9 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
             const SizedBox(height: 12),
           ],
           Row(children: [
-            Expanded(child: OutlinedButton(onPressed: _busy ? null : _check, child: const Text('Verificar'))),
+            Expanded(child: OutlinedButton(onPressed: _busy ? null : _check, child: Text(tr('Verificar')))),
             const SizedBox(width: 12),
-            Expanded(child: FilledButton(onPressed: _busy ? null : _import, child: const Text('Importar'))),
+            Expanded(child: FilledButton(onPressed: _busy ? null : _import, child: Text(tr('Importar')))),
           ]),
         ],
       )),

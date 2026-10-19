@@ -13,6 +13,7 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import '../widgets/set_symbol.dart';
 import 'limited_common.dart';
+import '../../l10n/l10n.dart';
 
 /// Nomes dos produtos JumpStart (o código vem do MTGJSON).
 const _jumpstartNames = {
@@ -134,7 +135,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
           name: 'JumpStart · ${_chosen.map((p) => p.theme).join(' + ')}',
           format: 'limited',
           entries: entries,
-          notes: 'Pacotes: ${_chosen.map((p) => '${p.name} (${p.set})').join(', ')}',
+          notes: tr('Pacotes: {v}', {'v': _chosen.map((p) => '${p.name} (${p.set})').join(', ')}),
         ));
     if (!mounted) return;
     await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
@@ -148,7 +149,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
     final sets = {for (final p in _all) p.set}.toList()..sort();
     if (_chosen.length == 2) return _reveal(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('JumpStart')),
+      appBar: AppBar(title: Text(tr('JumpStart'))),
       body: _all.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : MaxWidth(
@@ -156,9 +157,10 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
               child: ListView(padding: const EdgeInsets.all(16), children: [
                 Text(
                   _chosen.isEmpty
-                      ? 'Escolhe o primeiro pacote. Só vês o tema, as cores e a carta de destaque; as outras '
-                          '19 cartas aparecem no fim.'
-                      : 'Primeiro: ${_chosen.first.theme}. Agora escolhe o segundo pacote.',
+                      ? tr(
+                          'Escolhe o primeiro pacote. Só vês o tema, as cores e a carta de destaque; as outras 19 cartas aparecem no fim.')
+                      : tr('Primeiro: {theme}. Agora escolhe o segundo pacote.',
+                          {'theme': _chosen.first.theme}),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (_chosen.isNotEmpty)
@@ -171,7 +173,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                         _deal();
                       },
                       icon: const Icon(Icons.undo, size: 18),
-                      label: const Text('Trocar o primeiro'),
+                      label: Text(tr('Trocar o primeiro')),
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -180,7 +182,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                     height: 44,
                     child: ListView(scrollDirection: Axis.horizontal, children: [
                       ChoiceChip(
-                        label: Text('Todos (${_all.length})'),
+                        label: Text(tr('Todos ({n})', {'n': _all.length})),
                         selected: _set == null,
                         onSelected: (_) {
                           setState(() => _set = null);
@@ -223,7 +225,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                     style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
                     onPressed: _deal,
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Outros três'),
+                    label: Text(tr('Outros três')),
                   ),
                 ),
               ]),
@@ -252,7 +254,9 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('${_chosen.map((p) => p.theme).join(' + ')} · ${cards.length} cartas')),
+      appBar: AppBar(
+          title: Text(
+              tr('{v} · {n} cartas', {'v': _chosen.map((p) => p.theme).join(' + '), 'n': cards.length}))),
       body: ListView(padding: const EdgeInsets.only(bottom: 96), children: [
         for (var i = 0; i < _chosen.length; i++) ...[
           Padding(
@@ -286,7 +290,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                   _deal();
                 },
                 icon: const Icon(Icons.restart_alt),
-                label: const Text('Escolher outros'),
+                label: Text(tr('Escolher outros')),
               ),
             ),
             const SizedBox(width: 12),
@@ -294,7 +298,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
               child: FilledButton.icon(
                 onPressed: () => _save(cards),
                 icon: const Icon(Icons.save_outlined),
-                label: const Text('Guardar o deck'),
+                label: Text(tr('Guardar o deck')),
               ),
             ),
           ]),
@@ -349,7 +353,7 @@ class _PacketCard extends ConsumerWidget {
               style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 8)),
               onPressed: onTap,
-              child: const FittedBox(child: Text('Escolher')),
+              child: FittedBox(child: Text(tr('Escolher'))),
             ),
           ]),
         ),

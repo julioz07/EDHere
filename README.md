@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.3.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.4.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -55,6 +55,11 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 - Religação automática a meio do jogo; se a app fechar, volta-se ao jogo com a mão e o grimório como estavam.
 - Imagens em falta (por exemplo, versões alternativas de outro jogador) podem vir da internet ou do próprio dispositivo desse jogador, pela rede local.
 
+**Línguas**
+- A app em português, inglês, espanhol e italiano. Na primeira abertura fica na língua do telemóvel (inglês se for outra); muda-se nas Definições ou na introdução.
+- As cartas também: nas Definições (ou antes do primeiro download) escolhe-se a língua das cartas, e a app descarrega do Scryfall o nome, o tipo, o texto e a imagem de cada carta nessa língua (~20 MB; as que não existem nessa língua ficam em inglês). A pesquisa encontra a carta pelo nome nas duas línguas; listas, exportações e regras continuam com o nome Oracle (inglês).
+- O registo do jogo e as mensagens de validação seguem a língua de cada telemóvel.
+
 **Primeira abertura**
 - Introdução em 4 ecrãs: o que é a app, decks e boosters, jogar juntos e aprender, e porque é preciso descarregar a base de cartas. O último ecrã arranca o download.
 
@@ -70,6 +75,8 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 | `packages/card_db` | Importação do Scryfall, pesquisa, decks, validação, listas em texto, versões (SQLite) |
 | `lib/net` | Sala: anfitrião TCP, cliente com religação, mensagens diretas, mDNS, hotspot, QR |
 | `lib/data` | Descargas, imagens, versões, boosters, decks por montar, definições, providers (Riverpod) |
+| `lib/l10n` | Línguas: `tr()` e as traduções geradas (`strings_*.g.dart`) |
+| `tool/l10n` | Traduções (`src/*.json`) e ferramentas: `extract.py` recolhe as frases, `build.py` gera as tabelas e diz o que falta |
 | `lib/game` | `GameController` (núcleo ↔ UI), `NetworkGame` (lobby e jogo em rede), draft, jogos gravados |
 | `lib/ui` | Ecrãs |
 | `android/.../MainActivity.kt` | Hotspot local (`LocalOnlyHotspot`) por platform channel |
@@ -94,6 +101,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.4.0 | Línguas: app em português, inglês, espanhol e italiano (deteta a do telemóvel; inglês por defeito), seletor nas Definições e na introdução; cartas na língua escolhida (nome, texto e imagem do Scryfall), com pesquisa pelos dois nomes. Planeswalkers mostram as habilidades na língua das cartas |
 | 1.3.0 | Tutorial: capítulos "Os tipos de carta a fundo" (instantâneo e feitiço, artefactos, equipamentos com prática de Equip, veículos, encantamentos, auras, sagas, lendários) e "Planeswalkers e lealdade" (com jogo); glossário maior. Mesa: os planeswalkers entram com a lealdade inicial e as habilidades +N/−N usam-se no menu da carta, com registo. Brief da landing page em `docs/` |
 | 1.2.1 | Tutorial: os custos ({1}{G}, {T}…) aparecem como símbolos de mana; a vez dos adversários vai mais devagar (cerca de 3,5 s por jogada) e o guia mostra a lista do que fizeram |
 | 1.2.0 | Introdução na primeira abertura (4 ecrãs com prints da app) que acaba no download da base de cartas; "Ver a introdução" nas Definições. O pacote "As minhas cartas" e a importação de backups descarregam as versões escolhidas nos decks |

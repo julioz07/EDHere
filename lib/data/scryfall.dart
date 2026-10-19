@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../l10n/l10n.dart';
 
 /// O Scryfall pede um User-Agent próprio e um Accept explícito.
 const scryfallHeaders = {
@@ -35,7 +36,7 @@ Future<Map<String, BulkFile>> fetchBulkIndex() async {
     scryfallHeaders.forEach(req.headers.set);
     final res = await req.close().timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
-      throw HttpException('Scryfall respondeu ${res.statusCode}');
+      throw HttpException(tr('Scryfall respondeu {statusCode}', {'statusCode': res.statusCode}));
     }
     final body = jsonDecode(await res.transform(utf8.decoder).join()) as Map<String, dynamic>;
     return {
@@ -65,7 +66,9 @@ Future<void> downloadFile(
     final req = await client.getUrl(Uri.parse(url));
     scryfallHeaders.forEach(req.headers.set);
     final res = await req.close();
-    if (res.statusCode != 200) throw HttpException('HTTP ${res.statusCode} em $url');
+    if (res.statusCode != 200) {
+      throw HttpException(tr('HTTP {statusCode} em {url}', {'statusCode': res.statusCode, 'url': url}));
+    }
     final total = res.contentLength;
     final sink = tmp.openWrite();
     var received = 0;
@@ -91,5 +94,5 @@ Future<void> downloadFile(
 class DownloadCancelled implements Exception {
   const DownloadCancelled();
   @override
-  String toString() => 'Cancelado';
+  String toString() => tr('Cancelado');
 }

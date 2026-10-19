@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'prints.dart';
 import 'deck.dart';
 import 'deck_store.dart';
+import 'i18n.dart';
 
 /// Ficheiro de backup do EDHere: decks, coleção, histórico e versões
 /// escolhidas, num JSON que se pode guardar onde se quiser (Drive, PC…) e
@@ -129,14 +130,14 @@ class Backup {
     try {
       raw = jsonDecode(text);
     } on FormatException {
-      throw const FormatException('Este ficheiro não é um backup do EDHere.');
+      throw FormatException(cardDbTr('Este ficheiro não é um backup do EDHere.'));
     }
     if (raw is! Map || raw['kind'] != kind) {
-      throw const FormatException('Este ficheiro não é um backup do EDHere.');
+      throw FormatException(cardDbTr('Este ficheiro não é um backup do EDHere.'));
     }
     final j = raw.cast<String, dynamic>();
     if ((j['version'] as num? ?? 1) > version) {
-      throw const FormatException('Backup de uma versão mais recente da app. Atualiza o EDHere.');
+      throw FormatException(cardDbTr('Backup de uma versão mais recente da app. Atualiza o EDHere.'));
     }
     final names = <String, String>{};
     List<Map<String, dynamic>> list(String k) =>
@@ -148,7 +149,7 @@ class Backup {
         for (final d in list('decks'))
           Deck(
             id: (d['id'] as num?)?.toInt(),
-            name: d['name'] as String? ?? 'Deck',
+            name: d['name'] as String? ?? cardDbTr('Deck'),
             format: d['format'] as String? ?? 'free',
             notes: d['notes'] as String? ?? '',
             createdAt: date(d['created']),

@@ -2,6 +2,7 @@ import 'card.dart';
 import 'colors.dart';
 import 'deck.dart';
 import 'formats.dart';
+import 'i18n.dart';
 
 enum IssueLevel { error, warning }
 
@@ -40,7 +41,7 @@ List<DeckIssue> validateDeck(
   var identity = ManaColors.all;
   if (format.commandZone == CommandZone.commander) {
     if (command.isEmpty) {
-      err('Falta escolher o comandante.');
+      err(cardDbTr('Falta escolher o comandante.'));
     } else {
       _checkCommanders(commanderCards, format, err);
       identity = commanderCards.fold(0, (m, c) => m | c.identityMask);
@@ -60,28 +61,28 @@ List<DeckIssue> validateDeck(
     final spells = commanderCards
         .where((c) => c.frontType.contains('Instant') || c.frontType.contains('Sorcery'))
         .toList();
-    if (walkers.length != 1) err('Oathbreaker precisa de exatamente um planeswalker na zona de comando.');
-    if (spells.length != 1) err('Oathbreaker precisa de exatamente um signature spell (instantâneo ou feitiço).');
+    if (walkers.length != 1) err(cardDbTr('Oathbreaker precisa de exatamente um planeswalker na zona de comando.'));
+    if (spells.length != 1) err(cardDbTr('Oathbreaker precisa de exatamente um signature spell (instantâneo ou feitiço).'));
     if (walkers.isNotEmpty) identity = walkers.first.identityMask;
     for (final s in spells) {
       if (s.identityMask & ~identity != 0) {
-        err('O signature spell ${s.name} está fora da identidade de cor do oathbreaker.', s.oracleId);
+        err(cardDbTr('O signature spell {v} está fora da identidade de cor do oathbreaker.', {'v': s.name}), s.oracleId);
       }
     }
   } else if (command.isNotEmpty) {
-    warn('Este formato não tem zona de comando; as cartas lá contam como fora do deck.');
+    warn(cardDbTr('Este formato não tem zona de comando; as cartas lá contam como fora do deck.'));
   }
 
   // Tamanho.
   final size = format.hasCommandZone ? deck.playableCount : deck.count(Board.main);
   if (format.exactDeck != null && size != format.exactDeck) {
-    err('O deck tem $size cartas; ${format.label} pede exatamente ${format.exactDeck}.');
+    err(cardDbTr('O deck tem {size} cartas; {v} pede exatamente {exactDeck}.', {'size': size, 'v': format.label, 'exactDeck': format.exactDeck}));
   }
   if (format.minDeck != null && size < format.minDeck!) {
-    err('O deck tem $size cartas; ${format.label} pede pelo menos ${format.minDeck}.');
+    err(cardDbTr('O deck tem {size} cartas; {v} pede pelo menos {minDeck}.', {'size': size, 'v': format.label, 'minDeck': format.minDeck}));
   }
   if (format.maxSideboard != null && deck.count(Board.side) > format.maxSideboard!) {
-    err('O sideboard tem ${deck.count(Board.side)} cartas; o máximo é ${format.maxSideboard}.');
+    err(cardDbTr('O sideboard tem {v} cartas; o máximo é {maxSideboard}.', {'v': deck.count(Board.side), 'maxSideboard': format.maxSideboard}));
   }
 
   // Cópias, legalidade e identidade, por carta.
@@ -95,26 +96,26 @@ List<DeckIssue> validateDeck(
   for (final MapEntry(key: id, value: n) in copies.entries) {
     final card = cards[id];
     if (card == null) {
-      warn('Carta desconhecida na base local ($id).', id);
+      warn(cardDbTr('Carta desconhecida na base local ({id}).', {'id': id}), id);
       continue;
     }
     final status = legality[id];
     final limit = status == 'restricted' ? 1 : card.copyLimit(format.maxCopies);
     if (limit != null && n > limit) {
       err(format.isSingleton && limit == 1
-          ? '${card.name}: $n cópias num formato singleton.'
-          : '${card.name}: $n cópias; o máximo é $limit.', id);
+          ? cardDbTr('{v}: {n} cópias num formato singleton.', {'v': card.name, 'n': n})
+          : cardDbTr('{v}: {n} cópias; o máximo é {limit}.', {'v': card.name, 'n': n, 'limit': limit}), id);
     }
     if (status == 'banned') {
-      err('${card.name} está banida em ${format.label}.', id);
+      err(cardDbTr('{v} está banida em {v2}.', {'v': card.name, 'v2': format.label}), id);
     } else if (status == null && format.legalityKey != null) {
       // Formatos sem lista de legalidade (Limited) aceitam tudo o que sai.
-      err('${card.name} não é legal em ${format.label}.', id);
+      err(cardDbTr('{v} não é legal em {v2}.', {'v': card.name, 'v2': format.label}), id);
     }
     if (format.hasCommandZone &&
         commanderCards.isNotEmpty &&
         card.identityMask & ~identity != 0) {
-      err('${card.name} está fora da identidade de cor do comandante.', id);
+      err(cardDbTr('{v} está fora da identidade de cor do comandante.', {'v': card.name}), id);
     }
   }
   return issues;
@@ -126,16 +127,15 @@ void _checkCommanders(
     final ok = c.canBeCommander ||
         (format.commanderMayBePlaneswalker && c.isLegendary && c.frontType.contains('Planeswalker')) ||
         (cmds.length == 2 && _isBackground(c));
-    if (!ok) err('${c.name} não pode ser comandante.', c.oracleId);
+    if (!ok) err(cardDbTr('{v} não pode ser comandante.', {'v': c.name}), c.oracleId);
   }
   if (cmds.length > 2) {
-    err('No máximo dois comandantes (parceiros).');
+    err(cardDbTr('No máximo dois comandantes (parceiros).'));
   } else if (cmds.length == 2 &&
       !canPartner(cmds[0], cmds[1]) &&
       // No commander draft, duas lendas monocolores também podem.
       !(format.id == 'commanderdraft' && cmds.every((c) => c.canBeCommander && _bits(c.colorMask) == 1))) {
-    err('${cmds[0].name} e ${cmds[1].name} não podem ser comandantes juntos '
-        '(precisam de Partner, Friends forever, Background ou Doctor\'s companion).');
+    err(cardDbTr('{v} e {v2} não podem ser comandantes juntos (precisam de Partner, Friends forever, Background ou Doctor\'s companion).', {'v': cmds[0].name, 'v2': cmds[1].name}));
   }
 }
 

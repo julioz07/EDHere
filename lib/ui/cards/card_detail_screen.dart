@@ -10,6 +10,7 @@ import '../widgets/card_view.dart';
 import '../widgets/set_symbol.dart';
 import '../widgets/mana.dart';
 import 'versions.dart';
+import '../../l10n/l10n.dart';
 
 const _formatLabels = {
   'commander': 'Commander',
@@ -87,13 +88,17 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           if (inDeck)
             ListTile(
               leading: const Icon(Icons.style_outlined),
-              title: Text(p == null ? 'Usar a versão por defeito neste deck' : 'Usar ${p.label} neste deck'),
+              title: Text(p == null
+                  ? tr('Usar a versão por defeito neste deck')
+                  : tr('Usar {v} neste deck', {'v': p.label})),
               onTap: () => Navigator.pop(ctx, 'deck'),
             ),
           ListTile(
             leading: const Icon(Icons.favorite_border),
-            title: Text(p == null ? 'Deixar de ter versão preferida' : 'Usar ${p.label} em todo o lado'),
-            subtitle: const Text('Versão preferida desta carta (decks sem versão própria)'),
+            title: Text(p == null
+                ? tr('Deixar de ter versão preferida')
+                : tr('Usar {v} em todo o lado', {'v': p.label})),
+            subtitle: Text(tr('Versão preferida desta carta (decks sem versão própria)')),
             onTap: () => Navigator.pop(ctx, 'global'),
           ),
         ]),
@@ -144,7 +149,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
     final artist = card.faces.isNotEmpty ? (card.faces[_face].artist ?? card.artist) : card.artist;
 
     return Scaffold(
-      appBar: AppBar(title: Text(card.name, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(title: Text(card.displayName, overflow: TextOverflow.ellipsis)),
       body: _twoColumns(
         left: [
           Center(
@@ -158,14 +163,14 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               child: TextButton.icon(
                 onPressed: () => setState(() => _face = (_face + 1) % card.faces.length),
                 icon: const Icon(Icons.flip),
-                label: const Text('Virar'),
+                label: Text(tr('Virar')),
               ),
             ),
           const SizedBox(height: 8),
           Text(
             [
-              if (artist != null) 'Ilustração: $artist',
-              '™ & © Wizards of the Coast',
+              if (artist != null) tr('Ilustração: {artist}', {'artist': artist}),
+              tr('™ & © Wizards of the Coast'),
             ].join(' · '),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -177,8 +182,12 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               onPressed: _chooseVersion,
               icon: const Icon(Icons.collections_outlined),
               label: Text(_versionCount == null
-                  ? 'Versões'
-                  : 'Versões ($_versionCount) · ${card.setCode.toUpperCase()} #${card.collectorNumber}'),
+                  ? tr('Versões')
+                  : tr('Versões ({versionCount}) · {v} #{collectorNumber}', {
+                      'versionCount': _versionCount,
+                      'v': card.setCode.toUpperCase(),
+                      'collectorNumber': card.collectorNumber
+                    })),
             ),
           ),
           const SizedBox(height: 12),
@@ -189,7 +198,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           ],
         ],
         right: [
-          for (final f in faces) ...[
+          for (final (i, f) in faces.indexed) ...[
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -198,15 +207,21 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                   children: [
                     Row(children: [
                       Expanded(
-                        child: Text(f?.name ?? card.name,
+                        child: Text(f == null ? card.displayName : card.displayNameOf(i),
                             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                       ),
                       ManaCost(f?.manaCost ?? card.manaCost, size: 18),
                     ]),
+                    // O nome Oracle (inglês), quando a carta está noutra língua.
+                    if (card.printed != null &&
+                        (f?.name ?? card.name) != (f == null ? card.displayName : card.displayNameOf(i)))
+                      Text(f?.name ?? card.name,
+                          style:
+                              theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 4),
-                    Text(f?.typeLine ?? card.typeLine, style: theme.textTheme.bodyMedium),
+                    Text(card.displayTypeOf(f == null ? -1 : i), style: theme.textTheme.bodyMedium),
                     const SizedBox(height: 10),
-                    OracleText(f?.oracleText ?? card.oracleText,
+                    OracleText(card.displayTextOf(f == null ? -1 : i),
                         style: theme.textTheme.bodyMedium?.copyWith(height: 1.35)),
                     if ((f?.power ?? card.power) != null) ...[
                       const SizedBox(height: 8),
@@ -215,7 +230,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                     ],
                     if ((f?.loyalty ?? card.loyalty) != null) ...[
                       const SizedBox(height: 8),
-                      Text('Lealdade ${f?.loyalty ?? card.loyalty}', style: theme.textTheme.titleSmall),
+                      Text(tr('Lealdade {loyalty}', {'loyalty': f?.loyalty ?? card.loyalty}),
+                          style: theme.textTheme.titleSmall),
                     ],
                   ],
                 ),
@@ -226,18 +242,18 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
             Chip(
               label: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Text('Identidade  '),
+                Text(tr('Identidade  ')),
                 ColorIdentity(card.identityMask, size: 16),
               ]),
             ),
-            if (card.gameChanger) const Chip(label: Text('Game Changer')),
+            if (card.gameChanger) Chip(label: Text(tr('Game Changer'))),
             Chip(
               avatar: SetSymbol(card.setCode, rarity: card.rarity, size: 18),
               label: Text('${card.setCode.toUpperCase()} · ${card.rarity}'),
             ),
           ]),
           const SizedBox(height: 16),
-          Text('Legalidade', style: theme.textTheme.titleMedium),
+          Text(tr('Legalidade'), style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -248,7 +264,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           ),
           if (rulings.isNotEmpty) ...[
             const SizedBox(height: 20),
-            Text('Rulings', style: theme.textTheme.titleMedium),
+            Text(tr('Rulings'), style: theme.textTheme.titleMedium),
             for (final r in rulings)
               Padding(
                 padding: const EdgeInsets.only(top: 10),
@@ -273,10 +289,10 @@ class _LegalChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (text, color) = switch (status) {
-      'legal' => ('Legal', EdhColors.ok),
-      'banned' => ('Banida', EdhColors.bad),
-      'restricted' => ('Restrita', EdhColors.warn),
-      _ => ('Não', Theme.of(context).colorScheme.outline),
+      'legal' => (tr('Legal'), EdhColors.ok),
+      'banned' => (tr('Banida'), EdhColors.bad),
+      'restricted' => (tr('Restrita'), EdhColors.warn),
+      _ => (tr('Não'), Theme.of(context).colorScheme.outline),
     };
     return Container(
       width: 150,
@@ -314,8 +330,8 @@ class _OwnedAndDecks extends ConsumerWidget {
             Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
-              child:
-                  Text(owned == 0 ? 'Não tens esta carta' : 'Tens $owned', style: theme.textTheme.titleSmall),
+              child: Text(owned == 0 ? tr('Não tens esta carta') : tr('Tens {owned}', {'owned': owned}),
+                  style: theme.textTheme.titleSmall),
             ),
             IconButton(
               onPressed: owned > 0 ? () => collection.change(oracleId, -1) : null,
@@ -330,7 +346,7 @@ class _OwnedAndDecks extends ConsumerWidget {
             const Divider(),
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text('Nos meus decks', style: theme.textTheme.labelLarge),
+              child: Text(tr('Nos meus decks'), style: theme.textTheme.labelLarge),
             ),
             for (final (deck, qty) in decks)
               ListTile(
@@ -345,7 +361,7 @@ class _OwnedAndDecks extends ConsumerWidget {
               ),
             if (owned > 0 && decks.fold(0, (n, d) => n + d.$2) > owned)
               Text(
-                'Usada em mais decks do que as cópias que tens (é só um aviso).',
+                tr('Usada em mais decks do que as cópias que tens (é só um aviso).'),
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
           ],

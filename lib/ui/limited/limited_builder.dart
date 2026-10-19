@@ -10,6 +10,7 @@ import '../decks/deck_editor_screen.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'limited_common.dart';
+import '../../l10n/l10n.dart';
 
 const _basics = {'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest'};
 
@@ -86,7 +87,8 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     super.dispose();
   }
 
-  PoolCard _extraCard(db.Card c) => PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c);
+  PoolCard _extraCard(db.Card c) =>
+      PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c);
 
   /// setState e guarda (um pouco depois, para não escrever a cada toque).
   void _set(VoidCallback fn) {
@@ -242,14 +244,15 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           name: '${widget.title} · ${shortDate(now)}',
           format: widget.commander ? 'commanderdraft' : 'limited',
           entries: entries,
-          notes: 'O sideboard tem o resto da pool.',
+          notes: tr('O sideboard tem o resto da pool.'),
         ));
     _persist?.cancel();
     _builds.remove(_id);
     if (!mounted) return;
     final done = widget.onSaved;
     if (done != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${deck.name}" guardado.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tr('"{v}" guardado.', {'v': deck.name}))));
       done(context, deck);
       return;
     }
@@ -263,13 +266,13 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sair sem guardar o deck?'),
-        content: const Text('A pool e o que já escolheste ficam em Jogar → Decks por montar, para acabares '
-            'depois.'),
+        title: Text(tr('Sair sem guardar o deck?')),
+        content:
+            Text(tr('A pool e o que já escolheste ficam em Jogar → Decks por montar, para acabares depois.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: const Text('Ficar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: const Text('Deitar fora')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: const Text('Sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: Text(tr('Ficar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: Text(tr('Deitar fora'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'keep'), child: Text(tr('Sair'))),
         ],
       ),
     );
@@ -279,11 +282,11 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       final sure = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Deitar fora a pool?'),
-          content: Text('As ${widget.pool.length} cartas desta pool perdem-se.'),
+          title: Text(tr('Deitar fora a pool?')),
+          content: Text(tr('As {n} cartas desta pool perdem-se.', {'n': widget.pool.length})),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Deitar fora')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Deitar fora'))),
           ],
         ),
       );
@@ -331,14 +334,12 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           child: Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text('Comandante', style: theme.textTheme.titleLarge),
+              child: Text(tr('Comandante'), style: theme.textTheme.titleLarge),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Uma lenda que tiraste no draft. Podes ter duas se forem parceiras (Partner, Background) '
-                'ou se forem as duas de uma só cor. The Prismatic Piper e Faceless One estão sempre '
-                'disponíveis e ficam da cor que escolheres antes do jogo.',
+                tr('Uma lenda que tiraste no draft. Podes ter duas se forem parceiras (Partner, Background) ou se forem as duas de uma só cor. The Prismatic Piper e Faceless One estão sempre disponíveis e ficam da cor que escolheres antes do jogo.'),
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -384,14 +385,14 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         picked.length == 2
-                            ? 'Estas duas não podem ser comandantes juntas.'
-                            : 'Esta carta precisa de outra comandante (Background).',
+                            ? tr('Estas duas não podem ser comandantes juntas.')
+                            : tr('Esta carta precisa de outra comandante (Background).'),
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
                   FilledButton(
                     onPressed: valid(picked) ? () => Navigator.pop(ctx, true) : null,
-                    child: Text(picked.length == 2 ? 'Usar estas duas' : 'Usar este comandante'),
+                    child: Text(picked.length == 2 ? tr('Usar estas duas') : tr('Usar este comandante')),
                   ),
                 ]),
               ),
@@ -446,9 +447,11 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     final landNote = lands == 0
         ? null
         : lands > _recommendedLands + 2
-            ? 'Tens $lands terrenos; o normal é cerca de $_recommendedLands. Põe mais cartas da pool.'
+            ? tr('Tens {lands} terrenos; o normal é cerca de {recommendedLands}. Põe mais cartas da pool.',
+                {'lands': lands, 'recommendedLands': _recommendedLands})
             : lands < _recommendedLands - 3 && _total >= _target
-                ? 'Só $lands terrenos; o normal é cerca de $_recommendedLands.'
+                ? tr('Só {lands} terrenos; o normal é cerca de {recommendedLands}.',
+                    {'lands': lands, 'recommendedLands': _recommendedLands})
                 : null;
 
     final deckSection = [
@@ -459,30 +462,30 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
             Expanded(
               child: Text(
                   commanders.isEmpty
-                      ? 'Comandante'
-                      : 'Comandante: ${commanders.map((c) => c.base.name).join(' + ')}',
+                      ? tr('Comandante')
+                      : tr('Comandante: {v}', {'v': commanders.map((c) => c.base.name).join(' + ')}),
                   style: theme.textTheme.titleMedium),
             ),
             TextButton.icon(
               style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
               onPressed: _chooseCommander,
               icon: const Icon(Icons.workspace_premium_outlined, size: 18),
-              label: Text(commanders.isEmpty ? 'Escolher' : 'Trocar'),
+              label: Text(commanders.isEmpty ? tr('Escolher') : tr('Trocar')),
             ),
           ]),
         ),
       if (widget.commander && commanders.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(
-              'Escolhe primeiro o comandante: a pool passa a mostrar só as cartas da sua identidade de cor.'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Text(tr(
+              'Escolhe primeiro o comandante: a pool passa a mostrar só as cartas da sua identidade de cor.')),
         ),
       if (commanders.isNotEmpty)
         PoolGrid(target: 96, children: [for (final c in commanders) PoolCardView(card: c)]),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Row(children: [
-          Text('Deck (${_deck.length})', style: theme.textTheme.titleMedium),
+          Text(tr('Deck ({n})', {'n': _deck.length}), style: theme.textTheme.titleMedium),
           const Spacer(),
           for (var i = 1; i < 7; i++)
             Padding(
@@ -494,13 +497,14 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
         child: Text(
-            '$creatures criaturas · ${_nonLands - creatures} outras · $_poolLands terrenos da pool',
+            tr('{creatures} criaturas · {v} outras · {poolLands} terrenos da pool',
+                {'creatures': creatures, 'v': _nonLands - creatures, 'poolLands': _poolLands}),
             style: theme.textTheme.bodySmall),
       ),
       if (deck.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('Toca nas cartas da pool para as pôr no deck. Toque longo para ver a carta.'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(tr('Toca nas cartas da pool para as pôr no deck. Toque longo para ver a carta.')),
         )
       else
         PoolGrid(target: 96, children: [
@@ -509,20 +513,25 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Row(children: [
-          Expanded(child: Text('Terrenos básicos ($_basicCount)', style: theme.textTheme.titleMedium)),
+          Expanded(
+              child: Text(tr('Terrenos básicos ({basicCount})', {'basicCount': _basicCount}),
+                  style: theme.textTheme.titleMedium)),
           TextButton.icon(
             style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
             onPressed: _deck.isEmpty ? null : _suggestLands,
             icon: const Icon(Icons.auto_fix_high, size: 18),
-            label: Text('Completar até $_target'),
+            label: Text(tr('Completar até {target}', {'target': _target})),
           ),
         ]),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
         child: Text(
-          landNote ?? 'Terrenos no deck: $lands (recomendado: cerca de $_recommendedLands).',
-          style: theme.textTheme.bodySmall?.copyWith(color: landNote != null ? theme.colorScheme.error : null),
+          landNote ??
+              tr('Terrenos no deck: {lands} (recomendado: cerca de {recommendedLands}).',
+                  {'lands': lands, 'recommendedLands': _recommendedLands}),
+          style:
+              theme.textTheme.bodySmall?.copyWith(color: landNote != null ? theme.colorScheme.error : null),
         ),
       ),
       Wrap(alignment: WrapAlignment.center, spacing: 4, children: [
@@ -547,7 +556,11 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     final poolSection = [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Text('Pool (${pool.length})${outside > 0 ? ' · $outside fora da identidade' : ''}',
+        child: Text(
+            tr('Pool ({n}){v}', {
+              'n': pool.length,
+              'v': outside > 0 ? tr(' · {outside} fora da identidade', {'outside': outside}) : ''
+            }),
             style: theme.textTheme.titleMedium),
       ),
       Padding(
@@ -564,10 +577,10 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           SegmentedButton<_Sort>(
             showSelectedIcon: false,
             style: const ButtonStyle(visualDensity: VisualDensity.compact),
-            segments: const [
-              ButtonSegment(value: _Sort.color, label: Text('Cor')),
-              ButtonSegment(value: _Sort.cost, label: Text('Custo')),
-              ButtonSegment(value: _Sort.type, label: Text('Tipo')),
+            segments: [
+              ButtonSegment(value: _Sort.color, label: Text(tr('Cor'))),
+              ButtonSegment(value: _Sort.cost, label: Text(tr('Custo'))),
+              ButtonSegment(value: _Sort.type, label: Text(tr('Tipo'))),
             ],
             selected: {_sort},
             onSelectionChanged: (v) => setState(() => _sort = v.first),
@@ -590,8 +603,13 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(widget.title, overflow: TextOverflow.ellipsis),
             Text(
-                '${commanders.isEmpty ? '' : '${commanders.length} + '}'
-                '$_nonLands cartas + $lands terrenos = $_total / $_target',
+                tr('{v}{nonLands} cartas + {lands} terrenos = {total} / {target}', {
+                  'v': commanders.isEmpty ? '' : '${commanders.length} + ',
+                  'nonLands': _nonLands,
+                  'lands': lands,
+                  'total': _total,
+                  'target': _target
+                }),
                 style: theme.textTheme.bodySmall?.copyWith(color: _total >= _target ? Colors.green : null)),
           ]),
           actions: [
@@ -599,7 +617,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
               style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
               onPressed: _deck.isEmpty || (widget.commander && _commanders.isEmpty) ? null : _save,
               icon: const Icon(Icons.save_outlined),
-              label: const Text('Guardar'),
+              label: Text(tr('Guardar')),
             ),
             const SizedBox(width: 8),
           ],
@@ -656,27 +674,28 @@ class LimitedBuildsCard extends ConsumerWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Text('Decks por montar', style: theme.textTheme.titleSmall),
+          child: Text(tr('Decks por montar'), style: theme.textTheme.titleSmall),
         ),
         for (final b in builds)
           ListTile(
             leading: const Icon(Icons.construction),
             title: Text(b.title),
-            subtitle: Text('${b.pool.length} cartas na pool · ${b.deck.length} no deck · '
-                '${shortDate(b.savedAt)}'),
+            subtitle: Text(tr('{n} cartas na pool · {n2} no deck · {v}',
+                {'n': b.pool.length, 'n2': b.deck.length, 'v': shortDate(b.savedAt)})),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(
-                tooltip: 'Deitar fora',
+                tooltip: tr('Deitar fora'),
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Deitar fora a pool?'),
-                      content: Text('${b.title}: as ${b.pool.length} cartas perdem-se.'),
+                      title: Text(tr('Deitar fora a pool?')),
+                      content: Text(
+                          tr('{title}: as {n} cartas perdem-se.', {'title': b.title, 'n': b.pool.length})),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Deitar fora')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Deitar fora'))),
                       ],
                     ),
                   );
@@ -686,7 +705,7 @@ class LimitedBuildsCard extends ConsumerWidget {
               FilledButton(
                 style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
                 onPressed: () => resumeLimitedBuild(context, ref, b),
-                child: const Text('Montar'),
+                child: Text(tr('Montar')),
               ),
             ]),
           ),

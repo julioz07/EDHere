@@ -16,8 +16,8 @@ final pathsProvider = Provider<AppPaths>((_) => throw UnimplementedError());
 final prefsProvider = Provider<SharedPreferences>((_) => throw UnimplementedError());
 final deckStoreProvider = Provider<DeckStore>((_) => throw UnimplementedError());
 
-final cardDataProvider =
-    ChangeNotifierProvider<CardDataService>((ref) => CardDataService(ref.watch(pathsProvider)));
+final cardDataProvider = ChangeNotifierProvider<CardDataService>(
+    (ref) => CardDataService(ref.watch(pathsProvider), ref.watch(prefsProvider)));
 
 final imagesProvider = ChangeNotifierProvider<ImageService>((ref) => ImageService(ref.watch(pathsProvider)));
 

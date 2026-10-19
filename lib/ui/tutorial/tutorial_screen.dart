@@ -10,6 +10,7 @@ import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'glossary_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// Capítulos do tutorial já feitos (guardado entre sessões).
 class TutorialProgress extends ChangeNotifier {
@@ -109,16 +110,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final r = TutorialRunner(
       chapter: chapter,
       repo: repo,
-      playerName: name.isEmpty ? 'Jogador' : name,
+      playerName: name.isEmpty ? tr('Jogador') : name,
       resolvePrint: (c, p) => prints.resolve(c, printId: p),
     );
     if (!r.build()) {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Faltam cartas na base'),
-          content:
-              Text('Atualiza a base de cartas em Definições → Dados. Em falta: ${r.missing.join(', ')}.'),
+          title: Text(tr('Faltam cartas na base')),
+          content: Text(tr('Atualiza a base de cartas em Definições → Dados. Em falta: {v}.',
+              {'v': r.missing.join(', ')})),
           actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
         ),
       );
@@ -159,13 +160,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.emoji_events_outlined, size: 40),
-        title: Text('"${chapter.title}" concluído'),
+        title: Text(tr('"{title}" concluído', {'title': chapter.title})),
         content: Text(hasNext
-            ? 'Segue-se: ${widget.chapters[widget.index + 1].title}.'
-            : 'Chegaste ao fim do tutorial. Agora é jogar!'),
+            ? tr('Segue-se: {title}.', {'title': widget.chapters[widget.index + 1].title})
+            : tr('Chegaste ao fim do tutorial. Agora é jogar!')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Voltar à lista')),
-          if (hasNext) FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Seguinte')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Voltar à lista'))),
+          if (hasNext) FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Seguinte'))),
         ],
       ),
     );
@@ -187,13 +188,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           final theme = Theme.of(ctx);
           return AlertDialog(
             icon: const Icon(Icons.emoji_events, size: 48, color: Colors.amber),
-            title: const Text('Tutorial concluído!'),
+            title: Text(tr('Tutorial concluído!')),
             content: SingleChildScrollView(
               child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Aprendeste:'),
+                    Text(tr('Aprendeste:')),
                     const SizedBox(height: 6),
                     for (final c in widget.chapters)
                       Padding(
@@ -206,12 +207,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                       ),
                     const SizedBox(height: 8),
                     Text(
-                        'Próximo passo: monta (ou importa) o teu deck e cria uma sala com os amigos. O glossário '
-                        'está sempre no ícone do livro.',
+                        tr('Próximo passo: monta (ou importa) o teu deck e cria uma sala com os amigos. O glossário está sempre no ícone do livro.'),
                         style: theme.textTheme.bodySmall),
                   ]),
             ),
-            actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Bons jogos!'))],
+            actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Bons jogos!')))],
           );
         },
       );
@@ -221,11 +221,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sair do capítulo?'),
-        content: const Text('Podes recomeçá-lo quando quiseres.'),
+        title: Text(tr('Sair do capítulo?')),
+        content: Text(tr('Podes recomeçá-lo quando quiseres.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ficar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Sair'))),
         ],
       ),
     );
@@ -276,7 +276,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
                 onPressed: () =>
                     _pages.previousPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut),
-                child: const Text('Anterior'),
+                child: Text(tr('Anterior')),
               ),
             const SizedBox(width: 8),
             FilledButton.icon(
@@ -293,7 +293,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
               },
               icon: Icon(
                   !last ? Icons.arrow_forward : (chapter.hasGame ? Icons.play_arrow_rounded : Icons.check)),
-              label: Text(!last ? 'Seguinte' : (chapter.hasGame ? 'Jogar' : 'Concluir')),
+              label: Text(!last ? tr('Seguinte') : (chapter.hasGame ? tr('Jogar') : tr('Concluir'))),
             ),
           ]),
         ),
@@ -396,21 +396,23 @@ class _CoachPanelState extends State<CoachPanel> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          r.finished ? 'Capítulo concluído' : 'Passo ${r.step + 1} de $total',
+                          r.finished
+                              ? tr('Capítulo concluído')
+                              : tr('Passo {v} de {total}', {'v': r.step + 1, 'total': total}),
                           style: theme.textTheme.labelLarge
                               ?.copyWith(color: theme.colorScheme.onPrimaryContainer),
                         ),
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        tooltip: 'Glossário',
+                        tooltip: tr('Glossário'),
                         onPressed: () => Navigator.of(context)
                             .push(MaterialPageRoute<void>(builder: (_) => const GlossaryScreen())),
                         icon: const Icon(Icons.menu_book_outlined, size: 20),
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        tooltip: _small ? 'Mostrar o guia' : 'Encolher o guia',
+                        tooltip: _small ? tr('Mostrar o guia') : tr('Encolher o guia'),
                         onPressed: () => setState(() => _small = !_small),
                         icon: Icon(_small ? Icons.expand_more : Icons.expand_less),
                       ),
@@ -481,7 +483,7 @@ class _CoachPanelState extends State<CoachPanel> {
                             child: FilledButton(
                               style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
                               onPressed: r.next,
-                              child: Text(r.step + 1 >= total ? 'Concluir' : 'Continuar'),
+                              child: Text(r.step + 1 >= total ? tr('Concluir') : tr('Continuar')),
                             ),
                           ),
                         ),

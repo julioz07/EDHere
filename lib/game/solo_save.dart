@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import '../l10n/l10n.dart';
 
 /// Um jogo solo (goldfish ou 1 contra 1 neste dispositivo) gravado para
 /// continuar depois. Grava-se sozinho enquanto se joga, para não se perder
@@ -46,7 +47,7 @@ class SoloSave {
 
   static SoloSave fromJson(Map<String, dynamic> j) => SoloSave(
         deckIds: (j['decks'] as List).cast<num>().map((n) => n.toInt()).toList(),
-        title: j['title'] as String? ?? 'Jogo',
+        title: j['title'] as String? ?? tr('Jogo'),
         turn: (j['turn'] as num?)?.toInt() ?? 1,
         savedAt: DateTime.fromMillisecondsSinceEpoch((j['at'] as num).toInt()),
         names: (j['names'] as List?)?.cast<String>(),

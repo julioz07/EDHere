@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'events.dart';
 import 'model.dart';
+import 'i18n.dart';
 
 /// A mesa vista por um dispositivo: o estado público (igual em todos) mais
 /// as zonas ocultas dos lugares que este dispositivo controla.
@@ -95,11 +96,11 @@ class Table {
       ..clear()
       ..addAll(last.private);
     state.seq = seq;
-    state.log.add(LogEntry(seq, actor, Ev.undo, '${_n(actor)} desfez: $undone'));
+    state.log.add(LogEntry(seq, actor, Ev.undo, mesaTr('{v} desfez: {undone}', {'v': _n(actor), 'undone': undone})));
     return true;
   }
 
-  String _n(int seat) => state.players[seat]?.name ?? 'Jogador $seat';
+  String _n(int seat) => state.players[seat]?.name ?? mesaTr('Jogador {seat}', {'seat': seat});
   String _cardName(CardInstance c) => c.oracleId == null ? (c.tokenName ?? 'token') : '[[${c.oracleId}]]';
 
   String? _applyInner(String type, int actor, Map<String, dynamic> p) {
@@ -111,14 +112,14 @@ class Table {
       case Ev.joinTable:
         final seat = i('seat');
         s.players[seat] = PlayerState(seat: seat, name: p['name'] as String, life: i('life'));
-        return '${p['name']} sentou-se à mesa';
+        return mesaTr('{v} sentou-se à mesa', {'v': p['name']});
 
       case Ev.startGame:
         s.started = true;
         s.activeSeat = oi('first') ?? s.players.keys.first;
         s.turn = 1;
         s.phase = 'main1';
-        return 'Jogo começou. ${_n(s.activeSeat)} joga primeiro';
+        return mesaTr('Jogo começou. {v} joga primeiro', {'v': _n(s.activeSeat)});
 
       case Ev.deckLoaded:
         final seat = i('seat');
@@ -147,7 +148,7 @@ class Table {
           // O tutorial usa grimórios com ordem fixa (o topo é o primeiro).
           if (p['keep'] != true) zonesOf(seat).library.shuffle(_random);
         }
-        return '${_n(seat)} baralhou um deck de ${i('size')} cartas';
+        return mesaTr('{v} baralhou um deck de {v2} cartas', {'v': _n(seat), 'v2': i('size')});
 
       case Ev.passTurn:
         final seats = s.players.keys.toList()..sort();
@@ -167,7 +168,7 @@ class Table {
         for (final c in s.cards.values) {
           if (c.zone == Zone.battlefield && c.controller == next) c.tapped = false;
         }
-        return 'Turno ${s.turn}: ${_n(next)}';
+        return mesaTr('Turno {turn}: {v}', {'turn': s.turn, 'v': _n(next)});
 
       case Ev.setPhase:
         s.phase = p['phase'] as String;
@@ -178,7 +179,7 @@ class Table {
         for (final c in s.cards.values) {
           if (c.zone == Zone.battlefield && c.controller == seat) c.tapped = false;
         }
-        return '${_n(seat)} desvirou tudo';
+        return mesaTr('{v} desvirou tudo', {'v': _n(seat)});
 
       case Ev.move:
         return _move(actor, p);
@@ -200,29 +201,29 @@ class Table {
         final c = s.cards[i('id')];
         if (c == null) return null;
         c.faceIndex = c.faceIndex == 0 ? 1 : 0;
-        return '${_n(actor)} transformou ${_cardName(c)}';
+        return mesaTr('{v} transformou {v2}', {'v': _n(actor), 'v2': _cardName(c)});
 
       case Ev.faceDown:
         final c = s.cards[i('id')];
         if (c == null) return null;
         c.faceDown = p['value'] == true;
         return c.faceDown
-            ? '${_n(actor)} virou uma carta para baixo'
-            : '${_n(actor)} revelou ${_cardName(c)}';
+            ? mesaTr('{v} virou uma carta para baixo', {'v': _n(actor)})
+            : mesaTr('{v} revelou {v2}', {'v': _n(actor), 'v2': _cardName(c)});
 
       case Ev.attach:
         final c = s.cards[i('id')];
         if (c == null) return null;
         final to = oi('to');
         c.attachedTo = to;
-        if (to == null) return '${_n(actor)} desanexou ${_cardName(c)}';
+        if (to == null) return mesaTr('{v} desanexou {v2}', {'v': _n(actor), 'v2': _cardName(c)});
         final target = s.cards[to];
         if (target != null) {
           c
             ..x = target.x
             ..y = target.y;
         }
-        return '${_n(actor)} anexou ${_cardName(c)} a ${target == null ? '?' : _cardName(target)}';
+        return mesaTr('{v} anexou {v2} a {v3}', {'v': _n(actor), 'v2': _cardName(c), 'v3': target == null ? '?' : _cardName(target)});
 
       case Ev.control:
         final c = s.cards[i('id')];
@@ -231,7 +232,7 @@ class Table {
         for (final a in s.cards.values.where((a) => a.attachedTo == c.id)) {
           a.controller = c.controller;
         }
-        return '${_n(c.controller)} passou a controlar ${_cardName(c)}';
+        return mesaTr('{v} passou a controlar {v2}', {'v': _n(c.controller), 'v2': _cardName(c)});
 
       case Ev.position:
         final c = s.cards[i('id')];
@@ -264,20 +265,20 @@ class Table {
         final now = c.counters[kind] ?? 0;
         // Habilidade de lealdade de um planeswalker ("+1", "−4"…).
         if (p['ability'] is String) {
-          return '${_n(actor)} usou ${p['ability']} de ${_cardName(c)} (lealdade $now)';
+          return mesaTr('{v} usou {v2} de {v3} (lealdade {now})', {'v': _n(actor), 'v2': p['ability'], 'v3': _cardName(c), 'now': now});
         }
         if (kind.startsWith(CounterKind.keyword)) {
           final kw = kind.substring(CounterKind.keyword.length);
           return now > 0
-              ? '${_n(actor)} deu $kw a ${_cardName(c)}'
-              : '${_n(actor)} tirou $kw a ${_cardName(c)}';
+              ? mesaTr('{v} deu {kw} a {v2}', {'v': _n(actor), 'kw': kw, 'v2': _cardName(c)})
+              : mesaTr('{v} tirou {kw} a {v2}', {'v': _n(actor), 'kw': kw, 'v2': _cardName(c)});
         }
         final label = switch (kind) {
-          CounterKind.modPower => 'poder',
-          CounterKind.modToughness => 'resistência',
-          _ => 'contadores $kind',
+          CounterKind.modPower => mesaTr('poder'),
+          CounterKind.modToughness => mesaTr('resistência'),
+          _ => mesaTr('contadores {kind}', {'kind': kind}),
         };
-        return '${_n(actor)}: ${_cardName(c)} com ${signed && now > 0 ? '+' : ''}$now $label';
+        return mesaTr('{v}: {v2} com {v3}{now} {label}', {'v': _n(actor), 'v2': _cardName(c), 'v3': signed && now > 0 ? '+' : '', 'now': now, 'label': label});
 
       case Ev.token:
         final id = i('newId');
@@ -302,8 +303,7 @@ class Table {
         if (copyOf != null && s.cards[copyOf] != null) {
           c.faceIndex = s.cards[copyOf]!.faceIndex;
         }
-        return '${_n(actor)} criou ${c.stackQty > 1 ? '${c.stackQty}× ' : ''}${_cardName(c)}'
-            '${copyOf != null ? ' (cópia)' : ''}';
+        return mesaTr('{v} criou {v2}{v3}{v4}', {'v': _n(actor), 'v2': c.stackQty > 1 ? '${c.stackQty}× ' : '', 'v3': _cardName(c), 'v4': copyOf != null ? mesaTr(' (cópia)') : ''});
 
       case Ev.tokenQty:
         final c = s.cards[i('id')];
@@ -311,7 +311,7 @@ class Table {
         final q = i('qty');
         if (q <= 0) {
           _removeCard(c);
-          return '${_n(actor)} removeu ${_cardName(c)}';
+          return mesaTr('{v} removeu {v2}', {'v': _n(actor), 'v2': _cardName(c)});
         }
         c.stackQty = q;
         return '${_n(actor)}: ${_cardName(c)} ×$q';
@@ -320,7 +320,7 @@ class Table {
         final pl = s.players[i('seat')]!;
         final d = i('delta');
         pl.life += d;
-        return '${pl.name}: vida ${d > 0 ? '+' : ''}$d (${pl.life})';
+        return mesaTr('{v}: vida {v2}{d} ({life})', {'v': pl.name, 'v2': d > 0 ? '+' : '', 'd': d, 'life': pl.life});
 
       case Ev.commanderDamage:
         final pl = s.players[i('seat')]!;
@@ -329,8 +329,7 @@ class Table {
         pl.commanderDamage[cmd] = ((pl.commanderDamage[cmd] ?? 0) + d).clamp(0, 999);
         pl.life -= d;
         final c = s.cards[cmd];
-        return '${pl.name}: ${d > 0 ? '+' : ''}$d dano de comandante de '
-            '${c == null ? '?' : _cardName(c)} (${pl.commanderDamage[cmd]}; vida ${pl.life})';
+        return mesaTr('{v}: {v2}{d} dano de comandante de {v3} ({v4}; vida {life})', {'v': pl.name, 'v2': d > 0 ? '+' : '', 'd': d, 'v3': c == null ? '?' : _cardName(c), 'v4': pl.commanderDamage[cmd], 'life': pl.life});
 
       case Ev.playerCounter:
         final pl = s.players[i('seat')]!;
@@ -341,16 +340,16 @@ class Table {
 
       case Ev.monarch:
         s.monarch = oi('seat');
-        return s.monarch == null ? 'Ninguém é o monarca' : '${_n(s.monarch!)} é o monarca';
+        return s.monarch == null ? mesaTr('Ninguém é o monarca') : mesaTr('{v} é o monarca', {'v': _n(s.monarch!)});
 
       case Ev.initiative:
         s.initiative = oi('seat');
-        return s.initiative == null ? 'Ninguém tem a iniciativa' : '${_n(s.initiative!)} tem a iniciativa';
+        return s.initiative == null ? mesaTr('Ninguém tem a iniciativa') : mesaTr('{v} tem a iniciativa', {'v': _n(s.initiative!)});
 
       case Ev.defeated:
         final pl = s.players[i('seat')]!;
         pl.defeated = p['value'] != false;
-        return pl.defeated ? '${pl.name} foi derrotado' : '${pl.name} voltou ao jogo';
+        return pl.defeated ? mesaTr('{v} foi derrotado', {'v': pl.name}) : mesaTr('{v} voltou ao jogo', {'v': pl.name});
 
       case Ev.draw:
         final seat = i('seat');
@@ -365,12 +364,14 @@ class Table {
           z.hand.addAll(z.library.take(take));
           z.library.removeRange(0, take);
         }
-        return '${pl.name} comprou $n ${n == 1 ? 'carta' : 'cartas'}';
+        return n == 1
+            ? mesaTr('{v} comprou 1 carta', {'v': pl.name})
+            : mesaTr('{v} comprou {n} cartas', {'v': pl.name, 'n': n});
 
       case Ev.shuffle:
         final seat = i('seat');
         if (localSeats.contains(seat)) zonesOf(seat).library.shuffle(_random);
-        return '${_n(seat)} baralhou o grimório';
+        return mesaTr('{v} baralhou o grimório', {'v': _n(seat)});
 
       case Ev.mulligan:
         final seat = i('seat');
@@ -389,7 +390,7 @@ class Table {
           z.hand.addAll(z.library.take(take));
           z.library.removeRange(0, take);
         }
-        return '${pl.name} fez mulligan';
+        return mesaTr('{v} fez mulligan', {'v': pl.name});
 
       case Ev.bottom:
         final seat = i('seat');
@@ -405,8 +406,9 @@ class Table {
             if (idx >= 0) z.library.add(z.hand.removeAt(idx));
           }
         }
-        return '${pl.name} pôs ${pids.length} ${pids.length == 1 ? 'carta' : 'cartas'} '
-            'da mão no fundo do grimório';
+        return pids.length == 1
+            ? mesaTr('{v} pôs 1 carta da mão no fundo do grimório', {'v': pl.name})
+            : mesaTr('{v} pôs {n} cartas da mão no fundo do grimório', {'v': pl.name, 'n': pids.length});
 
       case Ev.mill:
         final seat = i('seat');
@@ -432,15 +434,15 @@ class Table {
             zonesOf(seat).library.removeWhere((c) => c.pid == (it['pid'] as num).toInt());
           }
         }
-        return '${pl.name} pôs do topo do grimório no ${to == Zone.exile ? 'exílio' : 'cemitério'}: '
-            '${names.join(', ')}';
+        return to == Zone.exile
+            ? mesaTr('{v} exilou do topo do grimório: {v3}', {'v': pl.name, 'v3': names.join(', ')})
+            : mesaTr('{v} pôs do topo do grimório no cemitério: {v3}', {'v': pl.name, 'v3': names.join(', ')});
 
       case Ev.reveal:
         final seat = i('seat');
         final oids = (p['os'] as List).cast<String>();
         s.revealed = Reveal(seat, oids, p['what'] as String? ?? 'cartas', to: oi('to'));
-        return '${_n(seat)} revelou ${p['what'] ?? ''}'
-            '${oi('to') == null ? '' : ' a ${_n(oi('to')!)}'}: ${oids.map((o) => '[[$o]]').join(', ')}';
+        return mesaTr('{v} revelou {v2}{v3}: {v4}', {'v': _n(seat), 'v2': p['what'] ?? '', 'v3': oi('to') == null ? '' : mesaTr(' a {v}', {'v': _n(oi('to')!)}), 'v4': oids.map((o) => '[[$o]]').join(', ')});
 
       case Ev.scryDone:
         final seat = i('seat');
@@ -481,9 +483,8 @@ class Table {
         }
         final kind = p['kind'] as String? ?? 'scry';
         final n = top.length + bottom.length + grave.length;
-        if (kind == 'look') return '${pl.name} reordenou o topo do grimório';
-        return '${pl.name} fez $kind $n: ${top.length} no topo, '
-            '${grave.isEmpty ? '${bottom.length} no fundo' : '${grave.length} no cemitério'}';
+        if (kind == 'look') return mesaTr('{v} reordenou o topo do grimório', {'v': pl.name});
+        return mesaTr('{v} fez {kind} {n}: {n2} no topo, {v2}', {'v': pl.name, 'kind': kind, 'n': n, 'n2': top.length, 'v2': grave.isEmpty ? mesaTr('{n} no fundo', {'n': bottom.length}) : mesaTr('{n} no cemitério', {'n': grave.length})});
 
       case Ev.highlight:
         s.highlight = oi('id');
@@ -502,38 +503,38 @@ class Table {
         final src = from == null ? null : s.cards[from];
         final what = card != null ? (s.cards[card] == null ? '?' : _cardName(s.cards[card]!)) : _n(seat!);
         return src == null
-            ? '${_n(actor)} aponta para $what'
-            : '${_n(actor)} aponta ${_cardName(src)} para $what';
+            ? mesaTr('{v} aponta para {what}', {'v': _n(actor), 'what': what})
+            : mesaTr('{v} aponta {v2} para {what}', {'v': _n(actor), 'v2': _cardName(src), 'what': what});
 
       case Ev.rollDie:
-        return '${_n(actor)} lançou um d${p['sides']}: ${p['value']}';
+        return mesaTr('{v} lançou um d{v2}: {v3}', {'v': _n(actor), 'v2': p['sides'], 'v3': p['value']});
 
       case Ev.flipCoin:
-        return '${_n(actor)} lançou a moeda: ${p['heads'] == true ? 'cara' : 'coroa'}';
+        return mesaTr('{v} lançou a moeda: {v2}', {'v': _n(actor), 'v2': p['heads'] == true ? mesaTr('cara') : mesaTr('coroa')});
 
       case Ev.randomPlayer:
-        return '${_n(actor)} sorteou um jogador: ${_n(i('seat'))}';
+        return mesaTr('{v} sorteou um jogador: {v2}', {'v': _n(actor), 'v2': _n(i('seat'))});
 
       case Ev.emote:
         return '${_n(actor)}: ${p['text']}';
 
       case Ev.storm:
         s.storm = oi('value') ?? max(0, s.storm + i('delta'));
-        return 'Storm: ${s.storm}';
+        return mesaTr('Storm: {storm}', {'storm': s.storm});
 
       case Ev.dayNight:
         s.dayNight = p['value'] as String?;
         return switch (s.dayNight) {
-          'day' => 'Passou a ser dia',
-          'night' => 'Passou a ser noite',
-          _ => 'Já não é dia nem noite',
+          'day' => mesaTr('Passou a ser dia'),
+          'night' => mesaTr('Passou a ser noite'),
+          _ => mesaTr('Já não é dia nem noite'),
         };
 
       case Ev.gameOver:
         s
           ..over = true
           ..winner = oi('winner');
-        return s.winner == null ? 'Jogo terminado, sem vencedor' : 'Jogo terminado: ${_n(s.winner!)} venceu';
+        return s.winner == null ? mesaTr('Jogo terminado, sem vencedor') : mesaTr('Jogo terminado: {v} venceu', {'v': _n(s.winner!)});
 
       default:
         return null;
@@ -568,7 +569,7 @@ class Table {
       final name = _cardName(c);
       if (c.isToken && to != Zone.battlefield) {
         _removeCard(c);
-        return '${_n(actor)} tirou $name do jogo';
+        return mesaTr('{v} tirou {name} do jogo', {'v': _n(actor), 'name': name});
       }
       if (to.hidden) {
         // Pública -> oculta: deixa de ser pública.
@@ -590,7 +591,7 @@ class Table {
             z.library.insert(0, card);
           }
         }
-        return '${_n(actor)} pôs $name ${_where(to, pos, owner)}';
+        return mesaTr('{v} pôs {name} {v2}', {'v': _n(actor), 'name': name, 'v2': _where(to, pos, owner)});
       }
       // Pública -> pública.
       // Lançar o comandante: conta para o imposto (2 por cada vez anterior).
@@ -625,9 +626,9 @@ class Table {
       c.order = s.maxOrder() + 1;
       if (from == to) return null;
       if (castTax != null) {
-        return '${_n(actor)} lançou o comandante $name${castTax > 0 ? ' (imposto +$castTax)' : ''}';
+        return mesaTr('{v} lançou o comandante {name}{v2}', {'v': _n(actor), 'name': name, 'v2': castTax > 0 ? mesaTr(' (imposto +{castTax})', {'castTax': castTax}) : ''});
       }
-      return '${_n(actor)} moveu $name ${_whereTo(to, pos)}';
+      return mesaTr('{v} moveu {name} {v2}', {'v': _n(actor), 'name': name, 'v2': _whereTo(to, pos)});
     }
 
     // Origem oculta: carta do dono com pid.
@@ -665,8 +666,7 @@ class Table {
           z.library.insert(0, card);
         }
       }
-      return '${pl.name} pôs uma carta ${from == Zone.hand ? 'da mão' : 'do grimório'} '
-          '${_where(to, pos, seat)}';
+      return mesaTr('{v} pôs uma carta {v2} {v3}', {'v': pl.name, 'v2': from == Zone.hand ? mesaTr('da mão') : mesaTr('do grimório'), 'v3': _where(to, pos, seat)});
     }
 
     // Oculta -> pública: a carta passa a ter id e identidade.
@@ -686,13 +686,14 @@ class Table {
       printId: p['p'] as String?,
     );
     if (to == Zone.battlefield) _entersWith(s.cards[newId]!, p);
-    final shown = p['fd'] == true ? 'uma carta virada para baixo' : '[[$oid]]';
-    final verb = switch ((from, to)) {
-      (Zone.hand, Zone.battlefield) => 'jogou',
-      (Zone.hand, Zone.graveyard) => p['cast'] == true ? 'lançou' : 'descartou',
-      _ => 'moveu',
+    final shown = p['fd'] == true ? mesaTr('uma carta virada para baixo') : '[[$oid]]';
+    final who = {'v': pl.name, 'shown': shown};
+    return switch ((from, to)) {
+      (Zone.hand, Zone.battlefield) => mesaTr('{v} jogou {shown}', who),
+      (Zone.hand, Zone.graveyard) =>
+        p['cast'] == true ? mesaTr('{v} lançou {shown}', who) : mesaTr('{v} descartou {shown}', who),
+      _ => mesaTr('{v} moveu {shown} {v2}', {...who, 'v2': _whereTo(to, pos)}),
     };
-    return verb == 'moveu' ? '${pl.name} moveu $shown ${_whereTo(to, pos)}' : '${pl.name} $verb $shown';
   }
 
   /// Contadores com que a carta entra em campo (a lealdade inicial de um
@@ -706,22 +707,22 @@ class Table {
 
   /// Destino de um movimento ("moveu X para o cemitério").
   String _whereTo(Zone to, String pos) => switch (to) {
-        Zone.library => pos == 'bottom' ? 'para o fundo do grimório' : 'para o topo do grimório',
-        Zone.hand => 'para a mão',
-        Zone.battlefield => 'para o campo',
-        Zone.graveyard => 'para o cemitério',
-        Zone.exile => 'para o exílio',
-        Zone.command => 'para a zona de comando',
+        Zone.library => pos == 'bottom' ? mesaTr('para o fundo do grimório') : mesaTr('para o topo do grimório'),
+        Zone.hand => mesaTr('para a mão'),
+        Zone.battlefield => mesaTr('para o campo'),
+        Zone.graveyard => mesaTr('para o cemitério'),
+        Zone.exile => mesaTr('para o exílio'),
+        Zone.command => mesaTr('para a zona de comando'),
       };
 
   String _where(Zone to, String pos, int owner) {
     return switch (to) {
-      Zone.library => pos == 'bottom' ? 'no fundo do grimório' : 'no topo do grimório',
-      Zone.hand => 'na mão',
-      Zone.battlefield => 'no campo',
-      Zone.graveyard => 'no cemitério',
-      Zone.exile => 'no exílio',
-      Zone.command => 'na zona de comando',
+      Zone.library => pos == 'bottom' ? mesaTr('no fundo do grimório') : mesaTr('no topo do grimório'),
+      Zone.hand => mesaTr('na mão'),
+      Zone.battlefield => mesaTr('no campo'),
+      Zone.graveyard => mesaTr('no cemitério'),
+      Zone.exile => mesaTr('no exílio'),
+      Zone.command => mesaTr('na zona de comando'),
     };
   }
 
@@ -820,7 +821,7 @@ class Table {
         for (final p in pids)
           if (byPid[p] != null) byPid[p]!.oracleId
       ],
-      'what': what ?? (from == Zone.hand ? 'da mão' : 'do grimório'),
+      'what': what ?? (from == Zone.hand ? mesaTr('da mão') : mesaTr('do grimório')),
       if (to != null) 'to': to,
     });
   }

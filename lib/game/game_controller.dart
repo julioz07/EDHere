@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/foundation.dart';
 import 'package:mesa_core/mesa_core.dart';
+import '../l10n/l10n.dart';
 
 /// Jogador a sentar à mesa num playtest local.
 class SeatSetup {
@@ -292,11 +293,11 @@ class GameController extends ChangeNotifier {
     return r == null ? c : r(c, printId);
   }
 
-  String cardName(String? oracleId) => card(oracleId)?.name ?? 'carta';
+  String cardName(String? oracleId) => card(oracleId)?.displayName ?? tr('carta');
 
   /// Substitui [[oracleId]] pelos nomes das cartas.
   String logText(LogEntry e) =>
-      e.text.replaceAllMapped(RegExp(r'\[\[([^\]]+)\]\]'), (m) => card(m.group(1))?.frontName ?? '?');
+      e.text.replaceAllMapped(RegExp(r'\[\[([^\]]+)\]\]'), (m) => card(m.group(1))?.displayFrontName ?? '?');
 
   PrivateZones zones(int seat) => table.zonesOf(seat);
 

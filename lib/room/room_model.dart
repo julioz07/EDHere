@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mesa_protocol/mesa_protocol.dart';
 
 import '../net/room_link.dart';
+import '../l10n/l10n.dart';
 
 class PlayerView {
   PlayerView({required this.seat, required this.name, this.isHost = false});
@@ -57,7 +58,8 @@ class RoomModel extends ChangeNotifier {
   int get lastSeq => log.isEmpty ? 0 : log.last.seq;
   int get mySeat => link.mySeat;
 
-  String nameOf(int seat) => seat < 0 ? 'Sala' : players[seat]?.name ?? 'Jogador $seat';
+  String nameOf(int seat) =>
+      seat < 0 ? tr('Sala') : players[seat]?.name ?? tr('Jogador {seat}', {'seat': seat});
 
   void _apply(Envelope e) {
     log.add(e);
@@ -67,7 +69,7 @@ class RoomModel extends ChangeNotifier {
         final seat = (p['seat'] as num).toInt();
         players[seat] = PlayerView(
           seat: seat,
-          name: p['name'] as String? ?? 'Jogador $seat',
+          name: p['name'] as String? ?? tr('Jogador {seat}', {'seat': seat}),
           isHost: p['host'] == true,
         );
       case MsgType.leave:
@@ -108,16 +110,18 @@ class RoomModel extends ChangeNotifier {
     final p = e.payload;
     final who = nameOf(e.actor);
     return switch (e.type) {
-      MsgType.join =>
-        p['host'] == true ? '${p['name']} criou a sala' : '${p['name']} entrou (lugar ${p['seat']})',
-      MsgType.leave => '${nameOf((p['seat'] as num).toInt())} saiu',
+      MsgType.join => p['host'] == true
+          ? tr('{v} criou a sala', {'v': p['name']})
+          : tr('{v} entrou (lugar {v2})', {'v': p['name'], 'v2': p['seat']}),
+      MsgType.leave => tr('{v} saiu', {'v': nameOf((p['seat'] as num).toInt())}),
       MsgType.playerStatus => p['connected'] == true
-          ? '${nameOf((p['seat'] as num).toInt())} voltou a ligar-se'
-          : '${nameOf((p['seat'] as num).toInt())} perdeu a ligação',
-      MsgType.ping => '$who: ping',
-      MsgType.rollDie => '$who lançou um d${p['sides']}: ${p['value']}',
-      MsgType.flipCoin => '$who lançou a moeda: ${p['heads'] == true ? 'cara' : 'coroa'}',
-      MsgType.burst => '$who: carga ${(p['i'] as num) + 1}/${p['n']}',
+          ? tr('{v} voltou a ligar-se', {'v': nameOf((p['seat'] as num).toInt())})
+          : tr('{v} perdeu a ligação', {'v': nameOf((p['seat'] as num).toInt())}),
+      MsgType.ping => tr('{who}: ping', {'who': who}),
+      MsgType.rollDie => tr('{who} lançou um d{v}: {v2}', {'who': who, 'v': p['sides'], 'v2': p['value']}),
+      MsgType.flipCoin =>
+        tr('{who} lançou a moeda: {v}', {'who': who, 'v': p['heads'] == true ? tr('cara') : tr('coroa')}),
+      MsgType.burst => tr('{who}: carga {v}/{v2}', {'who': who, 'v': (p['i'] as num) + 1, 'v2': p['n']}),
       _ => '$who: ${e.type}',
     };
   }

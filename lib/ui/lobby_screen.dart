@@ -16,6 +16,7 @@ import 'limited/draft_screen.dart';
 import 'room_screen.dart';
 import 'table/table_screen.dart';
 import 'widgets/responsive.dart';
+import '../l10n/l10n.dart';
 
 /// Lobby de uma sala: cada jogador escolhe o deck e fica pronto; o
 /// anfitrião começa o jogo. Depois mostra a mesa.
@@ -90,15 +91,15 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           ctrl: g,
           banner: switch (_game.link.status) {
             LinkStatus.reconnecting => MaterialBanner(
-                content: const Text('Ligação perdida. A voltar a ligar…'),
+                content: Text(tr('Ligação perdida. A voltar a ligar…')),
                 leading:
                     const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                actions: [TextButton(onPressed: _leaveFromTable, child: const Text('Sair'))],
+                actions: [TextButton(onPressed: _leaveFromTable, child: Text(tr('Sair')))],
               ),
             LinkStatus.closed when !_closing => MaterialBanner(
                 content: Text(_closedReason),
                 leading: const Icon(Icons.link_off),
-                actions: [TextButton(onPressed: _leaveFromTable, child: const Text('Sair'))],
+                actions: [TextButton(onPressed: _leaveFromTable, child: Text(tr('Sair')))],
               ),
             _ => null,
           },
@@ -143,8 +144,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   String get _closedReason {
     final l = _game.link;
-    if (l is RoomClient && l.hostClosed) return 'O anfitrião fechou a sala.';
-    return 'A ligação à sala terminou.';
+    if (l is RoomClient && l.hostClosed) return tr('O anfitrião fechou a sala.');
+    return tr('A ligação à sala terminou.');
   }
 
   /// Sai da mesa e da sala (ligação perdida ou sala fechada).
@@ -179,13 +180,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         child: ListView(shrinkWrap: true, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('Escolher deck (${format.label})', style: Theme.of(ctx).textTheme.titleMedium),
+            child: Text(tr('Escolher deck ({v})', {'v': format.label}),
+                style: Theme.of(ctx).textTheme.titleMedium),
           ),
-          if (decks.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Ainda não tens decks.')),
+          if (decks.isEmpty)
+            Padding(padding: const EdgeInsets.all(16), child: Text(tr('Ainda não tens decks.'))),
           for (final d in decks)
             ListTile(
               title: Text(d.name),
-              subtitle: Text('${GameFormat.byId(d.format).label} · ${d.playableCount} cartas'),
+              subtitle: Text(tr('{v} · {playableCount} cartas',
+                  {'v': GameFormat.byId(d.format).label, 'playableCount': d.playableCount})),
               onTap: () => Navigator.pop(ctx, d),
             ),
         ]),
@@ -212,7 +216,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     );
     if (!legal && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('O deck tem ${issues.length} avisos para ${format.label}. Podes jogar na mesma.'),
+        content: Text(tr('O deck tem {n} avisos para {v}. Podes jogar na mesma.',
+            {'n': issues.length, 'v': format.label})),
       ));
     }
   }
@@ -224,11 +229,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
-          title: const Text('Regras da sala'),
+          title: Text(tr('Regras da sala')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             DropdownButtonFormField<String>(
               value: format,
-              decoration: const InputDecoration(labelText: 'Formato'),
+              decoration: InputDecoration(labelText: tr('Formato')),
               items: [for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label))],
               onChanged: (v) => set(() {
                 format = v ?? format;
@@ -237,7 +242,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             ),
             const SizedBox(height: 12),
             Row(children: [
-              const Text('Vida inicial'),
+              Text(tr('Vida inicial')),
               const Spacer(),
               IconButton(onPressed: () => set(() => life--), icon: const Icon(Icons.remove)),
               Text('$life', style: Theme.of(ctx).textTheme.titleMedium),
@@ -245,13 +250,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             ]),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
             TextButton(
               onPressed: () {
                 _game.configure(format: format, life: life);
                 Navigator.pop(ctx);
               },
-              child: const Text('Guardar'),
+              child: Text(tr('Guardar')),
             ),
           ],
         ),
@@ -268,10 +273,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         final ok = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text(widget.session.isHost ? 'Fechar a sala?' : 'Sair da sala?'),
+            title: Text(widget.session.isHost ? tr('Fechar a sala?') : tr('Sair da sala?')),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ficar')),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sair')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Sair'))),
             ],
           ),
         );
@@ -294,7 +299,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               actions: [
                 if (widget.session.isHost)
                   IconButton(
-                    tooltip: 'QR code',
+                    tooltip: tr('QR code'),
                     icon: const Icon(Icons.qr_code_2),
                     onPressed: () => showRoomQr(context, widget.session),
                   ),
@@ -306,8 +311,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       ));
                     }
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'diag', child: Text('Diagnóstico de rede')),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'diag', child: Text(tr('Diagnóstico de rede'))),
                   ],
                 ),
               ],
@@ -315,9 +320,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             body: MaxWidth(
                 child: ListView(padding: const EdgeInsets.all(16), children: [
               if (status == LinkStatus.reconnecting)
-                const Card(
-                    margin: EdgeInsets.only(bottom: 8),
-                    child: ListTile(leading: CircularProgressIndicator(), title: Text('A voltar a ligar…'))),
+                Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                        leading: const CircularProgressIndicator(), title: Text(tr('A voltar a ligar…')))),
               if (status == LinkStatus.closed && !_closing)
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -325,15 +331,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
-                  title: Text('${format.label} · vida ${g.startingLife}'),
-                  subtitle: Text(
-                      g.players.length == 1 ? '1 jogador na sala' : '${g.players.length} jogadores na sala'),
+                  title: Text(
+                      tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
+                  subtitle: Text(g.players.length == 1
+                      ? tr('1 jogador na sala')
+                      : tr('{n} jogadores na sala', {'n': g.players.length})),
                   trailing: g.isHost ? const Icon(Icons.edit) : null,
                   onTap: g.isHost ? _configure : null,
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Jogadores', style: theme.textTheme.titleMedium),
+              Text(tr('Jogadores'), style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
               for (final p in g.players.values)
                 Card(
@@ -343,16 +351,21 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       p.isHost ? Icons.star_rounded : Icons.person,
                       color: p.connected ? EdhColors.ok : EdhColors.bad,
                     ),
-                    title: Text(p.seat == g.mySeat ? '${p.name} (tu)' : p.name),
+                    title: Text(p.seat == g.mySeat ? tr('{v} (tu)', {'v': p.name}) : p.name),
                     subtitle: Text(p.deckName == null
-                        ? 'Ainda sem deck'
-                        : '${p.deckName} · ${p.deckSize} cartas'
-                            '${p.commanders.isEmpty ? '' : ' · ${p.commanders.join(' + ')}'}'
-                            '${p.gameChangers == null ? '' : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}'}'
-                            '${p.deckLegal ? '' : ' · com avisos'}'),
+                        ? tr('Ainda sem deck')
+                        : tr('{deckName} · {deckSize} cartas{v}{v2}{v3}', {
+                            'deckName': p.deckName,
+                            'deckSize': p.deckSize,
+                            'v': p.commanders.isEmpty ? '' : ' · ${p.commanders.join(' + ')}',
+                            'v2': p.gameChangers == null
+                                ? ''
+                                : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}',
+                            'v3': p.deckLegal ? '' : tr(' · com avisos')
+                          })),
                     trailing: p.ready
-                        ? const Chip(label: Text('Pronto'), backgroundColor: Color(0x333FB27F))
-                        : const Chip(label: Text('A escolher')),
+                        ? Chip(label: Text(tr('Pronto')), backgroundColor: const Color(0x333FB27F))
+                        : Chip(label: Text(tr('A escolher'))),
                   ),
                 ),
               for (final p in g.players.values)
@@ -362,18 +375,24 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     color: theme.colorScheme.primaryContainer,
                     child: ListTile(
                       leading: const Icon(Icons.image_outlined),
-                      title: Text('${p.name} tem ${missing.length} imagens que não tens'),
+                      title: Text(tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
                       subtitle: Text(g.transfer?.seat == p.seat
-                          ? 'A receber do dispositivo de ${p.name}… ${g.transfer!.received}/${g.transfer!.expected}'
-                          : '~${(missing.length * smallImageBytes / 1024 / 1024).toStringAsFixed(1)} MB · '
-                              'da internet ou, sem rede, do telemóvel de ${p.name}'),
+                          ? tr('A receber do dispositivo de {v}… {received}/{expected}', {
+                              'v': p.name,
+                              'received': g.transfer!.received,
+                              'expected': g.transfer!.expected
+                            })
+                          : tr('~{v} MB · da internet ou, sem rede, do telemóvel de {v2}', {
+                              'v': (missing.length * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
+                              'v2': p.name
+                            })),
                       trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
                           ? const SizedBox.square(
                               dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                           : FilledButton(
                               style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
                               onPressed: () => g.downloadMissing(p.seat),
-                              child: const Text('Descarregar'),
+                              child: Text(tr('Descarregar')),
                             ),
                     ),
                   ),
@@ -382,12 +401,14 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 OutlinedButton.icon(
                   onPressed: me.ready ? null : _pickDeck,
                   icon: const Icon(Icons.style_outlined),
-                  label: Text(g.myDeck == null ? 'Escolher deck' : 'Trocar deck (${g.myDeck!.name})'),
+                  label: Text(g.myDeck == null
+                      ? tr('Escolher deck')
+                      : tr('Trocar deck ({v})', {'v': g.myDeck!.name})),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.tonal(
                   onPressed: g.myDeck == null ? null : () => g.setReady(!me.ready),
-                  child: Text(me.ready ? 'Já não estou pronto' : 'Estou pronto'),
+                  child: Text(me.ready ? tr('Já não estou pronto') : tr('Estou pronto')),
                 ),
               ],
               if (g.draftClient != null) ...[
@@ -395,7 +416,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 FilledButton.tonalIcon(
                   onPressed: _openDraft,
                   icon: const Icon(Icons.style),
-                  label: Text(g.draftClient!.finished ? 'Ver o draft (terminado)' : 'Voltar ao draft'),
+                  label:
+                      Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
                 ),
               ],
               if (g.isHost) ...[
@@ -403,19 +425,18 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 OutlinedButton.icon(
                   onPressed: () => showDraftSetup(context, ref, g),
                   icon: const Icon(Icons.card_giftcard),
-                  label: Text(g.draft == null ? 'Fazer um draft' : 'Novo draft'),
+                  label: Text(g.draft == null ? tr('Fazer um draft') : tr('Novo draft')),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
                   onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(g.allReady ? 'Começar jogo' : 'Começar (só com quem está pronto)'),
+                  label: Text(g.allReady ? tr('Começar jogo') : tr('Começar (só com quem está pronto)')),
                 ),
               ],
               const SizedBox(height: 16),
               Text(
-                'Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem '
-                'do telemóvel dele.',
+                tr('Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem do telemóvel dele.'),
                 style: theme.textTheme.bodySmall,
               ),
             ])),

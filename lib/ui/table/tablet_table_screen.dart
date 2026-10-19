@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import '../../game/game_controller.dart';
 import 'table_screen.dart';
 import 'table_sheets.dart';
+import '../../l10n/l10n.dart';
 
 /// Mesa partilhada: dois jogadores frente a frente com um tablet (ou
 /// telemóvel) no meio. A metade de cima está virada para quem está do outro
@@ -55,11 +56,11 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sair da mesa?'),
-        content: const Text('O jogo termina e não fica no histórico (usa "Terminar jogo" para o guardar).'),
+        title: Text(tr('Sair da mesa?')),
+        content: Text(tr('O jogo termina e não fica no histórico (usa "Terminar jogo" para o guardar).')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ficar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Sair'))),
         ],
       ),
     );
@@ -71,7 +72,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
     final winner = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Quem ganhou?'),
+        title: Text(tr('Quem ganhou?')),
         children: [
           for (final p in players)
             SimpleDialogOption(
@@ -80,7 +81,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
             ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, -1),
-            child: const Text('Sem vencedor', style: TextStyle(fontSize: 16)),
+            child: Text(tr('Sem vencedor'), style: const TextStyle(fontSize: 16)),
           ),
         ],
       ),
@@ -98,11 +99,11 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : Colors.amber, size: 40),
-        title: Text(winner == null ? 'Jogo terminado' : '${winner.name} ganhou'),
-        content: Text('Turno ${s.turn} · guardado no histórico.'),
+        title: Text(winner == null ? tr('Jogo terminado') : tr('{v} ganhou', {'v': winner.name})),
+        content: Text(tr('Turno {turn} · guardado no histórico.', {'turn': s.turn})),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ver a mesa')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Fechar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ver a mesa'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Fechar'))),
         ],
       ),
     );
@@ -188,17 +189,19 @@ class _CenterBar extends StatelessWidget {
       color: theme.colorScheme.primaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(children: [
-        IconButton(tooltip: 'Sair', icon: const Icon(Icons.close), onPressed: onClose),
+        IconButton(tooltip: tr('Sair'), icon: const Icon(Icons.close), onPressed: onClose),
         Flexible(
           child: Text(
-            s.over ? 'Jogo terminado' : 'Turno ${s.turn} · ${s.players[s.activeSeat]?.name ?? ''}',
+            s.over
+                ? tr('Jogo terminado')
+                : tr('Turno {turn} · {v}', {'turn': s.turn, 'v': s.players[s.activeSeat]?.name ?? ''}),
             style: theme.textTheme.titleSmall,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         const Spacer(),
         IconButton(
-          tooltip: 'Desfazer',
+          tooltip: tr('Desfazer'),
           onPressed: () {
             // Desfaz a última ação, seja de quem for (todos estão à mesa).
             for (final seat in ctrl.mySeats) {
@@ -211,18 +214,18 @@ class _CenterBar extends StatelessWidget {
           icon: const Icon(Icons.undo),
         ),
         IconButton(
-          tooltip: 'Registo',
+          tooltip: tr('Registo'),
           onPressed: () => showLogSheet(context, ctrl),
           icon: const Icon(Icons.receipt_long),
         ),
         IconButton(
-          tooltip: 'Lançar d20',
+          tooltip: tr('Lançar d20'),
           onPressed: () => ctrl.rollDie(20),
           icon: const Icon(Icons.casino_outlined),
         ),
-        IconButton(tooltip: 'Moeda', onPressed: ctrl.flipCoin, icon: const Icon(Icons.toll)),
+        IconButton(tooltip: tr('Moeda'), onPressed: ctrl.flipCoin, icon: const Icon(Icons.toll)),
         IconButton(
-          tooltip: 'Terminar jogo',
+          tooltip: tr('Terminar jogo'),
           onPressed: s.over ? null : onFinish,
           icon: const Icon(Icons.emoji_events_outlined),
         ),
@@ -295,7 +298,7 @@ class _SeatArea extends StatelessWidget {
                   ),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Token',
+                  tooltip: tr('Token'),
                   visualDensity: VisualDensity.compact,
                   onPressed: () {
                     ctrl.actAs(seat);
@@ -307,7 +310,7 @@ class _SeatArea extends StatelessWidget {
                   FilledButton(
                     style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
                     onPressed: () => ctrl.sendAs(seat, const Intent(Ev.passTurn, {})),
-                    child: const Text('Passar'),
+                    child: Text(tr('Passar')),
                   ),
               ]),
             ),

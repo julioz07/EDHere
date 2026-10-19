@@ -9,6 +9,7 @@ import '../net/network_util.dart';
 import '../room/room_session.dart';
 import 'lobby_screen.dart';
 import 'widgets/responsive.dart';
+import '../l10n/l10n.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key, required this.playerName});
@@ -20,7 +21,8 @@ class CreateRoomScreen extends StatefulWidget {
 }
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
-  late final _roomName = TextEditingController(text: 'Mesa de ${widget.playerName}');
+  late final _roomName =
+      TextEditingController(text: tr('Mesa de {playerName}', {'playerName': widget.playerName}));
   final _pin = TextEditingController();
   int _seats = 4;
   String _format = 'commander';
@@ -35,16 +37,13 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Criar uma rede para a mesa'),
-        content: const Text(
-          'Para criar o hotspot, o Android vai pedir a permissão "Dispositivos próximos" '
-          '(Android 13 ou mais recente) ou "Localização" (Android 8 a 12).\n\n'
-          'O EDHere só a usa para criar a rede local da mesa. Não guarda nem envia a tua '
-          'localização.',
+        title: Text(tr('Criar uma rede para a mesa')),
+        content: Text(
+          tr('Para criar o hotspot, o Android vai pedir a permissão "Dispositivos próximos" (Android 13 ou mais recente) ou "Localização" (Android 8 a 12).\n\nO EDHere só a usa para criar a rede local da mesa. Não guarda nem envia a tua localização.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Agora não')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continuar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Agora não'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Continuar'))),
         ],
       ),
     );
@@ -79,7 +78,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         hotspot = await Hotspot.start();
       }
 
-      final name = _roomName.text.trim().isEmpty ? 'Mesa de ${widget.playerName}' : _roomName.text.trim();
+      final name = _roomName.text.trim().isEmpty
+          ? tr('Mesa de {playerName}', {'playerName': widget.playerName})
+          : _roomName.text.trim();
       final pin = _pin.text.trim();
       server = HostServer(
         roomName: name,
@@ -142,7 +143,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Criar sala')),
+      appBar: AppBar(title: Text(tr('Criar sala'))),
       body: MaxWidth(
           child: ListView(
         padding: const EdgeInsets.all(20),
@@ -150,19 +151,19 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           TextField(
             controller: _roomName,
             maxLength: 40,
-            decoration: const InputDecoration(labelText: 'Nome da sala', counterText: ''),
+            decoration: InputDecoration(labelText: tr('Nome da sala'), counterText: ''),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _format,
-            decoration: const InputDecoration(labelText: 'Formato'),
+            decoration: InputDecoration(labelText: tr('Formato')),
             items: [
               for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
             ],
             onChanged: _busy ? null : (v) => setState(() => _format = v ?? _format),
           ),
           const SizedBox(height: 20),
-          Text('Lugares: $_seats', style: theme.textTheme.titleSmall),
+          Text(tr('Lugares: {seats}', {'seats': _seats}), style: theme.textTheme.titleSmall),
           Slider(
             value: _seats.toDouble(),
             min: 2,
@@ -177,9 +178,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             keyboardType: TextInputType.number,
             maxLength: 4,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: 'PIN (opcional)',
-              helperText: 'Impede que estranhos na mesma rede entrem',
+            decoration: InputDecoration(
+              labelText: tr('PIN (opcional)'),
+              helperText: tr('Impede que estranhos na mesma rede entrem'),
               counterText: '',
             ),
           ),
@@ -189,14 +190,13 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               contentPadding: EdgeInsets.zero,
               value: _useHotspot,
               onChanged: _busy ? null : (v) => setState(() => _useHotspot = v),
-              title: const Text('Criar hotspot (sem Wi-Fi)'),
-              subtitle: const Text('Este telemóvel cria uma rede local. Os outros ligam-se a ela '
-                  'pelo QR code do Wi-Fi.'),
+              title: Text(tr('Criar hotspot (sem Wi-Fi)')),
+              subtitle: Text(
+                  tr('Este telemóvel cria uma rede local. Os outros ligam-se a ela pelo QR code do Wi-Fi.')),
             )
           else
             Text(
-              'Sem Wi-Fi? Liga o Hotspot Pessoal nas Definições do iPhone e pede '
-              'aos outros que se liguem a ele.',
+              tr('Sem Wi-Fi? Liga o Hotspot Pessoal nas Definições do iPhone e pede aos outros que se liguem a ele.'),
               style: theme.textTheme.bodySmall,
             ),
           if (_error != null) ...[
@@ -208,7 +208,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             onPressed: _busy ? null : _create,
             child: _busy
                 ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                : const Text('Abrir sala'),
+                : Text(tr('Abrir sala')),
           ),
         ],
       )),

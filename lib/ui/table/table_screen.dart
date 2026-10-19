@@ -12,15 +12,16 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'table_card.dart';
 import 'table_sheets.dart';
+import '../../l10n/l10n.dart';
 
-const _phases = [
-  ('upkeep', 'Manutenção'),
-  ('draw', 'Compra'),
-  ('main1', 'Principal 1'),
-  ('combat', 'Combate'),
-  ('main2', 'Principal 2'),
-  ('end', 'Final'),
-];
+List<(String, String)> get _phases => [
+      ('upkeep', tr('Manutenção')),
+      ('draw', tr('Compra')),
+      ('main1', tr('Principal 1')),
+      ('combat', tr('Combate')),
+      ('main2', tr('Principal 2')),
+      ('end', tr('Final')),
+    ];
 
 /// Formatos em que o primeiro mulligan é grátis (multijogador de Commander).
 const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
@@ -37,7 +38,13 @@ const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
 /// Serve o playtest e o jogo em rede.
 class TableScreen extends ConsumerStatefulWidget {
   const TableScreen(
-      {super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame, this.confirmLeave});
+      {super.key,
+      required this.ctrl,
+      this.title,
+      this.onLeave,
+      this.banner,
+      this.onNewGame,
+      this.confirmLeave});
 
   final GameController ctrl;
   final String? title;
@@ -161,15 +168,21 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             final hand = ctrl.zones(seat).hand;
             final next = free ? count : count + 1;
             return AlertDialog(
-              title: Text(ctrl.mySeats.length > 1 ? 'Mão inicial de $name' : 'A tua mão inicial'),
+              title: Text(ctrl.mySeats.length > 1
+                  ? tr('Mão inicial de {name}', {'name': name})
+                  : tr('A tua mão inicial')),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   if (count > 0)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Text('Mulligan $count'
-                          '${toBottom > 0 ? ' · ao manter, pões $toBottom no fundo' : ' (grátis)'}'),
+                      child: Text(tr('Mulligan {count}{v}', {
+                        'count': count,
+                        'v': toBottom > 0
+                            ? tr(' · ao manter, pões {toBottom} no fundo', {'toBottom': toBottom})
+                            : tr(' (grátis)')
+                      })),
                     ),
                   GridView.count(
                     shrinkWrap: true,
@@ -190,9 +203,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               actions: [
                 TextButton(
                   onPressed: hand.length <= 1 ? null : () => Navigator.pop(ctx, false),
-                  child: Text(next == 0 ? 'Mulligan (grátis)' : 'Mulligan'),
+                  child: Text(next == 0 ? tr('Mulligan (grátis)') : tr('Mulligan')),
                 ),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Manter')),
+                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Manter'))),
               ],
             );
           },
@@ -217,11 +230,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sair da mesa?'),
-        content: Text(ctrl.isNetwork ? 'Podes voltar a entrar depois.' : 'O playtest termina.'),
+        title: Text(tr('Sair da mesa?')),
+        content: Text(ctrl.isNetwork ? tr('Podes voltar a entrar depois.') : tr('O playtest termina.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ficar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sair')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Sair'))),
         ],
       ),
     );
@@ -234,17 +247,18 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final winner = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Quem ganhou?'),
+        title: Text(tr('Quem ganhou?')),
         children: [
           for (final p in players)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, p.seat),
-              child: Text(ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? '${p.name} (tu)' : p.name,
+              child: Text(
+                  ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
                   style: const TextStyle(fontSize: 16)),
             ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, -1),
-            child: const Text('Sem vencedor', style: TextStyle(fontSize: 16)),
+            child: Text(tr('Sem vencedor'), style: const TextStyle(fontSize: 16)),
           ),
         ],
       ),
@@ -265,17 +279,17 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : Colors.amber, size: 40),
         title: Text(winner == null
-            ? 'Jogo terminado'
+            ? tr('Jogo terminado')
             : iWon
-                ? 'Ganhaste!'
-                : '${winner.name} ganhou'),
-        content: Text('Turno ${s.turn} · guardado no histórico.'),
+                ? tr('Ganhaste!')
+                : tr('{v} ganhou', {'v': winner.name})),
+        content: Text(tr('Turno {turn} · guardado no histórico.', {'turn': s.turn})),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, 'view'), child: const Text('Ver a mesa')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'view'), child: Text(tr('Ver a mesa'))),
           if (!ctrl.isNetwork)
-            FilledButton(onPressed: () => Navigator.pop(ctx, 'close'), child: const Text('Fechar'))
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'close'), child: Text(tr('Fechar')))
           else if (widget.onNewGame != null)
-            FilledButton(onPressed: () => Navigator.pop(ctx, 'again'), child: const Text('Nova partida')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, 'again'), child: Text(tr('Nova partida'))),
         ],
       ),
     );
@@ -304,13 +318,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             builder: (ctx, _) => SingleChildScrollView(
               child: Wrap(children: [
                 SwitchListTile(
-                  title: const Text('Compra automática no início do turno'),
+                  title: Text(tr('Compra automática no início do turno')),
                   value: ctrl.autoDraw,
                   onChanged: (v) => set(() => ctrl.autoDraw = v),
                 ),
                 ListTile(
                   leading: const Icon(Icons.bolt),
-                  title: Text('Storm neste turno: ${ctrl.state.storm}'),
+                  title: Text(tr('Storm neste turno: {storm}', {'storm': ctrl.state.storm})),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     IconButton(
                         onPressed: ctrl.state.storm > 0 ? () => ctrl.storm(-1) : null,
@@ -321,13 +335,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 ListTile(
                   leading:
                       Icon(ctrl.state.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny_outlined),
-                  title: const Text('Dia / noite'),
+                  title: Text(tr('Dia / noite')),
                   trailing: SegmentedButton<String>(
                     showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(value: '-', label: Text('—')),
-                      ButtonSegment(value: 'day', label: Text('Dia')),
-                      ButtonSegment(value: 'night', label: Text('Noite')),
+                    segments: [
+                      const ButtonSegment(value: '-', label: Text('—')),
+                      ButtonSegment(value: 'day', label: Text(tr('Dia'))),
+                      ButtonSegment(value: 'night', label: Text(tr('Noite'))),
                     ],
                     selected: {ctrl.state.dayNight ?? '-'},
                     onSelectionChanged: (v) => ctrl.dayNight(v.first == '-' ? null : v.first),
@@ -335,48 +349,48 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.emoji_events_outlined),
-                  title: const Text('Terminar jogo'),
-                  subtitle: const Text('Escolhe o vencedor; fica no histórico de todos'),
+                  title: Text(tr('Terminar jogo')),
+                  subtitle: Text(tr('Escolhe o vencedor; fica no histórico de todos')),
                   onTap: () => run(_finishGame),
                 ),
                 ListTile(
                   leading: const Icon(Icons.toll_outlined),
-                  title: const Text('Criar token'),
+                  title: Text(tr('Criar token')),
                   onTap: () => run(() => showTokenSheet(context, ctrl)),
                 ),
                 ListTile(
                   leading: const Icon(Icons.gps_fixed, color: targetGlow),
-                  title: const Text('Apontar para… (carta ou jogador)'),
+                  title: Text(tr('Apontar para… (carta ou jogador)')),
                   onTap: () => run(() => showTargetPicker(context, ctrl)),
                 ),
                 ListTile(
                   leading: const Icon(Icons.undo),
-                  title: const Text('Desvirar tudo'),
+                  title: Text(tr('Desvirar tudo')),
                   onTap: () => run(() => ctrl.send(Intent(Ev.untapAll, {'seat': ctrl.actor}))),
                 ),
                 ListTile(
                   leading: const Icon(Icons.casino_outlined),
-                  title: const Text('Lançar d6'),
+                  title: Text(tr('Lançar d6')),
                   onTap: () => run(() => ctrl.rollDie(6)),
                 ),
                 ListTile(
                   leading: const Icon(Icons.casino),
-                  title: const Text('Lançar d20'),
+                  title: Text(tr('Lançar d20')),
                   onTap: () => run(() => ctrl.rollDie(20)),
                 ),
                 ListTile(
                   leading: const Icon(Icons.toll),
-                  title: const Text('Lançar moeda'),
+                  title: Text(tr('Lançar moeda')),
                   onTap: () => run(ctrl.flipCoin),
                 ),
                 ListTile(
                   leading: const Icon(Icons.shuffle_on_outlined),
-                  title: const Text('Escolher jogador ao acaso'),
+                  title: Text(tr('Escolher jogador ao acaso')),
                   onTap: () => run(ctrl.randomPlayer),
                 ),
                 ListTile(
                   leading: const Icon(Icons.clear_all),
-                  title: const Text('Limpar os meus alvos e o destaque'),
+                  title: Text(tr('Limpar os meus alvos e o destaque')),
                   onTap: () => run(() {
                     ctrl.send(const Intent(Ev.arrow, {}));
                     ctrl.highlight(null);
@@ -384,12 +398,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.visibility),
-                  title: const Text('Revelar a minha mão a todos'),
+                  title: Text(tr('Revelar a minha mão a todos')),
                   onTap: () => run(() {
                     final hand = ctrl.zones(ctrl.actor).hand;
                     if (hand.isNotEmpty) {
-                      ctrl.send(ctrl.table
-                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
+                      ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid],
+                          what: tr('a mão')));
                     }
                   }),
                 ),
@@ -427,11 +441,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               titleSpacing: 0,
               title: Text(
                 s.over
-                    ? 'Jogo terminado'
+                    ? tr('Jogo terminado')
                     : ctrl.scripted
-                        ? 'Ronda ${ctrl.round} · ${myTurn ? 'o teu turno' : active?.name ?? ''}'
+                        ? tr('Ronda {round} · {v}',
+                            {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
                         : myTurn
-                            ? 'T${s.turn} · o teu turno'
+                            ? tr('T{turn} · o teu turno', {'turn': s.turn})
                             : 'T${s.turn} · ${active?.name ?? ''}',
                 style: theme.textTheme.titleMedium,
                 overflow: TextOverflow.ellipsis,
@@ -460,16 +475,16 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   },
                 ),
                 IconButton(
-                  tooltip: 'Desfazer',
+                  tooltip: tr('Desfazer'),
                   onPressed: ctrl.canUndo ? ctrl.undo : null,
                   icon: const Icon(Icons.undo),
                 ),
                 IconButton(
-                  tooltip: 'Registo',
+                  tooltip: tr('Registo'),
                   onPressed: () => showLogSheet(context, ctrl),
                   icon: const Icon(Icons.receipt_long),
                 ),
-                IconButton(tooltip: 'Mais', onPressed: _menu, icon: const Icon(Icons.more_vert)),
+                IconButton(tooltip: tr('Mais'), onPressed: _menu, icon: const Icon(Icons.more_vert)),
               ],
             ),
             body: Stack(children: [
@@ -540,7 +555,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                                     : null,
                                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                                   const Icon(Icons.skip_next),
-                                  if (!layout.short) const Text('Passar turno', textAlign: TextAlign.center),
+                                  if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
                                 ]),
                               ),
                             ),
@@ -664,11 +679,11 @@ class _PlayersStrip extends StatelessWidget {
                               const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
                             if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
                             if (ctrl.offline.contains(seat))
-                              const Padding(
-                                padding: EdgeInsets.only(right: 3),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 3),
                                 child: Tooltip(
-                                    message: 'Sem ligação',
-                                    child: Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
+                                    message: tr('Sem ligação'),
+                                    child: const Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
                               ),
                             Text(p.name,
                                 style: theme.textTheme.labelMedium
@@ -676,7 +691,8 @@ class _PlayersStrip extends StatelessWidget {
                           ]),
                           // Cartas na mão e no grimório.
                           Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.back_hand_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                            Icon(Icons.back_hand_outlined,
+                                size: 13, color: theme.colorScheme.onSurfaceVariant),
                             Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
                             Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
                             Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
@@ -807,7 +823,7 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
           child: Stack(clipBehavior: Clip.hardEdge, children: [
             if (cards.isEmpty && bg == null)
               Center(
-                child: Text('Campo de ${s.players[seat]?.name ?? ''}',
+                child: Text(tr('Campo de {v}', {'v': s.players[seat]?.name ?? ''}),
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               ),
             for (final c in cards)
@@ -984,7 +1000,7 @@ class TableZonesRow extends StatelessWidget {
                         tax: p?.commanderTax(c.id),
                         highlighted: ctrl.coachFocus.contains(c.oracleId),
                         showTapped: false),
-                    const Text('Comando', style: TextStyle(fontSize: 10)),
+                    Text(tr('Comando'), style: const TextStyle(fontSize: 10)),
                   ]),
                 ),
               ),
@@ -992,11 +1008,11 @@ class TableZonesRow extends StatelessWidget {
             if (command.isEmpty && s.cards.values.any((c) => c.isCommander && c.owner == seat))
               Padding(
                 padding: vertical ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(right: 6),
-                child: pile('Comando', 0, null, () {}),
+                child: pile(tr('Comando'), 0, null, () {}),
               ),
             if (vertical) const SizedBox(height: 6) else const Spacer(),
             pile(
-              'Grimório',
+              tr('Grimório'),
               p?.libraryCount ?? 0,
               (p?.libraryCount ?? 0) > 0 ? const CardBack() : null,
               mine
@@ -1014,7 +1030,7 @@ class TableZonesRow extends StatelessWidget {
             ),
             gap(),
             pile(
-              'Cemitério',
+              tr('Cemitério'),
               grave.length,
               grave.isEmpty
                   ? null
@@ -1027,7 +1043,7 @@ class TableZonesRow extends StatelessWidget {
             ),
             gap(),
             pile(
-              'Exílio',
+              tr('Exílio'),
               exile.length,
               exile.isEmpty
                   ? null
@@ -1041,7 +1057,7 @@ class TableZonesRow extends StatelessWidget {
             if (mine) ...[
               if (!vertical) const SizedBox(width: 4),
               IconButton(
-                tooltip: 'Grimório',
+                tooltip: tr('Grimório'),
                 onPressed: () {
                   ctrl.actAs(seat);
                   showLibraryMenu(context, ctrl);
@@ -1080,7 +1096,8 @@ class _TableHandState extends ConsumerState<TableHand> {
         height: 36,
         child: Center(
           child: Text(
-              'Mão de ${ctrl.state.players[seat]?.name}: ${ctrl.state.players[seat]?.handCount ?? 0} cartas',
+              tr('Mão de {v}: {v2} cartas',
+                  {'v': ctrl.state.players[seat]?.name, 'v2': ctrl.state.players[seat]?.handCount ?? 0}),
               style: theme.textTheme.bodySmall),
         ),
       );
@@ -1102,7 +1119,7 @@ class _TableHandState extends ConsumerState<TableHand> {
     final costH = (widget.height * 0.12).clamp(10.0, 17.0);
     final cardW = (widget.height - 10 - costH) * cardAspect;
     final list = hand.isEmpty
-        ? Center(child: Text('Mão vazia', style: theme.textTheme.bodySmall))
+        ? Center(child: Text(tr('Mão vazia'), style: theme.textTheme.bodySmall))
         : ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1148,7 +1165,8 @@ class _TableHandState extends ConsumerState<TableHand> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(6),
                                   boxShadow: [
-                                    BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
+                                    BoxShadow(
+                                        color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
                                   ],
                                 ),
                                 child: CardImage(card, radius: 5),
@@ -1182,7 +1200,7 @@ class _TableHandState extends ConsumerState<TableHand> {
           : Row(children: [
               Expanded(child: list),
               IconButton(
-                tooltip: _peek ? 'Esconder a mão' : 'Ver a mão',
+                tooltip: _peek ? tr('Esconder a mão') : tr('Ver a mão'),
                 onPressed: () => setState(() => _peek = !_peek),
                 icon: Icon(_peek ? Icons.visibility_off : Icons.visibility),
               ),
@@ -1220,7 +1238,7 @@ class _BottomBar extends StatelessWidget {
             style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
             onPressed: myTurn || !ctrl.isNetwork ? ctrl.passTurn : null,
             icon: const Icon(Icons.skip_next),
-            label: const Text('Passar turno'),
+            label: Text(tr('Passar turno')),
           ),
         ]),
       ),

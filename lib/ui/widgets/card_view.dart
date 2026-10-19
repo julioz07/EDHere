@@ -21,7 +21,12 @@ class CardImage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final images = ref.watch(imagesProvider);
-    final file = images.best(ImageRef.keyFor(card, face), preferNormal: preferNormal);
+    // A imagem da língua das cartas; enquanto não está, a inglesa que já houver.
+    final base = card.basePrintId;
+    final file = images.best(ImageRef.keyFor(card, face), preferNormal: preferNormal) ??
+        (base == null
+            ? null
+            : images.best(card.hasFaceImages ? '${base}_$face' : base, preferNormal: preferNormal));
     return AspectRatio(
       aspectRatio: cardAspect,
       child: ClipRRect(
@@ -56,10 +61,12 @@ class TextCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = card.faces.isNotEmpty ? card.faces[face.clamp(0, card.faces.length - 1)] : null;
-    final name = f?.name ?? card.name;
+    // O texto impresso na língua das cartas, quando há.
+    final fi = f == null ? -1 : face.clamp(0, card.faces.length - 1);
+    final name = f == null ? card.displayName : card.displayNameOf(fi);
     final cost = f?.manaCost ?? card.manaCost;
-    final type = f?.typeLine ?? card.typeLine;
-    final text = f?.oracleText ?? card.oracleText;
+    final type = card.displayTypeOf(fi);
+    final text = card.displayTextOf(fi);
     final pow = f?.power ?? card.power;
     final tou = f?.toughness ?? card.toughness;
     final loy = f?.loyalty ?? card.loyalty;
@@ -204,7 +211,7 @@ class CardTile extends StatelessWidget {
                 children: [
                   Row(children: [
                     Flexible(
-                      child: Text(card.name,
+                      child: Text(card.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
@@ -212,7 +219,7 @@ class CardTile extends StatelessWidget {
                     const SizedBox(width: 6),
                     ManaCost(card.manaCost, size: thumbWidth > 60 ? 19 : 15),
                   ]),
-                  Text(subtitle ?? card.typeLine,
+                  Text(subtitle ?? card.displayTypeOf(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),

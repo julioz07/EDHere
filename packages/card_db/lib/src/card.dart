@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'colors.dart';
+import 'localized.dart';
 
 /// Uma face de uma carta com várias faces (transform, MDFC, split, adventure...).
 class CardFace {
@@ -93,10 +94,45 @@ class Card {
     this.isExtra = false,
     this.gameChanger = false,
     this.edhrecRank,
+    this.printed,
+    this.basePrintId,
   });
 
   final String oracleId;
+
+  /// Nome Oracle (inglês): o que conta para listas, exportar e regras.
   final String name;
+
+  /// O texto impresso na língua das cartas escolhida (null = inglês).
+  final PrintedText? printed;
+
+  /// A impressão inglesa por defeito, quando [printId] é a da língua.
+  final String? basePrintId;
+
+  /// O nome a mostrar: o impresso na língua escolhida, ou o Oracle.
+  String get displayName => printed?.name.isNotEmpty ?? false ? printed!.name : name;
+
+  /// Nome da face da frente a mostrar.
+  String get displayFrontName =>
+      printed?.face(0)?.name.isNotEmpty ?? false ? printed!.face(0)!.name : frontName;
+
+  String displayTypeOf([int face = -1]) {
+    final p = face >= 0 ? printed?.face(face)?.typeLine : printed?.typeLine;
+    if (p != null && p.isNotEmpty) return p;
+    return face >= 0 && face < faces.length ? faces[face].typeLine : typeLine;
+  }
+
+  String displayTextOf([int face = -1]) {
+    final p = face >= 0 ? printed?.face(face)?.text : printed?.text;
+    if (p != null && p.isNotEmpty) return p;
+    return face >= 0 && face < faces.length ? faces[face].oracleText : oracleText;
+  }
+
+  String displayNameOf(int face) {
+    final p = printed?.face(face)?.name;
+    if (p != null && p.isNotEmpty) return p;
+    return face < faces.length ? faces[face].name : displayName;
+  }
   final String manaCost;
   final double mv;
   final String typeLine;
@@ -172,7 +208,13 @@ class Card {
   static List<String> _list(Object? raw) =>
       raw is String && raw.isNotEmpty ? (jsonDecode(raw) as List).cast<String>() : const [];
 
-  factory Card.fromRow(Map<String, Object?> r) => Card(
+  factory Card.fromRow(Map<String, Object?> r) {
+    final base = Card._fromRow(r);
+    if (r['l_lang'] == null) return base;
+    return base._localized(r);
+  }
+
+  factory Card._fromRow(Map<String, Object?> r) => Card(
         oracleId: r['oracle_id']! as String,
         name: r['name']! as String,
         manaCost: r['mana_cost'] as String? ?? '',
@@ -206,6 +248,79 @@ class Card {
         gameChanger: r['game_changer'] == 1,
         edhrecRank: r['edhrec_rank'] as int?,
       );
+
+  /// A mesma carta com o texto e a impressão da língua (colunas `l_`).
+  Card _localized(Map<String, Object?> r) {
+    final lFaces = r['l_faces'] is String && (r['l_faces']! as String).isNotEmpty
+        ? [for (final f in jsonDecode(r['l_faces']! as String) as List) (f as Map).cast<String, dynamic>()]
+        : const <Map<String, dynamic>>[];
+    final printed = PrintedText(
+      lang: r['l_lang']! as String,
+      name: r['l_name'] as String? ?? '',
+      typeLine: r['l_type'] as String? ?? '',
+      text: r['l_text'] as String? ?? '',
+      faces: [
+        for (final f in lFaces)
+          PrintedFace(
+            name: f['name'] as String? ?? '',
+            typeLine: f['type_line'] as String? ?? '',
+            text: f['text'] as String? ?? '',
+          ),
+      ],
+    );
+    final print = r['l_print_id'] as String?;
+    final hasFaceImgs = lFaces.any((f) => f['img_normal'] != null);
+    return Card(
+      oracleId: oracleId,
+      name: name,
+      manaCost: manaCost,
+      mv: mv,
+      typeLine: typeLine,
+      oracleText: oracleText,
+      power: power,
+      toughness: toughness,
+      loyalty: loyalty,
+      defense: defense,
+      colorMask: colorMask,
+      identityMask: identityMask,
+      layout: layout,
+      keywords: keywords,
+      rarity: rarity,
+      setCode: print == null ? setCode : r['l_set'] as String? ?? setCode,
+      collectorNumber: print == null ? collectorNumber : r['l_number'] as String? ?? collectorNumber,
+      printId: print ?? printId,
+      artist: print == null ? artist : r['l_artist'] as String? ?? artist,
+      imgSmall: print == null ? imgSmall : r['l_small'] as String?,
+      imgNormal: print == null ? imgNormal : r['l_normal'] as String?,
+      faces: [
+        for (var i = 0; i < faces.length; i++)
+          CardFace(
+            name: faces[i].name,
+            manaCost: faces[i].manaCost,
+            typeLine: faces[i].typeLine,
+            oracleText: faces[i].oracleText,
+            power: faces[i].power,
+            toughness: faces[i].toughness,
+            loyalty: faces[i].loyalty,
+            defense: faces[i].defense,
+            artist: faces[i].artist,
+            imgSmall: print != null && hasFaceImgs && i < lFaces.length
+                ? lFaces[i]['img_small'] as String?
+                : faces[i].imgSmall,
+            imgNormal: print != null && hasFaceImgs && i < lFaces.length
+                ? lFaces[i]['img_normal'] as String?
+                : faces[i].imgNormal,
+          ),
+      ],
+      producedMana: producedMana,
+      isToken: isToken,
+      isExtra: isExtra,
+      gameChanger: gameChanger,
+      edhrecRank: edhrecRank,
+      printed: printed,
+      basePrintId: print == null ? null : printId,
+    );
+  }
 
   @override
   String toString() => 'Card($name)';

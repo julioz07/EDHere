@@ -8,10 +8,12 @@ import '../../data/settings.dart';
 import '../../net/discovery.dart';
 import '../about_screen.dart';
 import '../onboarding_screen.dart';
+import '../shell.dart';
 import '../data/data_tab.dart';
 import '../stats/stats_screen.dart';
 import '../widgets/responsive.dart';
 import 'backup_actions.dart';
+import '../../l10n/l10n.dart';
 
 /// Definições: aparência, mesa, dados offline e sobre.
 class SettingsTab extends ConsumerWidget {
@@ -33,18 +35,41 @@ class SettingsTab extends ConsumerWidget {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Definições')),
+      appBar: AppBar(title: Text(tr('Definições'))),
       body: MaxWidth(
           child: ListView(padding: const EdgeInsets.only(bottom: 32), children: [
-        section('Aparência', Icons.palette_outlined),
+        section(tr('Língua'), Icons.language),
+        ListTile(
+          title: Text(tr('Língua da app')),
+          subtitle: Text(tr('Por defeito, a do telemóvel')),
+          trailing: DropdownButton<AppLang>(
+            value: s.appLang,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (final l in AppLang.values) DropdownMenuItem(value: l, child: Text(l.label)),
+            ],
+            onChanged: (l) {
+              if (l == null || l == s.appLang) return;
+              // A app refaz-se na nova língua e volta a este separador.
+              AppShell.reopenTab = 3;
+              s.appLang = l;
+            },
+          ),
+        ),
+        const CardLanguageTile(icon: false),
+        section(tr('Aparência'), Icons.palette_outlined),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SegmentedButton<ThemeMode>(
-            segments: const [
+            segments: [
               ButtonSegment(
-                  value: ThemeMode.system, icon: Icon(Icons.brightness_auto), label: Text('Sistema')),
-              ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode), label: Text('Escuro')),
-              ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode), label: Text('Claro')),
+                  value: ThemeMode.system,
+                  icon: const Icon(Icons.brightness_auto),
+                  label: Text(tr('Sistema'))),
+              ButtonSegment(
+                  value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: Text(tr('Escuro'))),
+              ButtonSegment(
+                  value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: Text(tr('Claro'))),
             ],
             selected: {s.themeMode},
             onSelectionChanged: (v) => s.themeMode = v.first,
@@ -53,7 +78,7 @@ class SettingsTab extends ConsumerWidget {
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Fundo da área de jogo', style: theme.textTheme.titleSmall),
+          child: Text(tr('Fundo da área de jogo'), style: theme.textTheme.titleSmall),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -63,7 +88,7 @@ class SettingsTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
               _BgOption(
-                label: 'Nenhum',
+                label: tr('Nenhum'),
                 selected: s.background == 'none',
                 onTap: () => s.background = 'none',
                 child: Container(color: theme.colorScheme.surfaceContainerHighest),
@@ -76,7 +101,7 @@ class SettingsTab extends ConsumerWidget {
                   child: Image.asset(b.asset, fit: BoxFit.cover),
                 ),
               _BgOption(
-                label: 'Da galeria',
+                label: tr('Da galeria'),
                 selected: s.background == 'file',
                 onTap: () => _pickFromGallery(context, s),
                 child: s.background == 'file' && s.backgroundImage != null
@@ -96,7 +121,7 @@ class SettingsTab extends ConsumerWidget {
         ),
         if (s.background != 'none')
           ListTile(
-            title: Text('Escurecer o fundo (${(s.backgroundDim * 100).round()}%)'),
+            title: Text(tr('Escurecer o fundo ({v}%)', {'v': (s.backgroundDim * 100).round()})),
             subtitle: Slider(
               value: s.backgroundDim,
               max: 0.8,
@@ -105,9 +130,9 @@ class SettingsTab extends ConsumerWidget {
               onChanged: (v) => s.backgroundDim = v,
             ),
           ),
-        section('Mesa', Icons.table_restaurant_outlined),
+        section(tr('Mesa'), Icons.table_restaurant_outlined),
         ListTile(
-          title: Text('Tamanho das cartas no campo (${(s.cardScale * 100).round()}%)'),
+          title: Text(tr('Tamanho das cartas no campo ({v}%)', {'v': (s.cardScale * 100).round()})),
           subtitle: Slider(
             value: s.cardScale,
             min: 0.7,
@@ -118,41 +143,42 @@ class SettingsTab extends ConsumerWidget {
           ),
         ),
         SwitchListTile(
-          title: const Text('Compra automática no início do turno'),
-          subtitle: const Text('Valor por defeito em cada jogo'),
+          title: Text(tr('Compra automática no início do turno')),
+          subtitle: Text(tr('Valor por defeito em cada jogo')),
           value: s.autoDraw,
           onChanged: (v) => s.autoDraw = v,
         ),
         SwitchListTile(
-          title: const Text('Toque duplo para virar (tap)'),
-          subtitle: const Text('Desligado, um toque abre sempre o menu da carta'),
+          title: Text(tr('Toque duplo para virar (tap)')),
+          subtitle: Text(tr('Desligado, um toque abre sempre o menu da carta')),
           value: s.doubleTapToTap,
           onChanged: (v) => s.doubleTapToTap = v,
         ),
         SwitchListTile(
-          title: const Text('Ordenar a mão'),
-          subtitle: const Text('Feitiços por custo primeiro, terrenos no fim'),
+          title: Text(tr('Ordenar a mão')),
+          subtitle: Text(tr('Feitiços por custo primeiro, terrenos no fim')),
           value: s.sortHand,
           onChanged: (v) => s.sortHand = v,
         ),
         SwitchListTile(
-          title: const Text('Manter o ecrã ligado durante o jogo'),
-          subtitle: const Text('Evita que a rede caia quando o ecrã se apaga'),
+          title: Text(tr('Manter o ecrã ligado durante o jogo')),
+          subtitle: Text(tr('Evita que a rede caia quando o ecrã se apaga')),
           value: s.keepScreenOn,
           onChanged: (v) => s.keepScreenOn = v,
         ),
         SwitchListTile(
-          title: const Text('Confirmar antes de sair da mesa'),
+          title: Text(tr('Confirmar antes de sair da mesa')),
           value: s.confirmLeave,
           onChanged: (v) => s.confirmLeave = v,
         ),
-        section('Dados', Icons.storage_outlined),
+        section(tr('Dados'), Icons.storage_outlined),
         ListTile(
           leading: const Icon(Icons.cloud_download_outlined),
-          title: const Text('Base de cartas e imagens offline'),
+          title: Text(tr('Base de cartas e imagens offline')),
           subtitle: Text(data.hasData
-              ? '${data.cardCount} cartas${data.updateAvailable ? ' · há uma atualização' : ''}'
-              : 'Ainda não descarregada'),
+              ? tr('{cardCount} cartas{v}',
+                  {'cardCount': data.cardCount, 'v': data.updateAvailable ? tr(' · há uma atualização') : ''})
+              : tr('Ainda não descarregada')),
           trailing: data.updateAvailable || !data.hasData
               ? const Badge(child: Icon(Icons.chevron_right))
               : const Icon(Icons.chevron_right),
@@ -160,46 +186,46 @@ class SettingsTab extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.bar_chart),
-          title: const Text('Histórico e estatísticas'),
+          title: Text(tr('Histórico e estatísticas')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () =>
               Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
         ),
         ListTile(
           leading: const Icon(Icons.upload_file),
-          title: const Text('Exportar backup'),
-          subtitle: const Text('Decks, as minhas cartas e histórico num ficheiro (Drive, PC…)'),
+          title: Text(tr('Exportar backup')),
+          subtitle: Text(tr('Decks, as minhas cartas e histórico num ficheiro (Drive, PC…)')),
           onTap: () => exportBackup(context, ref),
         ),
         ListTile(
           leading: const Icon(Icons.download_outlined),
-          title: const Text('Importar backup'),
-          subtitle: const Text('Junta o que está no ficheiro ao que já tens'),
+          title: Text(tr('Importar backup')),
+          subtitle: Text(tr('Junta o que está no ficheiro ao que já tens')),
           onTap: () => importBackupFile(context, ref),
         ),
-        section('Sobre', Icons.info_outline),
+        section(tr('Sobre'), Icons.info_outline),
         ListTile(
           leading: const Icon(Icons.slideshow_outlined),
-          title: const Text('Ver a introdução'),
-          subtitle: const Text('O que a app faz e como funciona'),
+          title: Text(tr('Ver a introdução')),
+          subtitle: Text(tr('O que a app faz e como funciona')),
           onTap: () => Navigator.of(context)
               .push(MaterialPageRoute<void>(builder: (_) => const OnboardingScreen(replay: true))),
         ),
         ListTile(
           leading: SvgPicture.asset(Brand.symbol(theme.brightness), width: 28, height: 28),
-          title: const Text('Sobre o EDHere'),
-          subtitle: const Text('Versão $appVersion'),
+          title: Text(tr('Sobre o EDHere')),
+          subtitle: Text(tr('Versão {appVersion}', {'appVersion': appVersion})),
           trailing: const Icon(Icons.chevron_right),
           onTap: () =>
               Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
         ),
         ListTile(
           leading: const Icon(Icons.description_outlined),
-          title: const Text('Licenças'),
+          title: Text(tr('Licenças')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => showLicensePage(
             context: context,
-            applicationName: 'EDHere',
+            applicationName: tr('EDHere'),
             applicationVersion: appVersion,
             applicationIcon: Padding(
               padding: const EdgeInsets.all(12),
@@ -219,7 +245,7 @@ class SettingsTab extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Não foi possível usar a imagem: $e')));
+            .showSnackBar(SnackBar(content: Text(tr('Não foi possível usar a imagem: {e}', {'e': e}))));
       }
     }
   }

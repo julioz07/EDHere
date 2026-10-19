@@ -8,6 +8,7 @@ import '../../data/collection.dart';
 import '../../data/providers.dart';
 import '../widgets/card_view.dart';
 import '../widgets/responsive.dart';
+import '../../l10n/l10n.dart';
 
 /// Campo de pesquisa com resultados, usado no separador Cartas e ao
 /// acrescentar cartas a um deck.
@@ -19,7 +20,7 @@ class CardSearchView extends ConsumerStatefulWidget {
     this.initialQuery = '',
     this.fixedFilter = '',
     this.autofocus = false,
-    this.hint = 'Nome ou filtros (t:dragon id:rg)',
+    this.hint,
     this.onlyOwned = false,
     this.header,
     this.defaultOrder = 'name',
@@ -45,7 +46,7 @@ class CardSearchView extends ConsumerStatefulWidget {
   /// Filtro acrescentado sempre à pesquisa (ex.: identidade do comandante).
   final String fixedFilter;
   final bool autofocus;
-  final String hint;
+  final String? hint;
 
   @override
   ConsumerState<CardSearchView> createState() => _CardSearchViewState();
@@ -92,7 +93,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
         ? (widget.onlyOwned || widget.listWhenEmpty ? widget.fixedFilter : '')
         : (widget.fixedFilter.isEmpty ? q : '$q ${widget.fixedFilter}');
     if (base.isEmpty || base.contains('order:') || _order == 'name') return base;
-    return '$base order:$_order';
+    return tr('{base} order:{order}', {'base': base, 'order': _order});
   }
 
   void _onChanged(String _) {
@@ -162,7 +163,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _run(),
             decoration: InputDecoration(
-              hintText: widget.hint,
+              hintText: widget.hint ?? tr('Nome ou filtros (t:dragon id:rg)'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (_ctrl.text.isNotEmpty)
@@ -182,7 +183,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
                     },
                   ),
                 IconButton(
-                  tooltip: 'Ajuda da pesquisa',
+                  tooltip: tr('Ajuda da pesquisa'),
                   icon: const Icon(Icons.help_outline),
                   onPressed: () => showSearchHelp(context),
                 ),
@@ -193,7 +194,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
         if (_errors.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Filtro não reconhecido: ${_errors.join(', ')}',
+            child: Text(tr('Filtro não reconhecido: {v}', {'v': _errors.join(', ')}),
                 style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
           ),
         if (widget.header != null) widget.header!,
@@ -201,11 +202,15 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 8, 2),
             child: Row(children: [
-              Text(_total == 1 ? '1 carta' : '$_total cartas',
+              Text(_total == 1 ? tr('1 carta') : tr('{total} cartas', {'total': _total}),
                   style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               const Spacer(),
               // Ordenar sem saber a sintaxe "order:".
-              for (final (id, label) in const [('name', 'Nome'), ('edhrec', 'Popular'), ('mv', 'Custo')])
+              for (final (id, label) in [
+                ('name', tr('Nome')),
+                ('edhrec', tr('Popular')),
+                ('mv', tr('Custo'))
+              ])
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: ChoiceChip(
@@ -264,23 +269,23 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
 }
 
 void showSearchHelp(BuildContext context) {
-  const rows = [
-    ('sol ring', 'Nome contém'),
-    ('!"Sol Ring"', 'Nome exato'),
-    ('t:dragon', 'Tipo'),
-    ('o:"draw a card"', 'Texto da carta'),
-    ('k:flying', 'Palavra-chave'),
-    ('c:rg  c=r  c:m  c:c', 'Cores (ou "azorius", "esper"…)'),
-    ('id:esper', 'Cabe na identidade de cor'),
-    ('mv<=3  pow>=4  tou:2', 'Valor de mana, poder, resistência'),
-    ('f:commander', 'Legal no formato'),
-    ('banned:modern', 'Banida no formato'),
-    ('r:mythic  s:cmm', 'Raridade, coleção'),
-    ('is:commander', 'Pode ser comandante'),
-    ('is:token  is:dfc', 'Tokens, duas faces'),
-    ('-t:land', 'Negar um filtro'),
-    ('bolt or shock', 'Uma ou outra'),
-    ('order:mv  order:edhrec', 'Ordenar'),
+  final rows = [
+    (tr('sol ring'), tr('Nome contém')),
+    (tr('!"Sol Ring"'), tr('Nome exato')),
+    ('t:dragon', tr('Tipo')),
+    (tr('o:"draw a card"'), tr('Texto da carta')),
+    ('k:flying', tr('Palavra-chave')),
+    (tr('c:rg  c=r  c:m  c:c'), tr('Cores (ou "azorius", "esper"…)')),
+    ('id:esper', tr('Cabe na identidade de cor')),
+    (tr('mv<=3  pow>=4  tou:2'), tr('Valor de mana, poder, resistência')),
+    ('f:commander', tr('Legal no formato')),
+    ('banned:modern', tr('Banida no formato')),
+    (tr('r:mythic  s:cmm'), tr('Raridade, coleção')),
+    ('is:commander', tr('Pode ser comandante')),
+    (tr('is:token  is:dfc'), tr('Tokens, duas faces')),
+    ('-t:land', tr('Negar um filtro')),
+    (tr('bolt or shock'), tr('Uma ou outra')),
+    (tr('order:mv  order:edhrec'), tr('Ordenar')),
   ];
   showModalBottomSheet<void>(
     context: context,
@@ -290,9 +295,9 @@ void showSearchHelp(BuildContext context) {
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [
-          Text('Pesquisa', style: Theme.of(ctx).textTheme.titleLarge),
+          Text(tr('Pesquisa'), style: Theme.of(ctx).textTheme.titleLarge),
           const SizedBox(height: 4),
-          const Text('Sintaxe parecida com a do Scryfall. Junta vários filtros com espaços.'),
+          Text(tr('Sintaxe parecida com a do Scryfall. Junta vários filtros com espaços.')),
           const SizedBox(height: 12),
           for (final (code, desc) in rows)
             Padding(

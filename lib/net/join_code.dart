@@ -1,3 +1,5 @@
+import '../l10n/l10n.dart';
+
 /// Conteúdo do QR code de uma sala: `edhere://join?h=IP1,IP2&p=PORTA&n=NOME&k=1`.
 class JoinCode {
   const JoinCode({
@@ -33,7 +35,7 @@ class JoinCode {
     return JoinCode(
       hosts: hosts,
       port: port,
-      roomName: q['n'] ?? 'Sala',
+      roomName: q['n'] ?? tr('Sala'),
       hasPin: q['k'] == '1',
     );
   }
@@ -43,5 +45,5 @@ class JoinCode {
 /// à rede sem escrever a password.
 String wifiQr({required String ssid, required String password}) {
   String esc(String s) => s.replaceAllMapped(RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
-  return 'WIFI:T:WPA;S:${esc(ssid)};P:${esc(password)};;';
+  return tr('WIFI:T:WPA;S:{v};P:{v2};;', {'v': esc(ssid), 'v2': esc(password)});
 }
