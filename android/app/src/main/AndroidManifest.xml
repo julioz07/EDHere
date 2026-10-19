@@ -19,7 +19,10 @@
     <!-- Ecrã ligado durante o jogo -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
+    <!-- enableOnBackInvokedCallback=false: no Android 16 o "voltar" continua a
+         passar pelo Flutter (navegação e PopScope), sem o voltar preditivo. -->
     <application
+        android:enableOnBackInvokedCallback="false"
         android:label="EDHere"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

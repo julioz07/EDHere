@@ -4,7 +4,7 @@ Tudo o que é preciso para publicar a versão 1.5.0. Os ficheiros estão no NAS,
 
 | Ficheiro | Para quê |
 | --- | --- |
-| `EDHere-v1.5.0-31.aab` | O pacote a enviar (App Bundle, assinado com a chave de upload) |
+| `EDHere-v1.5.0-32.aab` | O pacote a enviar (App Bundle, assinado com a chave de upload) |
 | `icon-512.png` | Ícone da app (512×512) |
 | `feature-graphic-{pt,en,es,it}.png` | Imagem de destaque (1024×500), uma por língua |
 | `phone-{pt,en,es,it}-N-*.png` | Capturas de ecrã do telemóvel (1080×1920), com legenda |
@@ -83,8 +83,8 @@ Depois, em **Gerir traduções › Adicionar as suas próprias traduções**, ju
 2. **Testers:** cria uma lista de emails (no mínimo 12 pessoas para a regra dos 14 dias) ou usa um Grupo do Google. Copia o **link de participação**: é o "link do open beta" para a landing page.
 3. **Criar versão:**
    - Na primeira vez, aceita a **Assinatura de apps do Google Play** com a chave gerada pela Google (opção recomendada). A nossa chave fica como chave de upload.
-   - Envia o `EDHere-v1.5.0-31.aab`.
-   - Nome da versão: `1.5.0 (31)`. Notas: as do `listing.md`, nas 4 línguas.
+   - Envia o `EDHere-v1.5.0-32.aab`.
+   - Nome da versão: `1.5.0 (32)`. Notas: as do `listing.md`, nas 4 línguas.
 4. **Países:** todos, ou começa por Portugal, Espanha, Itália, Brasil, Reino Unido e EUA.
 5. **Rever e implementar.** A primeira revisão da Google costuma demorar 1 a 7 dias.
 
