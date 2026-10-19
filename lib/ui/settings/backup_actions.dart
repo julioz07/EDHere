@@ -172,7 +172,9 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
               contentPadding: EdgeInsets.zero,
               value: games,
               onChanged: (v) => set_(() => games = v!),
-              title: Text(tr('Histórico ({n} partidas)', {'n': backup.games.length})),
+              title: Text(backup.games.length == 1
+                  ? tr('Histórico (1 partida)')
+                  : tr('Histórico ({n} partidas)', {'n': backup.games.length})),
             ),
         ]),
         actions: [

@@ -9,6 +9,7 @@ import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 import 'app/theme.dart';
 import 'data/app_paths.dart';
+import 'data/card_data_service.dart';
 import 'data/providers.dart';
 import 'data/settings.dart';
 import 'ui/onboarding_screen.dart';
@@ -22,7 +23,15 @@ Future<void> main() async {
         ['Mana (Andrew Gioia)'], await rootBundle.loadString('assets/licenses/mana_OFL.txt'));
   });
   final prefs = await SharedPreferences.getInstance();
-  // A língua da app: a escolhida nas Definições ou a do telemóvel.
+  // A língua da app: a escolhida nas Definições ou a do telemóvel. Quem já
+  // usava a app antes das línguas (1.3 ou anterior) continua em português,
+  // com as cartas em inglês como as tinha.
+  if (prefs.getString(Settings.langKey) == null && prefs.getKeys().isNotEmpty) {
+    await prefs.setString(Settings.langKey, AppLang.pt.code);
+    if (prefs.getString(CardDataService.cardLangKey) == null) {
+      await prefs.setString(CardDataService.cardLangKey, 'en');
+    }
+  }
   L10n.use(AppLang.byCode(prefs.getString(Settings.langKey)) ?? L10n.fromSystem());
   final paths = await AppPaths.resolve();
   final store = DeckStore.open(paths.userDb);

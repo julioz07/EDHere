@@ -377,7 +377,7 @@ Future<CardInstance?> _pickFieldCard(BuildContext context, GameController ctrl,
                         card: ctrl.card(c.oracleId, printId: c.printId),
                         width: 36,
                         showTapped: false)),
-                title: Text(ctrl.card(c.oracleId, printId: c.printId)?.name ?? c.tokenName ?? tr('Token')),
+                title: Text(ctrl.card(c.oracleId, printId: c.printId)?.displayName ?? c.tokenName ?? tr('Token')),
                 subtitle: Text(ctrl.state.players[c.controller]?.name ?? ''),
                 onTap: () => Navigator.pop(ctx, c),
               ),
@@ -1092,7 +1092,7 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                   ),
                   for (final c in enemyCommanders)
                     stepper(
-                      '${ctrl.card(c.oracleId, printId: c.printId)?.frontName ?? '?'} (${s.players[c.owner]?.name})',
+                      '${ctrl.card(c.oracleId, printId: c.printId)?.displayFrontName ?? '?'} (${s.players[c.owner]?.name})',
                       p.commanderDamage[c.id] ?? 0,
                       (d) => ctrl.commanderDamage(seat, c.id, d),
                       leading: Icon(Icons.star_rounded,

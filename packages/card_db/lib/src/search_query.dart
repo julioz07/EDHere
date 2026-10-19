@@ -7,6 +7,7 @@ class CompiledQuery {
     required this.where,
     required this.args,
     required this.orderBy,
+    this.orderArgs = const [],
     required this.errors,
     required this.isEmpty,
   });
@@ -14,6 +15,9 @@ class CompiledQuery {
   final String where;
   final List<Object?> args;
   final String orderBy;
+
+  /// Valores dos `?` em [orderBy] (vêm depois de [args]).
+  final List<Object?> orderArgs;
 
   /// Filtros que não foram percebidos (mostrados ao utilizador).
   final List<String> errors;
@@ -40,7 +44,10 @@ class _Sql {
 CompiledQuery compileSearch(String input, {bool localized = false}) {
   final tokens = _tokenize(input);
   final errors = <String>[];
-  var orderBy = 'name_norm';
+  // Ordena pelo nome que se vê: o traduzido, quando há.
+  final nk = localized ? 'coalesce(l_name_norm, name_norm)' : 'name_norm';
+  String? orderBy;
+  String? firstName;
   var includeExtras = false;
   var includeDigital = false;
 
@@ -63,11 +70,11 @@ CompiledQuery compileSearch(String input, {bool localized = false}) {
       final k = key.toLowerCase();
       if (k == 'order') {
         orderBy = switch (value.toLowerCase()) {
-          'mv' || 'cmc' => 'mv, name_norm',
-          'edhrec' => 'edhrec_rank IS NULL, edhrec_rank, name_norm',
-          'power' || 'pow' => 'CAST(power AS REAL) DESC, name_norm',
-          'rarity' => '${_rarityRank('rarity')} DESC, name_norm',
-          _ => 'name_norm',
+          'mv' || 'cmc' => 'mv, $nk',
+          'edhrec' => 'edhrec_rank IS NULL, edhrec_rank, $nk',
+          'power' || 'pow' => 'CAST(power AS REAL) DESC, $nk',
+          'rarity' => '${_rarityRank('rarity')} DESC, $nk',
+          _ => nk,
         };
         continue;
       }
@@ -101,6 +108,7 @@ CompiledQuery compileSearch(String input, {bool localized = false}) {
     text = _unquote(text);
     if (text.isEmpty) continue;
     final norm = normalizeName(text);
+    if (!exact && !negate) firstName ??= norm;
     final sql = exact
         ? (localized
             ? _Sql('(cards.oracle_id IN (SELECT oracle_id FROM card_names WHERE name_norm = ?) OR l_name_norm = ?)',
@@ -129,10 +137,22 @@ CompiledQuery compileSearch(String input, {bool localized = false}) {
   if (!includeExtras) parts.add('is_extra = 0');
   if (!includeDigital) parts.add('is_paper = 1');
 
+  // Sem order: explícito, o nome igual ao pesquisado vem primeiro, depois os
+  // que começam por ele ("relampago" -> Relámpago antes de Relámpago arco).
+  final orderArgs = <Object?>[];
+  if (orderBy == null && firstName != null) {
+    final starts = '${_escapeLike(firstName)}%';
+    orderBy = localized
+        ? "(name_norm = ? OR l_name_norm = ?) DESC, (name_norm LIKE ? ESCAPE '\\' OR l_name_norm LIKE ? ESCAPE '\\') DESC, $nk"
+        : "(name_norm = ?) DESC, (name_norm LIKE ? ESCAPE '\\') DESC, $nk";
+    orderArgs.addAll(localized ? [firstName, firstName, starts, starts] : [firstName, starts]);
+  }
+
   return CompiledQuery(
     where: parts.isEmpty ? '1' : parts.map((p) => '($p)').join(' AND '),
     args: args,
-    orderBy: orderBy,
+    orderBy: orderBy ?? nk,
+    orderArgs: orderArgs,
     errors: errors,
     isEmpty: nonEmpty.isEmpty,
   );

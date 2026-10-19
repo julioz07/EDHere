@@ -98,7 +98,7 @@ Future<VersionChoice?> showVersionPicker(BuildContext context, db.Card base,
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: Row(children: [
-                  Expanded(child: Text('$title · ${base.name}', style: theme.textTheme.titleMedium)),
+                  Expanded(child: Text('$title · ${base.displayName}', style: theme.textTheme.titleMedium)),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, const VersionChoice.byDefault()),
                     child: Text(tr('Por defeito')),

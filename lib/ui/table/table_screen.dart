@@ -1113,8 +1113,10 @@ class _TableHandState extends ConsumerState<TableHand> {
         height: 36,
         child: Center(
           child: Text(
-              tr('Mão de {v}: {v2} cartas',
-                  {'v': ctrl.state.players[seat]?.name, 'v2': ctrl.state.players[seat]?.handCount ?? 0}),
+              (ctrl.state.players[seat]?.handCount ?? 0) == 1
+                  ? tr('Mão de {v}: 1 carta', {'v': ctrl.state.players[seat]?.name})
+                  : tr('Mão de {v}: {v2} cartas',
+                      {'v': ctrl.state.players[seat]?.name, 'v2': ctrl.state.players[seat]?.handCount ?? 0}),
               style: theme.textTheme.bodySmall),
         ),
       );
@@ -1128,7 +1130,7 @@ class _TableHandState extends ConsumerState<TableHand> {
         final la = (ca?.isLand ?? false) ? 1 : 0, lb = (cb?.isLand ?? false) ? 1 : 0;
         if (la != lb) return la.compareTo(lb);
         final mv = (ca?.mv ?? 0).compareTo(cb?.mv ?? 0);
-        return mv != 0 ? mv : (ca?.name ?? '').compareTo(cb?.name ?? '');
+        return mv != 0 ? mv : (ca?.displayName ?? '').compareTo(cb?.displayName ?? '');
       });
     }
     final covered = widget.hidden && !_peek;

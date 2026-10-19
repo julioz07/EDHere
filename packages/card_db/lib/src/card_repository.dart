@@ -83,7 +83,7 @@ class CardRepository {
     final total = _db.select('SELECT COUNT(*) AS n FROM $_from WHERE $where', args).first['n'] as int;
     final rows = _db.select(
       'SELECT * FROM $_from WHERE $where ORDER BY ${q.orderBy} LIMIT ? OFFSET ?',
-      [...args, limit, offset],
+      [...args, ...q.orderArgs, limit, offset],
     );
     return SearchResult([for (final r in rows) _remember(Card.fromRow(r))], total, q.errors);
   }

@@ -195,7 +195,7 @@ class CardDataService extends ChangeNotifier {
             progress: 0, message: tr('A descarregar as cartas em {lang}…', {'lang': label}));
         final base =
             'https://api.scryfall.com/cards/search?q=${Uri.encodeQueryComponent('lang:$lang game:paper')}'
-            '&unique=cards&order=name';
+            '&unique=prints&order=name';
         // A primeira página diz quantas há; as outras pedem-se várias de cada
         // vez (duas), com pelo menos 150 ms entre pedidos, como o Scryfall pede.
         final first = await _fetchPage(base);

@@ -113,8 +113,11 @@ class Card {
   String get displayName => printed?.name.isNotEmpty ?? false ? printed!.name : name;
 
   /// Nome da face da frente a mostrar.
-  String get displayFrontName =>
-      printed?.face(0)?.name.isNotEmpty ?? false ? printed!.face(0)!.name : frontName;
+  String get displayFrontName {
+    final f = printed?.face(0)?.name;
+    if (f != null && f.isNotEmpty) return f;
+    return faces.isEmpty ? displayName : frontName;
+  }
 
   String displayTypeOf([int face = -1]) {
     final p = face >= 0 ? printed?.face(face)?.typeLine : printed?.typeLine;

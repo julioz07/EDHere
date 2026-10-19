@@ -66,7 +66,7 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
       appBar: AppBar(title: Text(tr('Mãos de {v}', {'v': widget.deck.name}))),
       body: MaxWidth(
           child: ListView(padding: const EdgeInsets.all(16), children: [
-        Text(tr('{v} terrenos nesta mão', {'v': _lands(_hand)}), style: theme.textTheme.titleMedium),
+        Text(_lands(_hand) == 1 ? tr('1 terreno nesta mão') : tr('{v} terrenos nesta mão', {'v': _lands(_hand)}), style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         GridView.count(
           shrinkWrap: true,
@@ -94,7 +94,7 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
           ),
         ]),
         const SizedBox(height: 20),
-        Text(tr('{total} mãos simuladas', {'total': total}), style: theme.textTheme.titleSmall),
+        Text(total == 1 ? tr('1 mão simulada') : tr('{total} mãos simuladas', {'total': total}), style: theme.textTheme.titleSmall),
         Text(tr('Média de terrenos: {v}', {'v': avg.toStringAsFixed(2)})),
         Text(tr('Mãos com 2 a 4 terrenos: {v}%',
             {'v': total == 0 ? 0 : (good * 100 / total).toStringAsFixed(0)})),
@@ -103,7 +103,7 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Row(children: [
-              SizedBox(width: 90, child: Text(tr('{k} terrenos', {'k': k}))),
+              SizedBox(width: 90, child: Text(k == 1 ? tr('1 terreno') : tr('{k} terrenos', {'k': k}))),
               Expanded(
                 child: LinearProgressIndicator(
                   value: byCount[k]! / total,

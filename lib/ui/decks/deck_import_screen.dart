@@ -89,7 +89,7 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     final repo = ref.read(cardRepoProvider)!;
     final commanders = [
       for (final e in r.entries.where((e) => e.board == Board.command))
-        if (repo.get(e.oracleId) case final c?) c.frontName.split(',').first,
+        if (repo.get(e.oracleId) case final c?) c.displayFrontName.split(',').first,
     ];
     final name = _name.text.trim().isNotEmpty
         ? _name.text.trim()

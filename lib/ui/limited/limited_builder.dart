@@ -463,7 +463,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
               child: Text(
                   commanders.isEmpty
                       ? tr('Comandante')
-                      : tr('Comandante: {v}', {'v': commanders.map((c) => c.base.name).join(' + ')}),
+                      : tr('Comandante: {v}', {'v': commanders.map((c) => c.base.displayName).join(' + ')}),
                   style: theme.textTheme.titleMedium),
             ),
             TextButton.icon(

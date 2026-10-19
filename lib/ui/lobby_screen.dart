@@ -210,14 +210,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       chosen,
       legal: legal,
       commanderNames: [
-        for (final e in chosen.inBoard(Board.command)) cards[e.oracleId]?.name ?? '?',
+        for (final e in chosen.inBoard(Board.command)) cards[e.oracleId]?.displayName ?? '?',
       ],
       gameChangers: format.hasCommandZone ? BracketEstimate.of(chosen, cards).count : null,
     );
     if (!legal && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(tr('O deck tem {n} avisos para {v}. Podes jogar na mesma.',
-            {'n': issues.length, 'v': format.label})),
+        content: Text(issues.length == 1
+            ? tr('O deck tem 1 aviso para {v}. Podes jogar na mesma.', {'v': format.label})
+            : tr('O deck tem {n} avisos para {v}. Podes jogar na mesma.',
+                {'n': issues.length, 'v': format.label})),
       ));
     }
   }
@@ -375,7 +377,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     color: theme.colorScheme.primaryContainer,
                     child: ListTile(
                       leading: const Icon(Icons.image_outlined),
-                      title: Text(tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
+                      title: Text(missing.length == 1
+                          ? tr('{v} tem 1 imagem que não tens', {'v': p.name})
+                          : tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
                       subtitle: Text(g.transfer?.seat == p.seat
                           ? tr('A receber do dispositivo de {v}… {received}/{expected}', {
                               'v': p.name,

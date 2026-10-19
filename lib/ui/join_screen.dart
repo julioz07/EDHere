@@ -223,7 +223,9 @@ class _JoinScreenState extends State<JoinScreen> {
                       title: Text(room.name),
                       subtitle: Text([
                         room.format,
-                        tr('{freeSeats} lugares livres', {'freeSeats': room.freeSeats}),
+                        room.freeSeats == 1
+                            ? tr('1 lugar livre')
+                            : tr('{freeSeats} lugares livres', {'freeSeats': room.freeSeats}),
                         if (room.host != null) '${room.host}:${room.port}',
                         if (room.appVersion != appVersion)
                           tr('versão {appVersion}', {'appVersion': room.appVersion}),

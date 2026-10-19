@@ -66,7 +66,7 @@ List<DeckIssue> validateDeck(
     if (walkers.isNotEmpty) identity = walkers.first.identityMask;
     for (final s in spells) {
       if (s.identityMask & ~identity != 0) {
-        err(cardDbTr('O signature spell {v} está fora da identidade de cor do oathbreaker.', {'v': s.name}), s.oracleId);
+        err(cardDbTr('O signature spell {v} está fora da identidade de cor do oathbreaker.', {'v': s.displayName}), s.oracleId);
       }
     }
   } else if (command.isNotEmpty) {
@@ -103,19 +103,19 @@ List<DeckIssue> validateDeck(
     final limit = status == 'restricted' ? 1 : card.copyLimit(format.maxCopies);
     if (limit != null && n > limit) {
       err(format.isSingleton && limit == 1
-          ? cardDbTr('{v}: {n} cópias num formato singleton.', {'v': card.name, 'n': n})
-          : cardDbTr('{v}: {n} cópias; o máximo é {limit}.', {'v': card.name, 'n': n, 'limit': limit}), id);
+          ? cardDbTr('{v}: {n} cópias num formato singleton.', {'v': card.displayName, 'n': n})
+          : cardDbTr('{v}: {n} cópias; o máximo é {limit}.', {'v': card.displayName, 'n': n, 'limit': limit}), id);
     }
     if (status == 'banned') {
-      err(cardDbTr('{v} está banida em {v2}.', {'v': card.name, 'v2': format.label}), id);
+      err(cardDbTr('{v} está banida em {v2}.', {'v': card.displayName, 'v2': format.label}), id);
     } else if (status == null && format.legalityKey != null) {
       // Formatos sem lista de legalidade (Limited) aceitam tudo o que sai.
-      err(cardDbTr('{v} não é legal em {v2}.', {'v': card.name, 'v2': format.label}), id);
+      err(cardDbTr('{v} não é legal em {v2}.', {'v': card.displayName, 'v2': format.label}), id);
     }
     if (format.hasCommandZone &&
         commanderCards.isNotEmpty &&
         card.identityMask & ~identity != 0) {
-      err(cardDbTr('{v} está fora da identidade de cor do comandante.', {'v': card.name}), id);
+      err(cardDbTr('{v} está fora da identidade de cor do comandante.', {'v': card.displayName}), id);
     }
   }
   return issues;
@@ -127,7 +127,7 @@ void _checkCommanders(
     final ok = c.canBeCommander ||
         (format.commanderMayBePlaneswalker && c.isLegendary && c.frontType.contains('Planeswalker')) ||
         (cmds.length == 2 && _isBackground(c));
-    if (!ok) err(cardDbTr('{v} não pode ser comandante.', {'v': c.name}), c.oracleId);
+    if (!ok) err(cardDbTr('{v} não pode ser comandante.', {'v': c.displayName}), c.oracleId);
   }
   if (cmds.length > 2) {
     err(cardDbTr('No máximo dois comandantes (parceiros).'));
@@ -135,7 +135,7 @@ void _checkCommanders(
       !canPartner(cmds[0], cmds[1]) &&
       // No commander draft, duas lendas monocolores também podem.
       !(format.id == 'commanderdraft' && cmds.every((c) => c.canBeCommander && _bits(c.colorMask) == 1))) {
-    err(cardDbTr('{v} e {v2} não podem ser comandantes juntos (precisam de Partner, Friends forever, Background ou Doctor\'s companion).', {'v': cmds[0].name, 'v2': cmds[1].name}));
+    err(cardDbTr('{v} e {v2} não podem ser comandantes juntos (precisam de Partner, Friends forever, Background ou Doctor\'s companion).', {'v': cmds[0].displayName, 'v2': cmds[1].displayName}));
   }
 }
 

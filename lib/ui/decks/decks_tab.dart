@@ -165,7 +165,7 @@ class DecksTab extends ConsumerWidget {
                                   tr('{v} · {v2} cartas{v3}', {
                                     'v': format.label,
                                     'v2': format.hasCommandZone ? d.playableCount : d.count(Board.main),
-                                    'v3': cmds.isEmpty ? '' : ' · ${cmds.map((c) => c.frontName).join(' + ')}'
+                                    'v3': cmds.isEmpty ? '' : ' · ${cmds.map((c) => c.displayFrontName).join(' + ')}'
                                   }),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,

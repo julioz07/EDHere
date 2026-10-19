@@ -70,13 +70,19 @@ class LocalizedImporter {
   }
 
   late String _lang;
+  final _scores = <String, int>{};
 
-  /// Uma carta impressa na língua. Se a mesma carta vier duas vezes, fica a
-  /// primeira (a pesquisa do Scryfall já devolve uma por carta).
+  /// Uma impressão da carta na língua. Muitas impressões não têm o tipo ou o
+  /// texto traduzidos no Scryfall: de cada carta fica a mais completa (o
+  /// texto conta mais do que a imagem; no empate, a primeira).
   void add(Map<String, dynamic> c) {
     final faces = (c['card_faces'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
     final oracle = c['oracle_id'] as String? ?? (faces.isNotEmpty ? faces.first['oracle_id'] as String? : null);
     if (oracle == null) return;
+    final score = _score(c, faces);
+    if ((_scores[oracle] ?? -1) >= score) return;
+    if (_scores[oracle] == null) imported++;
+    _scores[oracle] = score;
     String? s(Map<String, dynamic> m, String k) => (m[k] as String?)?.trim().isEmpty ?? true ? null : m[k] as String;
     final name = s(c, 'printed_name') ??
         (faces.isNotEmpty && faces.any((f) => s(f, 'printed_name') != null)
@@ -96,7 +102,6 @@ class LocalizedImporter {
     if (status == 'placeholder' || status == 'missing') {
       _ins.execute([oracle, _lang, name, name == null ? null : normalizeName(name), type, text,
           _facesJson(faces, s, withImages: false), null, null, null, null, null, null]);
-      imported++;
       return;
     }
     final top = (c['image_uris'] as Map?)?.cast<String, dynamic>();
@@ -118,7 +123,17 @@ class LocalizedImporter {
       imgs?['small'],
       imgs?['normal'],
     ]);
-    imported++;
+  }
+
+  static int _score(Map<String, dynamic> c, List<Map<String, dynamic>> faces) {
+    bool has(String k) =>
+        (c[k] as String?)?.trim().isNotEmpty == true ||
+        faces.any((f) => (f[k] as String?)?.trim().isNotEmpty == true);
+    final status = c['image_status'] as String?;
+    return (has('printed_name') ? 1 : 0) +
+        (has('printed_type_line') ? 4 : 0) +
+        (has('printed_text') ? 4 : 0) +
+        (status == 'placeholder' || status == 'missing' ? 0 : 2);
   }
 
   /// Só os campos que [add] usa (para não guardar as cartas inteiras em

@@ -58,12 +58,12 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     });
   }
 
+  // Ao sair, as imagens das cartas que se juntaram (no dispose o ref já não
+  // se pode usar).
   @override
-  void dispose() {
-    final images = ref.read(imagesProvider);
-    final cards = _cards().values.toList();
-    super.dispose();
-    images.ensure(cards);
+  void deactivate() {
+    ref.read(imagesProvider).ensure(_cards().values.toList());
+    super.deactivate();
   }
 
   Future<void> _addCards({bool commander = false}) async {
@@ -108,6 +108,16 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     setState(() {});
   }
 
+  /// Põe a carta na zona de comando; se já estava no deck, é essa cópia
+  /// (com a versão escolhida) que passa para lá.
+  static Deck _toCommand(Deck d, String oracleId) {
+    final main = d.entries.where((e) => e.oracleId == oracleId && e.board == Board.main).firstOrNull;
+    if (main == null) return d.add(oracleId, board: Board.command);
+    return d
+        .setQty(oracleId, Board.main, main.qty - 1)
+        .add(oracleId, board: Board.command, category: main.category, printId: main.printId);
+  }
+
   /// Escolher um comandante: o primeiro entra logo; um segundo só se forem
   /// parceiros, senão pergunta se é para trocar. Devolve true para fechar a
   /// pesquisa.
@@ -120,12 +130,12 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
       return false;
     }
     if (current.isEmpty) {
-      _update(_deck.add(c.oracleId, board: Board.command));
+      _update(_toCommand(_deck, c.oracleId));
       return true;
     }
     final first = cards[current.first.oracleId];
     if (current.length == 1 && first != null && canPartner(first, c)) {
-      _update(_deck.add(c.oracleId, board: Board.command));
+      _update(_toCommand(_deck, c.oracleId));
       return true;
     }
     final names = [for (final e in current) cards[e.oracleId]?.displayName ?? '?'].join(' + ');
@@ -146,7 +156,7 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     for (final e in current) {
       d = d.setQty(e.oracleId, Board.command, 0);
     }
-    _update(d.add(c.oracleId, board: Board.command));
+    _update(_toCommand(d, c.oracleId));
     return true;
   }
 
@@ -160,7 +170,9 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     ref.read(collectionProvider).addAll(cards, atLeast: true);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('{n} cartas juntas às minhas cartas.', {'n': cards.length}))));
+          SnackBar(content: Text(cards.length == 1
+              ? tr('1 carta junta às minhas cartas.')
+              : tr('{n} cartas juntas às minhas cartas.', {'n': cards.length}))));
     }
   }
 

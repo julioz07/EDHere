@@ -68,6 +68,7 @@ void main() {
     final bolt = repo.findByName('Lightning Bolt')!;
     expect(bolt.name, 'Lightning Bolt');
     expect(bolt.displayName, 'Fulmine');
+    expect(bolt.displayFrontName, 'Fulmine');
     expect(bolt.displayTypeOf(), 'Istantaneo');
     expect(bolt.displayTextOf(), startsWith('Fulmine infligge'));
     expect(bolt.oracleText, startsWith('Lightning Bolt deals'));
@@ -93,6 +94,17 @@ void main() {
     repo.close();
   });
 
+  test('a ordem segue o nome traduzido; o nome igual vem primeiro', () {
+    final repo = CardRepository.open(path)!;
+    final names = repo.search('e order:name', limit: 200).cards.map((c) => normalizeName(c.displayName)).toList();
+    expect(names, [...names]..sort());
+    expect(names, contains('anello del sole'));
+    // Sem order:, o nome que começa pelo texto vem antes dos que só o contêm.
+    final bolt = repo.search('bolt').cards.map((c) => c.name).toList();
+    expect(bolt.first, 'Lightning Bolt');
+    repo.close();
+  });
+
   test('cartas de duas faces: nomes e imagens de cada face', () {
     final repo = CardRepository.open(path)!;
     final d = repo.findByName('Delver of Secrets')!;
@@ -101,6 +113,28 @@ void main() {
     expect(d.displayFrontName, 'Cercatore di Segreti');
     expect(d.faces[1].imgNormal, 'n1');
     expect(ImageRef.allOf(d).map((r) => r.key), ['it-delver_0', 'it-delver_1']);
+    repo.close();
+  });
+
+  test('de várias impressões fica a que tem o texto traduzido', () async {
+    final p = await buildFixtureDb();
+    final imp = LocalizedImporter(p)..begin('es');
+    imp.add({'id': 'es-1', 'oracle_id': 'oid-Lightning Bolt', 'printed_name': 'Relámpago', 'set': 'tle'});
+    imp.add({
+      'id': 'es-2',
+      'oracle_id': 'oid-Lightning Bolt',
+      'printed_name': 'Relámpago',
+      'printed_type_line': 'Instantáneo',
+      'printed_text': 'El Relámpago hace 3 puntos de daño a cualquier objetivo.',
+      'set': 'm10',
+    });
+    imp.add({'id': 'es-3', 'oracle_id': 'oid-Lightning Bolt', 'printed_name': 'Relámpago', 'set': 'sld'});
+    imp.finish();
+    final repo = CardRepository.open(p)!;
+    final bolt = repo.findByName('relampago')!;
+    expect(bolt.displayTypeOf(), 'Instantáneo');
+    expect(bolt.printId, 'es-2');
+    expect(imp.imported, 1);
     repo.close();
   });
 
