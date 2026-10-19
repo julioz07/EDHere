@@ -29,7 +29,7 @@ class _Slide {
   final String title;
   final List<(IconData, String)> points;
 
-  /// Print da app (em assets/onboarding).
+  /// Print da app na língua da app (em assets/onboarding/<língua>).
   final String? image;
   final IconData? icon;
 }
@@ -45,7 +45,7 @@ List<_Slide> get _slides => [
             tr('É uma mesa, não um árbitro: tu jogas as cartas e a app guarda vida, contadores, zonas e o registo.')
           ),
         ],
-        image: 'assets/onboarding/table.jpg',
+        image: 'assets/onboarding/${L10n.lang.code}/table.jpg',
       ),
       _Slide(
         tr('Decks, cartas e boosters'),
@@ -57,7 +57,7 @@ List<_Slide> get _slides => [
           ),
           (Icons.card_giftcard, tr('Abre boosters: sealed, draft, Commander draft e JumpStart.')),
         ],
-        image: 'assets/onboarding/deck.jpg',
+        image: 'assets/onboarding/${L10n.lang.code}/deck.jpg',
       ),
       _Slide(
         tr('Jogar juntos e aprender'),
@@ -72,7 +72,7 @@ List<_Slide> get _slides => [
             tr('Nunca jogaste? O tutorial "Aprender a jogar Commander" ensina-te a jogar.')
           ),
         ],
-        image: 'assets/onboarding/room.jpg',
+        image: 'assets/onboarding/${L10n.lang.code}/room.jpg',
       ),
       _Slide(
         tr('Primeiro, as cartas'),
@@ -145,7 +145,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               PopupMenuButton<AppLang>(
                 tooltip: tr('Língua'),
                 initialValue: L10n.lang,
-                onSelected: (l) => ref.read(settingsProvider).appLang = l,
+                onSelected: (l) {
+                  // A app refaz-se na nova língua; vista das Definições, volta lá.
+                  if (widget.replay) AppShell.reopenTab = 3;
+                  ref.read(settingsProvider).appLang = l;
+                },
                 itemBuilder: (_) => [
                   for (final l in AppLang.values) PopupMenuItem(value: l, child: Text(l.label)),
                 ],

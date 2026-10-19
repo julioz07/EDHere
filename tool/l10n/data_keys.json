@@ -416,5 +416,9 @@
  "Cubo (lista para packs)": "formats",
  "Livre": "formats",
  "Mão": "zones",
- "Campo": "zones"
+ "Campo": "zones",
+ "Comando": "boards",
+ "Deck": "boards",
+ "Sideboard": "boards",
+ "Talvez": "boards"
 }

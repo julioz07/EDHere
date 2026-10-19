@@ -148,7 +148,7 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                 style: theme.textTheme.bodySmall),
             stepper(
                 tr('Tempo por escolha'),
-                timer == 0 ? 'livre' : '${timer}s',
+                timer == 0 ? tr('livre') : '${timer}s',
                 timer > 0 ? () => set_(() => timer = timer <= 30 ? 0 : timer - 15) : null,
                 timer < 120 ? () => set_(() => timer = timer == 0 ? 30 : timer + 15) : null),
             if (timer > 0)

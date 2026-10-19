@@ -59,6 +59,9 @@ Map<String, String> dataKeys() {
   for (final z in Zone.values) {
     add(z.label, 'zones');
   }
+  for (final b in Board.values) {
+    add(b.label, 'boards');
+  }
   return keys;
 }
 

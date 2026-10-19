@@ -1,3 +1,5 @@
+import 'i18n.dart';
+
 const Object _keep = Object();
 
 /// Onde uma carta está no deck.
@@ -7,9 +9,12 @@ enum Board {
   side('side', 'Sideboard'),
   maybe('maybe', 'Talvez');
 
-  const Board(this.id, this.label);
+  const Board(this.id, this._label);
   final String id;
-  final String label;
+  final String _label;
+
+  /// O nome da secção na língua da app.
+  String get label => cardDbTr(_label);
 
   static Board byId(String id) =>
       values.firstWhere((b) => b.id == id, orElse: () => main);

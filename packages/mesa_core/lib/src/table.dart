@@ -441,7 +441,7 @@ class Table {
       case Ev.reveal:
         final seat = i('seat');
         final oids = (p['os'] as List).cast<String>();
-        s.revealed = Reveal(seat, oids, p['what'] as String? ?? 'cartas', to: oi('to'));
+        s.revealed = Reveal(seat, oids, p['what'] as String? ?? mesaTr('cartas'), to: oi('to'));
         return mesaTr('{v} revelou {v2}{v3}: {v4}', {'v': _n(seat), 'v2': p['what'] ?? '', 'v3': oi('to') == null ? '' : mesaTr(' a {v}', {'v': _n(oi('to')!)}), 'v4': oids.map((o) => '[[$o]]').join(', ')});
 
       case Ev.scryDone:

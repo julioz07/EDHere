@@ -184,20 +184,37 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                             : tr(' (grátis)')
                       })),
                     ),
-                  GridView.count(
-                    shrinkWrap: true,
-                    crossAxisCount: 4,
-                    childAspectRatio: cardAspect,
-                    mainAxisSpacing: 6,
-                    crossAxisSpacing: 6,
-                    children: [
-                      for (final pc in hand)
-                        if (ctrl.card(pc.oracleId, printId: pc.printId) case final c?)
-                          CardImage(c, radius: 4)
-                        else
-                          const CardBack(),
-                    ],
-                  ),
+                  // Colunas suficientes para a mão caber na altura (tablet deitado).
+                  Builder(builder: (context) {
+                    final screen = MediaQuery.sizeOf(context);
+                    final maxH = screen.height * 0.55;
+                    // Largura do conteúdo do diálogo: o ecrã menos as margens (40 + 24 de cada lado).
+                    final width = screen.width - 128;
+                    var cols = 4;
+                    while (cols < hand.length) {
+                      final w = (width - (cols - 1) * 6) / cols;
+                      final rows = (hand.length / cols).ceil();
+                      if (rows * w / cardAspect + (rows - 1) * 6 <= maxH) break;
+                      cols++;
+                    }
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxH),
+                      child: GridView.count(
+                        shrinkWrap: true,
+                        crossAxisCount: cols,
+                        childAspectRatio: cardAspect,
+                        mainAxisSpacing: 6,
+                        crossAxisSpacing: 6,
+                        children: [
+                          for (final pc in hand)
+                            if (ctrl.card(pc.oracleId, printId: pc.printId) case final c?)
+                              CardImage(c, radius: 4)
+                            else
+                              const CardBack(),
+                        ],
+                      ),
+                    );
+                  }),
                 ]),
               ),
               actions: [

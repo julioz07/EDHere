@@ -219,7 +219,7 @@ class _Packs extends ConsumerWidget {
                           tr('{total} cartas · {v}', {
                             'total': st.total,
                             'v': complete
-                                ? 'completo'
+                                ? tr('completo')
                                 : tr('faltam {missing} (~{v})',
                                     {'missing': st.missing, 'v': formatBytes(st.estimateBytes(size))})
                           }),
@@ -306,8 +306,9 @@ class _StorageState extends ConsumerState<_Storage> {
                         final ok = await showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
-                            title: Text(
-                                tr('Apagar imagens {v}?', {'v': size == 'small' ? 'pequenas' : 'normais'})),
+                            title: Text(size == 'small'
+                                ? tr('Apagar as imagens pequenas?')
+                                : tr('Apagar as imagens normais?')),
                             content: Text(tr('Podes voltar a descarregá-las depois.')),
                             actions: [
                               TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
@@ -325,7 +326,7 @@ class _StorageState extends ConsumerState<_Storage> {
                         _usage = null;
                         if (mounted) setState(() {});
                       },
-                child: Text(tr('Apagar {v}', {'v': size == 'small' ? 'pequenas' : 'normais'})),
+                child: Text(size == 'small' ? tr('Apagar as pequenas') : tr('Apagar as normais')),
               ),
           ]),
         ]),

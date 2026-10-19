@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.4.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.4.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -101,6 +101,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.4.1 | Introdução com imagens da app em cada língua; traduções que faltavam (raridade, secções do deck, apagar imagens, estatísticas, draft); a mão inicial cabe no ecrã do tablet ao deitado; downloads da língua das cartas mais cuidadosos com o Scryfall (2 pedidos de cada vez, esperas em caso de 429) |
 | 1.4.0 | Línguas: app em português, inglês, espanhol e italiano (deteta a do telemóvel; inglês por defeito), seletor nas Definições e na introdução; cartas na língua escolhida (nome, texto e imagem do Scryfall), com pesquisa pelos dois nomes. Planeswalkers mostram as habilidades na língua das cartas |
 | 1.3.0 | Tutorial: capítulos "Os tipos de carta a fundo" (instantâneo e feitiço, artefactos, equipamentos com prática de Equip, veículos, encantamentos, auras, sagas, lendários) e "Planeswalkers e lealdade" (com jogo); glossário maior. Mesa: os planeswalkers entram com a lealdade inicial e as habilidades +N/−N usam-se no menu da carta, com registo. Brief da landing page em `docs/` |
 | 1.2.1 | Tutorial: os custos ({1}{G}, {T}…) aparecem como símbolos de mana; a vez dos adversários vai mais devagar (cerca de 3,5 s por jogada) e o guia mostra a lista do que fizeram |

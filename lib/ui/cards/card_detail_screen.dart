@@ -249,7 +249,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
             if (card.gameChanger) Chip(label: Text(tr('Game Changer'))),
             Chip(
               avatar: SetSymbol(card.setCode, rarity: card.rarity, size: 18),
-              label: Text('${card.setCode.toUpperCase()} · ${card.rarity}'),
+              label: Text('${card.setCode.toUpperCase()} · ${rarityName(card.rarity)}'),
             ),
           ]),
           const SizedBox(height: 16),
@@ -370,3 +370,14 @@ class _OwnedAndDecks extends ConsumerWidget {
     );
   }
 }
+
+/// A raridade na língua da app.
+String rarityName(String r) => switch (r) {
+      'common' => tr('comum'),
+      'uncommon' => tr('incomum'),
+      'rare' => tr('rara'),
+      'mythic' => tr('mítica'),
+      'special' => tr('especial'),
+      'bonus' => tr('bónus'),
+      _ => r,
+    };

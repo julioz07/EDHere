@@ -74,13 +74,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   // Mesma altura para todos, mesmo quando o texto parte em duas linhas.
                   IntrinsicHeight(
                       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    stat('jogos', '${games.length}'),
+                    stat(tr('jogos'), '${games.length}'),
                     const SizedBox(width: 8),
                     stat(tr('vitórias'), solo.isEmpty ? '—' : '${(wins * 100 / solo.length).round()}%'),
                     const SizedBox(width: 8),
                     stat(tr('min por jogo'), avgMin.toStringAsFixed(0)),
                     const SizedBox(width: 8),
-                    stat('turnos', avgTurns.toStringAsFixed(1)),
+                    stat(tr('turnos'), avgTurns.toStringAsFixed(1)),
                   ])),
                   if (perDeck.isNotEmpty) ...[
                     const SizedBox(height: 16),
