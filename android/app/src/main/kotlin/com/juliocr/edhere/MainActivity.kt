@@ -2,6 +2,7 @@ package com.juliocr.edhere
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.location.LocationManager
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -28,6 +29,16 @@ class MainActivity : FlutterActivity() {
                     }
                     else -> result.notImplemented()
                 }
+            }
+        // Mesa partilhada: fixa o ecrã na orientação em que está (pousado na
+        // mesa, o tablet não pode rodar quando alguém lhe toca).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/orientation")
+            .setMethodCallHandler { call, result ->
+                requestedOrientation = when (call.method) {
+                    "lock" -> ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                    else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
+                result.success(null)
             }
         // Partilhar texto (listas de decks) pela folha de partilha do Android.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/share")

@@ -1,0 +1,22 @@
+[
+["=Categoria mudada ({n}).", "Category changed ({n}).", "Categoría cambiada ({n}).", "Categoria cambiata ({n})."],
+["=Movidas para {v}: {n}.", "Moved to {v}: {n}.", "Movidas a {v}: {n}.", "Spostate in {v}: {n}."],
+["=Removidas: {n}.", "Removed: {n}.", "Quitadas: {n}.", "Rimosse: {n}."],
+["=Cancelar seleção", "Cancel selection", "Cancelar selección", "Annulla selezione"],
+["=1 selecionada", "1 selected", "1 seleccionada", "1 selezionata"],
+["={n} selecionadas", "{n} selected", "{n} seleccionadas", "{n} selezionate"],
+["=Selecionar todas", "Select all", "Seleccionar todas", "Seleziona tutte"],
+["=Mover para…", "Move to…", "Mover a…", "Sposta in…"],
+["=Importar lista para este deck", "Import a list into this deck", "Importar lista a este mazo", "Importa una lista in questo mazzo"],
+["=Nenhuma", "None", "Ninguna", "Nessuna"],
+["=Todas", "All", "Todas", "Tutte"],
+["={found} cartas importadas para {v}.", "{found} cards imported into {v}.", "{found} cartas importadas a {v}.", "{found} carte importate in {v}."],
+["=Importar para {v}", "Import into {v}", "Importar a {v}", "Importa in {v}"],
+["=Juntar às que lá estão", "Add to the current cards", "Añadir a las que ya hay", "Aggiungi a quelle presenti"],
+["=Substituir o deck", "Replace the deck", "Sustituir el mazo", "Sostituisci il mazzo"],
+["=Partida de teste (2 a 6 jogadores)", "Test match (2 to 6 players)", "Partida de prueba (2 a 6 jugadores)", "Partita di prova (da 2 a 6 giocatori)"],
+["=Partida de teste", "Test match", "Partida de prueba", "Partita di prova"],
+["=Uma partida completa num só dispositivo: controlas todos os jogadores e, ao passar o turno, a mesa mostra o seguinte. Para testar decks ou ensinar alguém. Para jogar a sério, cada um com o seu telemóvel, usa \"Criar sala\".", "A full game on a single device: you control every player and, when you pass the turn, the table shows the next one. For testing decks or teaching someone. To play for real, each on their own phone, use \"Create room\".", "Una partida completa en un solo dispositivo: controlas a todos los jugadores y, al pasar el turno, la mesa muestra al siguiente. Para probar mazos o enseñar a alguien. Para jugar en serio, cada uno con su móvil, usa \"Crear sala\".", "Una partita completa su un solo dispositivo: controlli tutti i giocatori e, quando passi il turno, il tavolo mostra il successivo. Per provare i mazzi o insegnare a qualcuno. Per giocare sul serio, ognuno con il suo telefono, usa \"Crea stanza\"."],
+["=Menos", "Fewer", "Menos", "Meno"],
+["=1 carta importada para {v}.", "1 card imported into {v}.", "1 carta importada a {v}.", "1 carta importata in {v}."]
+]

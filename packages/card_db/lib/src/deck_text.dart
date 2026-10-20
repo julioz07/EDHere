@@ -72,6 +72,9 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
     final raw = lines[i].trim();
     if (raw.isEmpty) {
       if (!hasHeaders && blocks.last.isNotEmpty) blocks.add([]);
+      // "Commander", o comandante, uma linha em branco e o resto sem
+      // cabeçalho "Deck": o resto é o deck, não mais comandantes.
+      if (board == Board.command && blocks.last.any((p) => p.board == Board.command)) board = Board.main;
       continue;
     }
     final h = _header.firstMatch(raw);
@@ -104,7 +107,7 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
   }
 
   final nonEmpty = blocks.where((b) => b.isNotEmpty).toList();
-  if (hasHeaders || nonEmpty.length < 2) return nonEmpty.expand((b) => b).toList();
+  if (hasHeaders || nonEmpty.length < 2) return _sanity(nonEmpty.expand((b) => b).toList());
 
   // Formato MTGO: o último bloco é o sideboard (ou os comandantes).
   final last = nonEmpty.last;
@@ -114,6 +117,20 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
     for (final p in last)
       ParsedLine(p.qty, p.name, lastBoard,
           category: p.category, line: p.line, setCode: p.setCode, collectorNumber: p.collectorNumber),
+  ];
+}
+
+/// Salvaguarda: mais de dois comandantes e nada no deck é uma lista sem o
+/// cabeçalho do deck. Só a primeira carta fica na zona de comando.
+List<ParsedLine> _sanity(List<ParsedLine> lines) {
+  final command = lines.where((p) => p.board == Board.command).toList();
+  if (command.length <= 2 || lines.any((p) => p.board == Board.main)) return lines;
+  return [
+    for (final p in lines)
+      p.board == Board.command && !identical(p, command.first)
+          ? ParsedLine(p.qty, p.name, Board.main,
+              category: p.category, line: p.line, setCode: p.setCode, collectorNumber: p.collectorNumber)
+          : p,
   ];
 }
 

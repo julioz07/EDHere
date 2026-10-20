@@ -184,9 +184,9 @@ class _PlayTabState extends ConsumerState<PlayTab> {
             ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
-              onPressed: hasDecks ? () => _go((_) => const DuelSetupScreen()) : null,
+              onPressed: hasDecks ? () => _go((_) => const TestMatchSetupScreen()) : null,
               icon: const Icon(Icons.people_alt_outlined),
-              label: Text(tr('1 contra 1 neste dispositivo')),
+              label: Text(tr('Partida de teste (2 a 6 jogadores)')),
             ),
             if (!hasDecks)
               Padding(

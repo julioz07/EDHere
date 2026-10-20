@@ -8,19 +8,15 @@ import '../cards/card_detail_screen.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import 'table_card.dart';
+import 'table_turns.dart';
 import '../../l10n/l10n.dart';
 
-Future<T?> _sheet<T>(BuildContext context, WidgetBuilder builder) => showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: builder,
-    );
+Future<T?> _sheet<T>(BuildContext context, WidgetBuilder builder) => showTableSheet<T>(context, builder);
 
 /// Pede um número (para "comprar N", "scry N", etc.).
 Future<int?> pickNumber(BuildContext context, String title, {int initial = 1, int max = 20}) {
   var n = initial;
-  return showDialog<int>(
+  return showTableDialog<int>(
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, set) => AlertDialog(
@@ -46,7 +42,7 @@ Future<int?> pickNumber(BuildContext context, String title, {int initial = 1, in
 
 Future<int?> pickPlayer(BuildContext context, GameController ctrl, String title, {bool excludeSelf = false}) {
   final players = ctrl.state.players.values.where((p) => !excludeSelf || p.seat != ctrl.actor).toList();
-  return showDialog<int>(
+  return showTableDialog<int>(
     context: context,
     builder: (ctx) => SimpleDialog(
       title: Text(title),
@@ -201,7 +197,7 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
       if (card != null)
         _tile(Icons.zoom_in, tr('Ver carta'), () {
           Navigator.pop(ctx);
-          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
+          pushTablePage<void>(context, CardDetailScreen(card: card));
         }),
       _tile(Icons.highlight, ctrl.state.highlight == c.id ? tr('Tirar destaque') : tr('Destacar para todos'),
           () => done(() => ctrl.highlight(ctrl.state.highlight == c.id ? null : c))),
@@ -313,7 +309,7 @@ Future<void> moveMaybeToCommand(BuildContext context, GameController ctrl, CardI
     return;
   }
   final name = ctrl.card(c.oracleId, printId: c.printId)?.displayFrontName ?? tr('O comandante');
-  final command = await showDialog<bool>(
+  final command = await showTableDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       icon: const Icon(Icons.star_rounded, color: Colors.amber),
@@ -551,7 +547,7 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
 
               Future<void> addOther() async {
                 final text = TextEditingController();
-                final kind = await showDialog<String>(
+                final kind = await showTableDialog<String>(
                   context: ctx,
                   builder: (d) => AlertDialog(
                     title: Text(tr('Outro contador')),
@@ -653,7 +649,7 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
 Future<int?> pickValue(BuildContext context, String title, {int initial = 0, bool signed = false}) {
   final ctrl = TextEditingController(text: '$initial');
   int? parse(String v) => int.tryParse(v.replaceAll('+', '').trim());
-  return showDialog<int>(
+  return showTableDialog<int>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
@@ -705,7 +701,7 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
       if (card != null)
         _tile(Icons.zoom_in, tr('Ver carta'), () {
           Navigator.pop(ctx);
-          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CardDetailScreen(card: card)));
+          pushTablePage<void>(context, CardDetailScreen(card: card));
         }),
     ]);
   });
@@ -777,7 +773,7 @@ Future<void> showLibraryMenu(BuildContext context, GameController ctrl) {
 /// Escolher N cartas da mão para o fundo (depois do mulligan).
 Future<void> showBottomPicker(BuildContext context, GameController ctrl, int n) {
   final chosen = <int>{};
-  return showDialog<void>(
+  return showTableDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => ListenableBuilder(
@@ -945,7 +941,7 @@ Future<void> showLibrarySearch(BuildContext context, GameController ctrl) {
                     for (final pc in shown)
                       if (ctrl.card(pc.oracleId, printId: pc.printId) case final card?)
                         CardTile(card, onTap: () async {
-                          final to = await showDialog<String>(
+                          final to = await showTableDialog<String>(
                             context: ctx,
                             builder: (d) => SimpleDialog(title: Text(card.displayName), children: [
                               for (final (k, l) in [
@@ -1288,7 +1284,7 @@ Future<void> showLogSheet(BuildContext context, GameController ctrl) {
 }
 
 Future<void> showRevealDialog(BuildContext context, GameController ctrl, Reveal r) {
-  return showDialog<void>(
+  return showTableDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(tr('{v} revelou {what}', {'v': ctrl.state.players[r.seat]?.name, 'what': r.what})),

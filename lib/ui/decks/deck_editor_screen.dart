@@ -19,6 +19,7 @@ import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'decks_tab.dart';
+import 'deck_import_screen.dart';
 import 'hand_simulator_screen.dart';
 import '../../l10n/l10n.dart';
 
@@ -35,10 +36,81 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
   late Deck _deck = ref.read(deckStoreProvider).getDeck(widget.deckId)!;
   late bool _grid = ref.read(deckStoreProvider).setting('deck_view') == 'grid';
 
+  /// Cartas selecionadas (toque longo), por [_selKey].
+  final Set<String> _sel = {};
+
   GameFormat get _format => GameFormat.byId(_deck.format);
 
   void _update(Deck d) {
-    setState(() => _deck = ref.read(decksProvider).save(d));
+    setState(() {
+      _deck = ref.read(decksProvider).save(d);
+      // O que deixou de existir sai da seleção.
+      final keys = {for (final e in _deck.entries) _selKey(e)};
+      _sel.removeWhere((k) => !keys.contains(k));
+    });
+  }
+
+  void _toggle(DeckEntry e) =>
+      setState(() => _sel.contains(_selKey(e)) ? _sel.remove(_selKey(e)) : _sel.add(_selKey(e)));
+
+  /// Selecionar (ou largar, se já estavam todas) as cartas de uma secção.
+  void _toggleAll(List<DeckEntry> entries) => setState(() {
+        final keys = entries.map(_selKey).toSet();
+        if (_sel.containsAll(keys)) {
+          _sel.removeAll(keys);
+        } else {
+          _sel.addAll(keys);
+        }
+      });
+
+  List<DeckEntry> get _selected => [
+        for (final e in _deck.entries)
+          if (_sel.contains(_selKey(e))) e,
+      ];
+
+  /// Aplica uma mudança às cartas selecionadas, com "Desfazer".
+  void _bulk(Deck Function(Deck d, DeckEntry e) change, String done) {
+    final before = _deck;
+    final entries = _selected;
+    var d = _deck;
+    for (final e in entries) {
+      d = change(d, e);
+    }
+    _sel.clear();
+    _update(d);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(done),
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(label: tr('Desfazer'), onPressed: () => _update(before)),
+      ));
+  }
+
+  Future<void> _bulkCategory() async {
+    final cat = await _askCategory(null);
+    if (cat == null) return;
+    _bulk((d, e) => d.setCategory(e.oracleId, e.board, cat.isEmpty ? null : cat),
+        tr('Categoria mudada ({n}).', {'n': _sel.length}));
+  }
+
+  void _bulkMove(Board to) {
+    final n = _sel.length;
+    _bulk((d, e) => d.move(e.oracleId, e.board, to), tr('Movidas para {v}: {n}.', {'n': n, 'v': to.label}));
+  }
+
+  void _bulkRemove() {
+    final n = _sel.length;
+    _bulk((d, e) => d.setQty(e.oracleId, e.board, 0), tr('Removidas: {n}.', {'n': n}));
+  }
+
+  Future<void> _importInto() async {
+    final done = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => DeckImportScreen(intoDeckId: _deck.id),
+    ));
+    if (done == true && mounted) {
+      setState(() => _deck = ref.read(deckStoreProvider).getDeck(_deck.id!) ?? _deck);
+    }
   }
 
   Map<String, db.Card> _cards() => ref.read(cardRepoProvider)!.getMany(_deck.entries.map((e) => e.oracleId));
@@ -454,106 +526,162 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
     // deck precisa do espaço).
     final narrow = MediaQuery.sizeOf(context).width < 400;
 
+    final selecting = _sel.isNotEmpty;
+    final selectionBar = AppBar(
+      leading: IconButton(
+        tooltip: tr('Cancelar seleção'),
+        icon: const Icon(Icons.close),
+        onPressed: () => setState(_sel.clear),
+      ),
+      title: Text(_sel.length == 1 ? tr('1 selecionada') : tr('{n} selecionadas', {'n': _sel.length})),
+      actions: [
+        IconButton(
+          tooltip: tr('Selecionar todas'),
+          icon: const Icon(Icons.select_all),
+          onPressed: () => setState(() => _sel.addAll(_deck.entries.map(_selKey))),
+        ),
+        PopupMenuButton<Board>(
+          tooltip: tr('Mover para…'),
+          icon: const Icon(Icons.drive_file_move_outline),
+          onSelected: _bulkMove,
+          itemBuilder: (_) => [
+            for (final b in Board.values)
+              if (b != Board.command || f.hasCommandZone)
+                PopupMenuItem(
+                  value: b,
+                  child: Text(b == Board.command
+                      ? (f.commandZone == CommandZone.oathbreaker ? tr('Zona de comando') : tr('Comandante'))
+                      : tr('Mover para {v}', {'v': b.label})),
+                ),
+          ],
+        ),
+        IconButton(tooltip: tr('Categoria'), icon: const Icon(Icons.label_outline), onPressed: _bulkCategory),
+        IconButton(tooltip: tr('Remover'), icon: const Icon(Icons.delete_outline), onPressed: _bulkRemove),
+      ],
+    );
+
     return DefaultTabController(
       length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_deck.name, overflow: TextOverflow.ellipsis),
-            Text(tr('{v} · {size}{v2} cartas', {'v': f.label, 'size': size, 'v2': target == null ? '' : '/$target'}),
-                style: Theme.of(context).textTheme.bodySmall),
-          ]),
-          actions: [
-            if (!narrow) ...[
-              IconButton(
-                tooltip: tr('Testar (goldfish)'),
-                icon: const Icon(Icons.play_arrow_rounded),
-                onPressed: _deck.playableCount == 0
-                    ? null
-                    : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
-                        )),
-              ),
-              IconButton(
-                tooltip: _grid ? tr('Ver em lista') : tr('Ver em grelha'),
-                icon: Icon(_grid ? Icons.view_list : Icons.grid_view),
-                onPressed: _toggleView,
-              ),
-            ],
-            IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
-            PopupMenuButton<String>(
-              onSelected: (v) => switch (v) {
-                'edit' => _editSettings(),
-                'own' => _ownDeck(),
-                'hands' => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => HandSimulatorScreen(deck: _deck, cards: _cards()),
-                  )),
-                'delete' => _delete(),
-                'test' => _deck.playableCount == 0
-                    ? null
-                    : Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
-                      )),
-                'view' => _toggleView(),
-                _ => null,
-              },
-              itemBuilder: (_) => [
-                if (narrow) ...[
-                  PopupMenuItem(value: 'test', child: Text(tr('Testar (goldfish)'))),
-                  PopupMenuItem(value: 'view', child: Text(_grid ? tr('Ver em lista') : tr('Ver em grelha'))),
-                ],
-                PopupMenuItem(value: 'hands', child: Text(tr('Simular mãos iniciais'))),
-                PopupMenuItem(value: 'own', child: Text(tr('Tenho este deck (juntar às minhas cartas)'))),
-                PopupMenuItem(value: 'edit', child: Text(tr('Nome e formato'))),
-                PopupMenuItem(value: 'delete', child: Text(tr('Apagar deck'))),
-              ],
+      child: PopScope(
+        // Em modo de seleção, "voltar" larga a seleção em vez de sair.
+        canPop: !selecting,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) setState(_sel.clear);
+        },
+        child: Scaffold(
+          appBar: selecting
+              ? selectionBar
+              : AppBar(
+                  title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(_deck.name, overflow: TextOverflow.ellipsis),
+                    Text(
+                        tr('{v} · {size}{v2} cartas',
+                            {'v': f.label, 'size': size, 'v2': target == null ? '' : '/$target'}),
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ]),
+                  actions: [
+                    if (!narrow) ...[
+                      IconButton(
+                        tooltip: tr('Testar (goldfish)'),
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        onPressed: _deck.playableCount == 0
+                            ? null
+                            : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                                  builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
+                                )),
+                      ),
+                      IconButton(
+                        tooltip: _grid ? tr('Ver em lista') : tr('Ver em grelha'),
+                        icon: Icon(_grid ? Icons.view_list : Icons.grid_view),
+                        onPressed: _toggleView,
+                      ),
+                    ],
+                    IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
+                    PopupMenuButton<String>(
+                      onSelected: (v) => switch (v) {
+                        'edit' => _editSettings(),
+                        'own' => _ownDeck(),
+                        'hands' => Navigator.of(context).push(MaterialPageRoute<void>(
+                            builder: (_) => HandSimulatorScreen(deck: _deck, cards: _cards()),
+                          )),
+                        'delete' => _delete(),
+                        'test' => _deck.playableCount == 0
+                            ? null
+                            : Navigator.of(context).push(MaterialPageRoute<void>(
+                                builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
+                              )),
+                        'view' => _toggleView(),
+                        'import' => _importInto(),
+                        _ => null,
+                      },
+                      itemBuilder: (_) => [
+                        if (narrow) ...[
+                          PopupMenuItem(value: 'test', child: Text(tr('Testar (goldfish)'))),
+                          PopupMenuItem(value: 'view', child: Text(_grid ? tr('Ver em lista') : tr('Ver em grelha'))),
+                        ],
+                        PopupMenuItem(value: 'import', child: Text(tr('Importar lista para este deck'))),
+                        PopupMenuItem(value: 'hands', child: Text(tr('Simular mãos iniciais'))),
+                        PopupMenuItem(value: 'own', child: Text(tr('Tenho este deck (juntar às minhas cartas)'))),
+                        PopupMenuItem(value: 'edit', child: Text(tr('Nome e formato'))),
+                        PopupMenuItem(value: 'delete', child: Text(tr('Apagar deck'))),
+                      ],
+                    ),
+                  ],
+                  bottom: TabBar(tabs: [
+                    Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Cartas')))),
+                    Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Estatísticas')))),
+                    Tab(
+                      // Com letra grande, os rótulos encolhem em vez de transbordar.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(tr('Validação')),
+                          const SizedBox(width: 6),
+                          if (!f.validates)
+                            const Icon(Icons.remove_circle_outline, size: 16)
+                          else if (errors == 0)
+                            const Icon(Icons.check_circle, size: 16, color: EdhColors.ok)
+                          else
+                            Badge(label: Text('$errors'), backgroundColor: EdhColors.bad),
+                        ]),
+                      ),
+                    ),
+                  ]),
+                ),
+          floatingActionButton: selecting
+              ? null
+              : FloatingActionButton(
+                  tooltip: tr('Juntar cartas'),
+                  onPressed: () => _addCards(),
+                  child: const Icon(Icons.add),
+                ),
+          body: TabBarView(children: [
+            _CardList(
+              grid: _grid,
+              deck: _deck,
+              cards: cards,
+              format: f,
+              issues: issues,
+              onTap: (e, c) => selecting ? _toggle(e) : _entryActions(e, c),
+              selected: _sel,
+              onToggle: _toggle,
+              onToggleAll: _toggleAll,
+              shown: (e, c) => ref.read(printsProvider).resolve(c, printId: e.printId),
+              owned: ref.watch(collectionProvider).owned,
+              onChooseCommander: () => _addCards(commander: true),
             ),
-          ],
-          bottom: TabBar(tabs: [
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Cartas')))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text(tr('Estatísticas')))),
-            Tab(
-              // Com letra grande, os rótulos encolhem em vez de transbordar.
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(tr('Validação')),
-                  const SizedBox(width: 6),
-                  if (!f.validates)
-                    const Icon(Icons.remove_circle_outline, size: 16)
-                  else if (errors == 0)
-                    const Icon(Icons.check_circle, size: 16, color: EdhColors.ok)
-                  else
-                    Badge(label: Text('$errors'), backgroundColor: EdhColors.bad),
-                ]),
-              ),
-            ),
+            _StatsView(deck: _deck, cards: cards, format: f),
+            _IssuesView(issues: issues, format: f, cards: cards),
           ]),
         ),
-        floatingActionButton: FloatingActionButton(
-          tooltip: tr('Juntar cartas'),
-          onPressed: () => _addCards(),
-          child: const Icon(Icons.add),
-        ),
-        body: TabBarView(children: [
-          _CardList(
-            grid: _grid,
-            deck: _deck,
-            cards: cards,
-            format: f,
-            issues: issues,
-            onTap: _entryActions,
-            shown: (e, c) => ref.read(printsProvider).resolve(c, printId: e.printId),
-            owned: ref.watch(collectionProvider).owned,
-            onChooseCommander: () => _addCards(commander: true),
-          ),
-          _StatsView(deck: _deck, cards: cards, format: f),
-          _IssuesView(issues: issues, format: f, cards: cards),
-        ]),
       ),
     );
   }
 }
+
+/// Chave de uma entrada na seleção (a mesma carta pode estar no deck e no
+/// sideboard).
+String _selKey(DeckEntry e) => '${e.board.id}|${e.oracleId}';
 
 enum _Group { type, mv }
 
@@ -568,7 +696,15 @@ class _CardList extends StatefulWidget {
     required this.shown,
     this.owned = const {},
     this.grid = false,
+    this.selected = const {},
+    this.onToggle,
+    this.onToggleAll,
   });
+
+  /// Seleção do editor (chaves de [_selKey]); com alguma, toca-se para marcar.
+  final Set<String> selected;
+  final void Function(DeckEntry)? onToggle;
+  final void Function(List<DeckEntry>)? onToggleAll;
 
   /// A carta com a versão desta entrada (ou a preferida).
   final db.Card Function(DeckEntry e, db.Card base) shown;
@@ -608,8 +744,12 @@ class _CardListState extends State<_CardList> {
   VoidCallback get onChooseCommander => widget.onChooseCommander;
   bool get grid => widget.grid;
 
+  bool get selecting => widget.selected.isNotEmpty;
+
   Widget _tile(DeckEntry e, db.Card c) => CardTile(
         shown(e, c),
+        onLongPress: widget.onToggle == null ? null : () => widget.onToggle!(e),
+        selected: selecting ? widget.selected.contains(_selKey(e)) : null,
         // Num telemóvel estreito, miniaturas menores: cabem mais cartas no ecrã.
         thumbWidth: MediaQuery.sizeOf(context).width < 400 ? 60 : 84,
         subtitle: [c.displayTypeOf(), if (_ownedNote(e) case final n?) n].join(' · '),
@@ -786,11 +926,22 @@ class _CardListState extends State<_CardList> {
         for (final (title, entries) in sections)
           if (entries.isNotEmpty || title == tr('Comandante')) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                '$title (${entries.fold(0, (n, e) => n + e.qty)})',
-                style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
-              ),
+              padding: EdgeInsets.fromLTRB(16, selecting ? 8 : 16, 8, selecting ? 0 : 4),
+              child: Row(children: [
+                Expanded(
+                  child: Text(
+                    '$title (${entries.fold(0, (n, e) => n + e.qty)})',
+                    style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                ),
+                // Em modo de seleção: escolher a secção inteira.
+                if (selecting && entries.isNotEmpty && widget.onToggleAll != null)
+                  TextButton(
+                    onPressed: () => widget.onToggleAll!(entries),
+                    child:
+                        Text(entries.every((e) => widget.selected.contains(_selKey(e))) ? tr('Nenhuma') : tr('Todas')),
+                  ),
+              ]),
             ),
             if (grid)
               Padding(
@@ -810,6 +961,8 @@ class _CardListState extends State<_CardList> {
                           qty: e.qty,
                           flagged: flagged.contains(e.oracleId),
                           onTap: () => onTap(e, c),
+                          onLongPress: widget.onToggle == null ? null : () => widget.onToggle!(e),
+                          selected: selecting ? widget.selected.contains(_selKey(e)) : null,
                         ),
                   ],
                 ),
@@ -1158,20 +1311,49 @@ class _AddCardsScreenState extends State<_AddCardsScreen> {
 
 /// Carta na vista em grelha do deck, com a quantidade por cima.
 class _GridCard extends StatelessWidget {
-  const _GridCard({required this.card, required this.qty, required this.flagged, required this.onTap});
+  const _GridCard(
+      {required this.card,
+      required this.qty,
+      required this.flagged,
+      required this.onTap,
+      this.onLongPress,
+      this.selected});
 
   final db.Card card;
   final int qty;
   final bool flagged;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool? selected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Stack(children: [
         Positioned.fill(child: CardImage(card, radius: 8)),
+        if (selected == true)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.primary.withOpacity(0.25),
+                border: Border.all(color: scheme.primary, width: 3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        if (selected != null)
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: CircleAvatar(
+              radius: 13,
+              backgroundColor: selected! ? scheme.primary : Colors.black54,
+              child: Icon(selected! ? Icons.check : Icons.circle_outlined, color: Colors.white, size: 18),
+            ),
+          ),
         if (qty > 1)
           Positioned(
             top: 6,

@@ -24,9 +24,7 @@ class CardImage extends ConsumerWidget {
     // A imagem da língua das cartas; enquanto não está, a inglesa que já houver.
     final base = card.basePrintId;
     final file = images.best(ImageRef.keyFor(card, face), preferNormal: preferNormal) ??
-        (base == null
-            ? null
-            : images.best(card.hasFaceImages ? '${base}_$face' : base, preferNormal: preferNormal));
+        (base == null ? null : images.best(card.hasFaceImages ? '${base}_$face' : base, preferNormal: preferNormal));
     return AspectRatio(
       aspectRatio: cardAspect,
       child: ClipRRect(
@@ -138,8 +136,7 @@ class TextCard extends StatelessWidget {
                           style: TextStyle(fontSize: fs * 0.9, color: dark))
                       : SingleChildScrollView(
                           physics: const NeverScrollableScrollPhysics(),
-                          child: OracleText(text,
-                              style: TextStyle(fontSize: fs * 0.85, color: dark, height: 1.25)),
+                          child: OracleText(text, style: TextStyle(fontSize: fs * 0.85, color: dark, height: 1.25)),
                         ),
                 ),
               ),
@@ -177,10 +174,21 @@ class TextCard extends StatelessWidget {
 /// Linha de lista com miniatura, nome, custo e tipo.
 class CardTile extends StatelessWidget {
   const CardTile(this.card,
-      {super.key, this.onTap, this.trailing, this.leadingQty, this.subtitle, this.thumbWidth = 56});
+      {super.key,
+      this.onTap,
+      this.onLongPress,
+      this.selected,
+      this.trailing,
+      this.leadingQty,
+      this.subtitle,
+      this.thumbWidth = 56});
 
   final db.Card card;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  /// Em modo de seleção (true/false), mostra a caixa de seleção; null fora dele.
+  final bool? selected;
   final Widget? trailing;
   final int? leadingQty;
   final String? subtitle;
@@ -193,15 +201,23 @@ class CardTile extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      onLongPress: onLongPress,
+      child: Ink(
+        color: selected == true ? theme.colorScheme.primaryContainer.withOpacity(0.6) : null,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           children: [
+            if (selected != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(selected! ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: selected! ? theme.colorScheme.primary : theme.colorScheme.outline),
+              ),
             if (leadingQty != null)
               SizedBox(
                 width: 28,
-                child: Text('$leadingQty',
-                    style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
+                child:
+                    Text('$leadingQty', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
               ),
             SizedBox(width: thumbWidth, child: CardImage(card, radius: thumbWidth * 0.06)),
             const SizedBox(width: 12),

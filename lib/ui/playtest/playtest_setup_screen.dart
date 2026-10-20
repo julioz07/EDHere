@@ -41,21 +41,38 @@ class GoldfishSetupScreen extends ConsumerWidget {
   }
 }
 
-/// Dois jogadores no mesmo dispositivo: para ensinar alguém ou testar um
-/// deck contra outro.
-class DuelSetupScreen extends ConsumerStatefulWidget {
-  const DuelSetupScreen({super.key});
+/// Partida de teste no mesmo dispositivo, de 2 a 6 jogadores: controlo-os
+/// todos e, ao passar o turno, a mesa mostra o jogador seguinte. Com 2, pode
+/// ser uma mesa partilhada (frente a frente) para ensinar alguém.
+class TestMatchSetupScreen extends ConsumerStatefulWidget {
+  const TestMatchSetupScreen({super.key});
 
   @override
-  ConsumerState<DuelSetupScreen> createState() => _DuelSetupScreenState();
+  ConsumerState<TestMatchSetupScreen> createState() => _TestMatchSetupScreenState();
 }
 
-class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
+class _TestMatchSetupScreenState extends ConsumerState<TestMatchSetupScreen> {
+  static const _maxPlayers = 6;
   late final _names = [
     TextEditingController(text: ref.read(playerNameProvider).isEmpty ? tr('Jogador 1') : ref.read(playerNameProvider)),
-    TextEditingController(text: tr('Jogador 2')),
+    for (var i = 2; i <= _maxPlayers; i++) TextEditingController(text: tr('Jogador {v}', {'v': i})),
   ];
-  final List<int?> _decks = [null, null];
+  final List<int?> _decks = List.filled(_maxPlayers, null);
+  int _count = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cada jogador começa já com um deck (alternando os que há): com 6
+    // jogadores, escolher todos à mão era cansativo.
+    final ids = [
+      for (final d in ref.read(decksProvider).decks)
+        if (d.playableCount > 0) d.id!,
+    ];
+    for (var i = 0; i < _maxPlayers && ids.isNotEmpty; i++) {
+      _decks[i] = ids[i % ids.length];
+    }
+  }
   bool _randomFirst = true;
   late bool _shared = true;
   bool _openHands = false;
@@ -74,20 +91,39 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
   Widget build(BuildContext context) {
     final decks = ref.watch(decksProvider).decks.where((d) => d.playableCount > 0).toList();
     final theme = Theme.of(context);
-    final ready = _decks.every((d) => d != null);
+    final ready = _decks.take(_count).every((d) => d != null);
+    final shared = _shared && _count == 2;
     return Scaffold(
-      appBar: AppBar(title: Text(tr('1 contra 1 neste dispositivo'))),
+      appBar: AppBar(title: Text(tr('Partida de teste'))),
       // "Começar" fica fora da lista: sempre à vista, mesmo com o teclado.
       body: Column(children: [
         Expanded(
           child: MaxWidth(
             child: ListView(padding: const EdgeInsets.all(16), children: [
               Text(
-                tr('Para ensinar alguém a jogar ou testar um deck contra outro, com um só dispositivo. Para jogar a sério, cada um com o seu telemóvel, usa "Criar sala".'),
+                tr('Uma partida completa num só dispositivo: controlas todos os jogadores e, ao passar o turno, a mesa mostra o seguinte. Para testar decks ou ensinar alguém. Para jogar a sério, cada um com o seu telemóvel, usa "Criar sala".'),
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 16),
-              for (var i = 0; i < 2; i++) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: Text(tr('Jogadores'), style: theme.textTheme.titleSmall)),
+                IconButton.filledTonal(
+                  tooltip: tr('Menos'),
+                  onPressed: _count > 2 ? () => setState(() => _count--) : null,
+                  icon: const Icon(Icons.remove),
+                ),
+                SizedBox(
+                  width: 40,
+                  child: Text('$_count', textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+                ),
+                IconButton.filledTonal(
+                  tooltip: tr('Mais'),
+                  onPressed: _count < _maxPlayers ? () => setState(() => _count++) : null,
+                  icon: const Icon(Icons.add),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              for (var i = 0; i < _count; i++) ...[
                 Text(tr('Jogador {v}', {'v': i + 1}), style: theme.textTheme.titleSmall),
                 const SizedBox(height: 6),
                 Row(children: [
@@ -116,20 +152,23 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
                 ]),
                 const SizedBox(height: 16),
               ],
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(tr('Mesa partilhada (frente a frente)')),
-                subtitle: Text(tr('O ecrã fica dividido: cada um vê a sua metade virada para si.')),
-                value: _shared,
-                onChanged: (v) => setState(() => _shared = v),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(tr('Mãos abertas')),
-                subtitle: Text(tr('As duas mãos ficam à vista: bom para ensinar.')),
-                value: _openHands,
-                onChanged: _shared ? (v) => setState(() => _openHands = v) : null,
-              ),
+              // A mesa partilhada (frente a frente) só existe com 2 jogadores.
+              if (_count == 2) ...[
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(tr('Mesa partilhada (frente a frente)')),
+                  subtitle: Text(tr('O ecrã fica dividido: cada um vê a sua metade virada para si.')),
+                  value: _shared,
+                  onChanged: (v) => setState(() => _shared = v),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(tr('Mãos abertas')),
+                  subtitle: Text(tr('As duas mãos ficam à vista: bom para ensinar.')),
+                  value: _openHands,
+                  onChanged: _shared ? (v) => setState(() => _openHands = v) : null,
+                ),
+              ],
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(tr('Primeiro jogador ao acaso')),
@@ -150,11 +189,11 @@ class _DuelSetupScreenState extends ConsumerState<DuelSetupScreen> {
                 ? null
                 : () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
                       builder: (_) => PlaytestScreen(
-                        deckIds: [_decks[0]!, _decks[1]!],
-                        names: [_name(0), _name(1)],
+                        deckIds: [for (var i = 0; i < _count; i++) _decks[i]!],
+                        names: [for (var i = 0; i < _count; i++) _name(i)],
                         randomFirst: _randomFirst,
-                        tablet: _shared,
-                        openHands: _openHands,
+                        tablet: shared,
+                        openHands: shared && _openHands,
                       ),
                     )),
             icon: const Icon(Icons.play_arrow_rounded),

@@ -154,7 +154,7 @@
   "where": [
    "lib/data/limited_builds.dart:70",
    "lib/ui/decks/decks_tab.dart:80",
-   "lib/ui/playtest/playtest_setup_screen.dart:108",
+   "lib/ui/playtest/playtest_setup_screen.dart:144",
    "packages/card_db/lib/src/backup.dart:152",
    "boards"
   ]
@@ -710,7 +710,7 @@
   "key": "Nome ou filtros (t:dragon id:rg)",
   "where": [
    "lib/ui/cards/card_search.dart:166",
-   "lib/ui/decks/deck_editor_screen.dart:1107"
+   "lib/ui/decks/deck_editor_screen.dart:1260"
   ]
  },
  {
@@ -742,7 +742,7 @@
   "where": [
    "lib/ui/cards/card_search.dart:210",
    "lib/ui/decks/decks_tab.dart:222",
-   "lib/ui/playtest/playtest_setup_screen.dart:99"
+   "lib/ui/playtest/playtest_setup_screen.dart:135"
   ]
  },
  {
@@ -755,7 +755,7 @@
   "key": "Custo",
   "where": [
    "lib/ui/cards/card_search.dart:212",
-   "lib/ui/decks/deck_editor_screen.dart:779",
+   "lib/ui/decks/deck_editor_screen.dart:919",
    "lib/ui/limited/limited_builder.dart:583"
   ]
  },
@@ -787,7 +787,7 @@
   "key": "Tipo",
   "where": [
    "lib/ui/cards/card_search.dart:275",
-   "lib/ui/decks/deck_editor_screen.dart:778",
+   "lib/ui/decks/deck_editor_screen.dart:918",
    "lib/ui/limited/limited_builder.dart:584"
   ]
  },
@@ -930,7 +930,7 @@
   "where": [
    "lib/ui/cards/cards_tab.dart:27",
    "lib/ui/cards/cards_tab.dart:36",
-   "lib/ui/decks/deck_editor_screen.dart:513",
+   "lib/ui/decks/deck_editor_screen.dart:631",
    "lib/ui/shell.dart:118",
    "lib/ui/shell.dart:137"
   ]
@@ -976,7 +976,7 @@
   "key": "Importar lista",
   "where": [
    "lib/ui/cards/cards_tab.dart:93",
-   "lib/ui/decks/deck_import_screen.dart:152",
+   "lib/ui/decks/deck_import_screen.dart:177",
    "lib/ui/decks/decks_tab.dart:58",
    "lib/ui/decks/decks_tab.dart:103"
   ]
@@ -1011,8 +1011,8 @@
    "lib/ui/cards/cards_tab.dart:139",
    "lib/ui/data/data_tab.dart:118",
    "lib/ui/data/data_tab.dart:314",
-   "lib/ui/decks/deck_editor_screen.dart:149",
-   "lib/ui/decks/deck_editor_screen.dart:428",
+   "lib/ui/decks/deck_editor_screen.dart:221",
+   "lib/ui/decks/deck_editor_screen.dart:500",
    "lib/ui/decks/decks_tab.dart:235",
    "lib/ui/join_screen.dart:107",
    "lib/ui/join_screen.dart:166",
@@ -1023,9 +1023,9 @@
    "lib/ui/resume_game.dart:138",
    "lib/ui/settings/backup_actions.dart:55",
    "lib/ui/settings/backup_actions.dart:181",
-   "lib/ui/table/table_sheets.dart:39",
-   "lib/ui/table/table_sheets.dart:564",
-   "lib/ui/table/table_sheets.dart:667"
+   "lib/ui/table/table_sheets.dart:35",
+   "lib/ui/table/table_sheets.dart:560",
+   "lib/ui/table/table_sheets.dart:663"
   ]
  },
  {
@@ -1086,7 +1086,7 @@
   "key": "Colar",
   "where": [
    "lib/ui/cards/collection_import_screen.dart:144",
-   "lib/ui/decks/deck_import_screen.dart:189"
+   "lib/ui/decks/deck_import_screen.dart:226"
   ]
  },
  {
@@ -1141,21 +1141,21 @@
   "key": "Não encontradas ({n}):",
   "where": [
    "lib/ui/cards/collection_import_screen.dart:196",
-   "lib/ui/decks/deck_import_screen.dart:215"
+   "lib/ui/decks/deck_import_screen.dart:252"
   ]
  },
  {
   "key": "linha {line}: {qty} {v}",
   "where": [
    "lib/ui/cards/collection_import_screen.dart:199",
-   "lib/ui/decks/deck_import_screen.dart:218"
+   "lib/ui/decks/deck_import_screen.dart:255"
   ]
  },
  {
   "key": "Verificar",
   "where": [
    "lib/ui/cards/collection_import_screen.dart:207",
-   "lib/ui/decks/deck_import_screen.dart:233"
+   "lib/ui/decks/deck_import_screen.dart:270"
   ]
  },
  {
@@ -1168,7 +1168,7 @@
   "key": "Importar",
   "where": [
    "lib/ui/cards/collection_import_screen.dart:212",
-   "lib/ui/decks/deck_import_screen.dart:235",
+   "lib/ui/decks/deck_import_screen.dart:272",
    "lib/ui/settings/backup_actions.dart:184"
   ]
  },
@@ -1176,7 +1176,7 @@
   "key": "Escolher versão",
   "where": [
    "lib/ui/cards/versions.dart:83",
-   "lib/ui/decks/deck_editor_screen.dart:231"
+   "lib/ui/decks/deck_editor_screen.dart:303"
   ]
  },
  {
@@ -1262,7 +1262,7 @@
   "key": "Formato",
   "where": [
    "lib/ui/create_room_screen.dart:161",
-   "lib/ui/decks/deck_import_screen.dart:172",
+   "lib/ui/decks/deck_import_screen.dart:198",
    "lib/ui/decks/decks_tab.dart:227",
    "lib/ui/lobby_screen.dart:234"
   ]
@@ -1529,7 +1529,7 @@
   "key": "Apagar",
   "where": [
    "lib/ui/data/data_tab.dart:316",
-   "lib/ui/decks/deck_editor_screen.dart:429",
+   "lib/ui/decks/deck_editor_screen.dart:501",
    "lib/ui/resume_game.dart:130",
    "lib/ui/resume_game.dart:139"
   ]
@@ -1601,750 +1601,859 @@
   ]
  },
  {
+  "key": "Desfazer",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:86",
+   "lib/ui/table/table_screen.dart:494",
+   "lib/ui/table/tablet_table_screen.dart:232"
+  ]
+ },
+ {
+  "key": "Categoria mudada ({n}).",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:94"
+  ]
+ },
+ {
+  "key": "Movidas para {v}: {n}.",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:99"
+  ]
+ },
+ {
+  "key": "Removidas: {n}.",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:104"
+  ]
+ },
+ {
   "key": "Identidade {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:87"
+   "lib/ui/decks/deck_editor_screen.dart:159"
   ]
  },
  {
   "key": "incolor",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:87"
+   "lib/ui/decks/deck_editor_screen.dart:159"
   ]
  },
  {
   "key": "legal em {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:88"
+   "lib/ui/decks/deck_editor_screen.dart:160"
   ]
  },
  {
   "key": "Escolher comandante",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:92",
-   "lib/ui/decks/deck_editor_screen.dart:725",
-   "lib/ui/decks/deck_editor_screen.dart:1143"
+   "lib/ui/decks/deck_editor_screen.dart:164",
+   "lib/ui/decks/deck_editor_screen.dart:865",
+   "lib/ui/decks/deck_editor_screen.dart:1296"
   ]
  },
  {
   "key": "Juntar cartas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:92",
-   "lib/ui/decks/deck_editor_screen.dart:534"
+   "lib/ui/decks/deck_editor_screen.dart:164",
+   "lib/ui/decks/deck_editor_screen.dart:654"
   ]
  },
  {
   "key": "{v} já é o comandante.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:129"
+   "lib/ui/decks/deck_editor_screen.dart:201"
   ]
  },
  {
   "key": "Trocar de comandante?",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:145"
+   "lib/ui/decks/deck_editor_screen.dart:217"
   ]
  },
  {
   "key": "{v} não pode ser parceiro de {names}. Queres que passe a ser o comandante?",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:146"
+   "lib/ui/decks/deck_editor_screen.dart:218"
   ]
  },
  {
   "key": "Trocar",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:150",
+   "lib/ui/decks/deck_editor_screen.dart:222",
    "lib/ui/limited/limited_builder.dart:474"
   ]
  },
  {
   "key": "1 carta junta às minhas cartas.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:174"
+   "lib/ui/decks/deck_editor_screen.dart:246"
   ]
  },
  {
   "key": "{n} cartas juntas às minhas cartas.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:175"
+   "lib/ui/decks/deck_editor_screen.dart:247"
   ]
  },
  {
   "key": "Ver carta",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:217",
-   "lib/ui/table/table_sheets.dart:202",
-   "lib/ui/table/table_sheets.dart:706"
+   "lib/ui/decks/deck_editor_screen.dart:289",
+   "lib/ui/table/table_sheets.dart:198",
+   "lib/ui/table/table_sheets.dart:702"
   ]
  },
  {
   "key": "A preferida ou a por defeito",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:233"
+   "lib/ui/decks/deck_editor_screen.dart:305"
   ]
  },
  {
   "key": "Versão escolhida",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:234"
+   "lib/ui/decks/deck_editor_screen.dart:306"
   ]
  },
  {
   "key": "Pôr na zona de comando",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:251"
+   "lib/ui/decks/deck_editor_screen.dart:323"
   ]
  },
  {
   "key": "Definir como comandante",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:252"
+   "lib/ui/decks/deck_editor_screen.dart:324"
   ]
  },
  {
   "key": "Mover para {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:253"
+   "lib/ui/decks/deck_editor_screen.dart:325",
+   "lib/ui/decks/deck_editor_screen.dart:554"
   ]
  },
  {
   "key": "Categoria",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:261",
-   "lib/ui/decks/deck_editor_screen.dart:302"
+   "lib/ui/decks/deck_editor_screen.dart:333",
+   "lib/ui/decks/deck_editor_screen.dart:374",
+   "lib/ui/decks/deck_editor_screen.dart:558"
   ]
  },
  {
   "key": "Sem categoria (agrupa por tipo)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:262"
+   "lib/ui/decks/deck_editor_screen.dart:334"
   ]
  },
  {
   "key": "Remover",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:273"
+   "lib/ui/decks/deck_editor_screen.dart:345",
+   "lib/ui/decks/deck_editor_screen.dart:559"
   ]
  },
  {
   "key": "Ramp",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:290"
+   "lib/ui/decks/deck_editor_screen.dart:362"
   ]
  },
  {
   "key": "Draw",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:291"
+   "lib/ui/decks/deck_editor_screen.dart:363"
   ]
  },
  {
   "key": "Remoção",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:292"
+   "lib/ui/decks/deck_editor_screen.dart:364"
   ]
  },
  {
   "key": "Wipes",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:293"
+   "lib/ui/decks/deck_editor_screen.dart:365"
   ]
  },
  {
   "key": "Terrenos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:294",
-   "lib/ui/decks/deck_editor_screen.dart:690",
-   "lib/ui/decks/deck_editor_screen.dart:864"
+   "lib/ui/decks/deck_editor_screen.dart:366",
+   "lib/ui/decks/deck_editor_screen.dart:830",
+   "lib/ui/decks/deck_editor_screen.dart:1017"
   ]
  },
  {
   "key": "Proteção",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:295"
+   "lib/ui/decks/deck_editor_screen.dart:367"
   ]
  },
  {
   "key": "Win cons",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:296"
+   "lib/ui/decks/deck_editor_screen.dart:368"
   ]
  },
  {
   "key": "Sem categoria",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:311"
+   "lib/ui/decks/deck_editor_screen.dart:383"
   ]
  },
  {
   "key": "Copiar lista (Moxfield / Archidekt)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:326"
+   "lib/ui/decks/deck_editor_screen.dart:398"
   ]
  },
  {
   "key": "Com secções Commander, Deck, Sideboard e as versões escolhidas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:327"
+   "lib/ui/decks/deck_editor_screen.dart:399"
   ]
  },
  {
   "key": "Mostrar QR do deck",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:332"
+   "lib/ui/decks/deck_editor_screen.dart:404"
   ]
  },
  {
   "key": "Para outro telemóvel ler em Decks → Importar lista",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:333"
+   "lib/ui/decks/deck_editor_screen.dart:405"
   ]
  },
  {
   "key": "Fechar",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:350",
+   "lib/ui/decks/deck_editor_screen.dart:422",
    "lib/ui/room_screen.dart:61",
    "lib/ui/table/table_screen.dart:299",
-   "lib/ui/table/tablet_table_screen.dart:106"
+   "lib/ui/table/tablet_table_screen.dart:124"
   ]
  },
  {
   "key": "Copiar lista (MTGO)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:357"
+   "lib/ui/decks/deck_editor_screen.dart:429"
   ]
  },
  {
   "key": "Deck, linha em branco, sideboard",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:358"
+   "lib/ui/decks/deck_editor_screen.dart:430"
   ]
  },
  {
   "key": "Exportar ficheiro do EDHere…",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:363"
+   "lib/ui/decks/deck_editor_screen.dart:435"
   ]
  },
  {
   "key": "Com versões das cartas e notas; guardar ou enviar a alguém",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:364"
+   "lib/ui/decks/deck_editor_screen.dart:436"
   ]
  },
  {
   "key": "Partilhar lista…",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:372"
+   "lib/ui/decks/deck_editor_screen.dart:444"
   ]
  },
  {
   "key": "WhatsApp, email, notas…",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:373"
+   "lib/ui/decks/deck_editor_screen.dart:445"
   ]
  },
  {
   "key": "Copiar as cartas que me faltam",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:382"
+   "lib/ui/decks/deck_editor_screen.dart:454"
   ]
  },
  {
   "key": "Lista de compras (sem terrenos básicos)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:383"
+   "lib/ui/decks/deck_editor_screen.dart:455"
   ]
  },
  {
   "key": "Lista copiada.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:410"
+   "lib/ui/decks/deck_editor_screen.dart:482"
   ]
  },
  {
   "key": "Editar deck",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:416"
+   "lib/ui/decks/deck_editor_screen.dart:488"
   ]
  },
  {
   "key": "Apagar \"{v}\"?",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:425"
+   "lib/ui/decks/deck_editor_screen.dart:497"
   ]
  },
  {
   "key": "Esta ação não se pode desfazer.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:426"
+   "lib/ui/decks/deck_editor_screen.dart:498"
   ]
  },
  {
-  "key": "{v} · {size}{v2} cartas",
+  "key": "Cancelar seleção",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:463"
+   "lib/ui/decks/deck_editor_screen.dart:532"
   ]
  },
  {
-  "key": "Testar (goldfish)",
+  "key": "1 selecionada",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:469",
-   "lib/ui/decks/deck_editor_screen.dart:502"
+   "lib/ui/decks/deck_editor_screen.dart:536"
   ]
  },
  {
-  "key": "Ver em lista",
+  "key": "{n} selecionadas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:478",
-   "lib/ui/decks/deck_editor_screen.dart:503"
+   "lib/ui/decks/deck_editor_screen.dart:536"
   ]
  },
  {
-  "key": "Ver em grelha",
+  "key": "Selecionar todas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:478",
-   "lib/ui/decks/deck_editor_screen.dart:503"
+   "lib/ui/decks/deck_editor_screen.dart:539"
   ]
  },
  {
-  "key": "Exportar",
+  "key": "Mover para…",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:483"
-  ]
- },
- {
-  "key": "Simular mãos iniciais",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:505"
-  ]
- },
- {
-  "key": "Tenho este deck (juntar às minhas cartas)",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:506"
-  ]
- },
- {
-  "key": "Nome e formato",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:507"
-  ]
- },
- {
-  "key": "Apagar deck",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:508"
-  ]
- },
- {
-  "key": "Estatísticas",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:514"
-  ]
- },
- {
-  "key": "Validação",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:520"
-  ]
- },
- {
-  "key": "não tens",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:628"
-  ]
- },
- {
-  "key": "tens {have}",
-  "where": [
-   "lib/ui/decks/deck_editor_screen.dart:629"
+   "lib/ui/decks/deck_editor_screen.dart:544"
   ]
  },
  {
   "key": "Zona de comando",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:662",
-   "lib/ui/table/table_sheets.dart:324",
+   "lib/ui/decks/deck_editor_screen.dart:553",
+   "lib/ui/decks/deck_editor_screen.dart:802",
+   "lib/ui/table/table_sheets.dart:320",
    "glossary"
   ]
  },
  {
   "key": "Comandante",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:662",
-   "lib/ui/decks/deck_editor_screen.dart:787",
+   "lib/ui/decks/deck_editor_screen.dart:553",
+   "lib/ui/decks/deck_editor_screen.dart:802",
+   "lib/ui/decks/deck_editor_screen.dart:927",
    "lib/ui/limited/limited_builder.dart:338",
    "lib/ui/limited/limited_builder.dart:466",
    "glossary"
   ]
  },
  {
+  "key": "{v} · {size}{v2} cartas",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:578"
+  ]
+ },
+ {
+  "key": "Testar (goldfish)",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:585",
+   "lib/ui/decks/deck_editor_screen.dart:619"
+  ]
+ },
+ {
+  "key": "Ver em lista",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:594",
+   "lib/ui/decks/deck_editor_screen.dart:620"
+  ]
+ },
+ {
+  "key": "Ver em grelha",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:594",
+   "lib/ui/decks/deck_editor_screen.dart:620"
+  ]
+ },
+ {
+  "key": "Exportar",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:599"
+  ]
+ },
+ {
+  "key": "Importar lista para este deck",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:622"
+  ]
+ },
+ {
+  "key": "Simular mãos iniciais",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:623"
+  ]
+ },
+ {
+  "key": "Tenho este deck (juntar às minhas cartas)",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:624"
+  ]
+ },
+ {
+  "key": "Nome e formato",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:625"
+  ]
+ },
+ {
+  "key": "Apagar deck",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:626"
+  ]
+ },
+ {
+  "key": "Estatísticas",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:632"
+  ]
+ },
+ {
+  "key": "Validação",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:638"
+  ]
+ },
+ {
+  "key": "não tens",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:768"
+  ]
+ },
+ {
+  "key": "tens {have}",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:769"
+  ]
+ },
+ {
   "key": "Land",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:674",
+   "lib/ui/decks/deck_editor_screen.dart:814",
    "tutorial:mtg-cards"
   ]
  },
  {
   "key": "Custo {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:675"
+   "lib/ui/decks/deck_editor_screen.dart:815"
   ]
  },
  {
   "key": "Outros",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:678"
+   "lib/ui/decks/deck_editor_screen.dart:818"
   ]
  },
  {
   "key": "Criaturas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:683",
-   "lib/ui/decks/deck_editor_screen.dart:857",
+   "lib/ui/decks/deck_editor_screen.dart:823",
+   "lib/ui/decks/deck_editor_screen.dart:1010",
    "tutorial:mtg-types"
   ]
  },
  {
   "key": "Instantâneos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:684",
-   "lib/ui/decks/deck_editor_screen.dart:858"
+   "lib/ui/decks/deck_editor_screen.dart:824",
+   "lib/ui/decks/deck_editor_screen.dart:1011"
   ]
  },
  {
   "key": "Feitiços",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:685",
-   "lib/ui/decks/deck_editor_screen.dart:859"
+   "lib/ui/decks/deck_editor_screen.dart:825",
+   "lib/ui/decks/deck_editor_screen.dart:1012"
   ]
  },
  {
   "key": "Artefactos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:686",
-   "lib/ui/decks/deck_editor_screen.dart:860",
+   "lib/ui/decks/deck_editor_screen.dart:826",
+   "lib/ui/decks/deck_editor_screen.dart:1013",
    "tutorial:mtg-types"
   ]
  },
  {
   "key": "Encantamentos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:687",
-   "lib/ui/decks/deck_editor_screen.dart:861"
+   "lib/ui/decks/deck_editor_screen.dart:827",
+   "lib/ui/decks/deck_editor_screen.dart:1014"
   ]
  },
  {
   "key": "Planeswalkers",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:688",
-   "lib/ui/decks/deck_editor_screen.dart:862"
+   "lib/ui/decks/deck_editor_screen.dart:828",
+   "lib/ui/decks/deck_editor_screen.dart:1015"
   ]
  },
  {
   "key": "Batalhas",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:689",
-   "lib/ui/decks/deck_editor_screen.dart:863"
+   "lib/ui/decks/deck_editor_screen.dart:829",
+   "lib/ui/decks/deck_editor_screen.dart:1016"
   ]
  },
  {
   "key": "Sideboard",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:710",
+   "lib/ui/decks/deck_editor_screen.dart:850",
    "boards"
   ]
  },
  {
   "key": "Talvez",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:713",
+   "lib/ui/decks/deck_editor_screen.dart:853",
    "boards"
   ]
  },
  {
   "key": "Tens {have} de {need} cartas (sem terrenos básicos)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:739"
+   "lib/ui/decks/deck_editor_screen.dart:879"
   ]
  },
  {
   "key": "Procurar no deck",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:758"
+   "lib/ui/decks/deck_editor_screen.dart:898"
+  ]
+ },
+ {
+  "key": "Nenhuma",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:942"
+  ]
+ },
+ {
+  "key": "Todas",
+  "where": [
+   "lib/ui/decks/deck_editor_screen.dart:942"
   ]
  },
  {
   "key": "Curva de mana",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:873"
+   "lib/ui/decks/deck_editor_screen.dart:1026"
   ]
  },
  {
   "key": "Valor de mana médio: {v} · {nonLands} não-terrenos, {lands} terrenos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:874"
+   "lib/ui/decks/deck_editor_screen.dart:1027"
   ]
  },
  {
   "key": "Tipos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:901"
+   "lib/ui/decks/deck_editor_screen.dart:1054"
   ]
  },
  {
   "key": "Bracket (regra zero)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:915"
+   "lib/ui/decks/deck_editor_screen.dart:1068"
   ]
  },
  {
   "key": "Bracket mínimo: {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:921"
+   "lib/ui/decks/deck_editor_screen.dart:1074"
   ]
  },
  {
   "key": "Sem Game Changers.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:924"
+   "lib/ui/decks/deck_editor_screen.dart:1077"
   ]
  },
  {
   "key": "Destruição de terrenos em massa (só nos brackets 4–5): {v}",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:929"
+   "lib/ui/decks/deck_editor_screen.dart:1082"
   ]
  },
  {
   "key": "carta de turno extra",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:936"
+   "lib/ui/decks/deck_editor_screen.dart:1089"
   ]
  },
  {
   "key": "cartas de turno extra",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:936"
+   "lib/ui/decks/deck_editor_screen.dart:1089"
   ]
  },
  {
   "key": ". Nos brackets 1–3 não se encadeiam turnos extra.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:936"
+   "lib/ui/decks/deck_editor_screen.dart:1089"
   ]
  },
  {
   "key": "Combos de duas cartas também contam para o bracket e não se detetam pela lista: fala disso com a mesa.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:943"
+   "lib/ui/decks/deck_editor_screen.dart:1096"
   ]
  },
  {
   "key": "Cores: símbolos e fontes",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:950"
+   "lib/ui/decks/deck_editor_screen.dart:1103"
   ]
  },
  {
   "key": "{v} nos custos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:958"
+   "lib/ui/decks/deck_editor_screen.dart:1111"
   ]
  },
  {
   "key": "símbolo",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:958"
+   "lib/ui/decks/deck_editor_screen.dart:1111"
   ]
  },
  {
   "key": "símbolos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:958"
+   "lib/ui/decks/deck_editor_screen.dart:1111"
   ]
  },
  {
   "key": "terreno",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:959"
+   "lib/ui/decks/deck_editor_screen.dart:1112"
   ]
  },
  {
   "key": "terrenos",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:959"
+   "lib/ui/decks/deck_editor_screen.dart:1112"
   ]
  },
  {
   "key": "Mão inicial (7 cartas)",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:963"
+   "lib/ui/decks/deck_editor_screen.dart:1116"
   ]
  },
  {
   "key": "Pelo menos {k} terrenos: {v}%",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:965"
+   "lib/ui/decks/deck_editor_screen.dart:1118"
   ]
  },
  {
   "key": "Calculado sobre as {library} cartas do grimório.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:968"
+   "lib/ui/decks/deck_editor_screen.dart:1121"
   ]
  },
  {
   "key": "Formato livre: sem validação.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1005"
+   "lib/ui/decks/deck_editor_screen.dart:1158"
   ]
  },
  {
   "key": "Deck legal em {v}.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1012"
+   "lib/ui/decks/deck_editor_screen.dart:1165"
   ]
  },
  {
   "key": "Avisos: a app nunca impede de jogar.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1019"
+   "lib/ui/decks/deck_editor_screen.dart:1172"
   ]
  },
  {
   "key": "Já tens {v}: este formato só permite {limit}.",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1082"
+   "lib/ui/decks/deck_editor_screen.dart:1235"
   ]
  },
  {
   "key": "Juntar na mesma",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1083"
+   "lib/ui/decks/deck_editor_screen.dart:1236"
   ]
  },
  {
   "key": "Só as minhas cartas…",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1107"
+   "lib/ui/decks/deck_editor_screen.dart:1260"
   ]
  },
  {
   "key": "Sem filtros do deck",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1120"
+   "lib/ui/decks/deck_editor_screen.dart:1273"
   ]
  },
  {
   "key": "Só as que tenho",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1127"
+   "lib/ui/decks/deck_editor_screen.dart:1280"
   ]
  },
  {
   "key": "Escolher como comandante",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1143"
+   "lib/ui/decks/deck_editor_screen.dart:1296"
   ]
  },
  {
   "key": "Juntar ao deck",
   "where": [
-   "lib/ui/decks/deck_editor_screen.dart:1143"
+   "lib/ui/decks/deck_editor_screen.dart:1296"
   ]
  },
  {
   "key": "Este QR não é de um deck do EDHere.",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:50"
+   "lib/ui/decks/deck_import_screen.dart:58"
   ]
  },
  {
   "key": "Deck importado",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:96"
+   "lib/ui/decks/deck_import_screen.dart:104"
   ]
  },
  {
   "key": "A buscar as versões das cartas…",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:104"
+   "lib/ui/decks/deck_import_screen.dart:112"
   ]
  },
  {
   "key": "A buscar as versões das cartas… {done}/{total}",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:110"
+   "lib/ui/decks/deck_import_screen.dart:118"
   ]
  },
  {
   "key": "Sem internet: {missing} cartas ficaram com a versão base. Podes trocar a versão de cada carta no deck.",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:119"
+   "lib/ui/decks/deck_import_screen.dart:127"
   ]
  },
  {
   "key": "{missing} versões não foram encontradas no Scryfall; ficaram as versões base.",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:123"
+   "lib/ui/decks/deck_import_screen.dart:131"
   ]
  },
  {
   "key": "Não encontradas na importação:\n{v}",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:136"
+   "lib/ui/decks/deck_import_screen.dart:140"
+  ]
+ },
+ {
+  "key": "1 carta importada para {v}.",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:152"
+  ]
+ },
+ {
+  "key": "{found} cartas importadas para {v}.",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:153"
+  ]
+ },
+ {
+  "key": "Importar para {v}",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:177"
   ]
  },
  {
   "key": "Ler QR de um deck",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:154"
+   "lib/ui/decks/deck_import_screen.dart:179"
   ]
  },
  {
   "key": "Nome do deck",
   "where": [
-   "lib/ui/decks/deck_import_screen.dart:167"
+   "lib/ui/decks/deck_import_screen.dart:193"
   ]
  },
  {
-  "key": "Lista",
-  "where": [
-   "lib/ui/decks/deck_import_screen.dart:186"
-  ]
- },
- {
-  "key": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n35 Forest\n…",
-  "where": [
-   "lib/ui/decks/deck_import_screen.dart:187"
-  ]
- },
- {
-  "key": "Aceita \"1 Nome\", \"1x Nome (SET) 123 *F* [Categoria]\" e secções Commander, Deck, Sideboard e Maybeboard. Sem secções, uma linha em branco separa o sideboard (estilo MTGO).",
-  "where": [
-   "lib/ui/decks/deck_import_screen.dart:197"
-  ]
- },
- {
-  "key": "{found} cartas reconhecidas.",
-  "where": [
-   "lib/ui/decks/deck_import_screen.dart:202"
-  ]
- },
- {
-  "key": "Usar as versões da lista",
+  "key": "Juntar às que lá estão",
   "where": [
    "lib/ui/decks/deck_import_screen.dart:208"
   ]
  },
  {
-  "key": "{withPrint} cartas trazem coleção e número: ficam com essa arte (as que não estão no telemóvel vêm do Scryfall).",
+  "key": "Substituir o deck",
   "where": [
    "lib/ui/decks/deck_import_screen.dart:210"
+  ]
+ },
+ {
+  "key": "Lista",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:223"
+  ]
+ },
+ {
+  "key": "Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring\n35 Forest\n…",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:224"
+  ]
+ },
+ {
+  "key": "Aceita \"1 Nome\", \"1x Nome (SET) 123 *F* [Categoria]\" e secções Commander, Deck, Sideboard e Maybeboard. Sem secções, uma linha em branco separa o sideboard (estilo MTGO).",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:234"
+  ]
+ },
+ {
+  "key": "{found} cartas reconhecidas.",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:239"
+  ]
+ },
+ {
+  "key": "Usar as versões da lista",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:245"
+  ]
+ },
+ {
+  "key": "{withPrint} cartas trazem coleção e número: ficam com essa arte (as que não estão no telemóvel vêm do Scryfall).",
+  "where": [
+   "lib/ui/decks/deck_import_screen.dart:247"
   ]
  },
  {
@@ -2945,7 +3054,7 @@
    "lib/ui/playtest/playtest_screen.dart:179",
    "lib/ui/room_screen.dart:59",
    "lib/ui/table/table_screen.dart:246",
-   "lib/ui/table/tablet_table_screen.dart:62",
+   "lib/ui/table/tablet_table_screen.dart:80",
    "lib/ui/tutorial/tutorial_screen.dart:227"
   ]
  },
@@ -2969,8 +3078,8 @@
    "lib/ui/room_screen.dart:61",
    "lib/ui/room_screen.dart:96",
    "lib/ui/table/table_screen.dart:247",
-   "lib/ui/table/tablet_table_screen.dart:63",
-   "lib/ui/table/tablet_table_screen.dart:195",
+   "lib/ui/table/tablet_table_screen.dart:81",
+   "lib/ui/table/tablet_table_screen.dart:220",
    "lib/ui/tutorial/tutorial_screen.dart:228"
   ]
  },
@@ -3458,7 +3567,8 @@
   "key": "Jogadores",
   "where": [
    "lib/ui/lobby_screen.dart:373",
-   "lib/ui/table/table_sheets.dart:404"
+   "lib/ui/playtest/playtest_setup_screen.dart:109",
+   "lib/ui/table/table_sheets.dart:400"
   ]
  },
  {
@@ -3668,7 +3778,7 @@
   "key": "Começar",
   "where": [
    "lib/ui/onboarding_screen.dart:203",
-   "lib/ui/playtest/playtest_setup_screen.dart:161"
+   "lib/ui/playtest/playtest_setup_screen.dart:200"
   ]
  },
  {
@@ -3766,17 +3876,16 @@
   ]
  },
  {
-  "key": "1 contra 1 neste dispositivo",
+  "key": "Partida de teste (2 a 6 jogadores)",
   "where": [
-   "lib/ui/play/play_tab.dart:189",
-   "lib/ui/playtest/playtest_setup_screen.dart:79"
+   "lib/ui/play/play_tab.dart:189"
   ]
  },
  {
   "key": "Cria primeiro um deck.",
   "where": [
    "lib/ui/play/play_tab.dart:194",
-   "lib/ui/playtest/playtest_setup_screen.dart:142"
+   "lib/ui/playtest/playtest_setup_screen.dart:181"
   ]
  },
  {
@@ -3836,7 +3945,7 @@
   "where": [
    "lib/ui/playtest/playtest_screen.dart:176",
    "lib/ui/table/table_screen.dart:243",
-   "lib/ui/table/tablet_table_screen.dart:59"
+   "lib/ui/table/tablet_table_screen.dart:77"
   ]
  },
  {
@@ -3872,56 +3981,70 @@
  {
   "key": "Jogador 1",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:55"
-  ]
- },
- {
-  "key": "Jogador 2",
-  "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:56"
+   "lib/ui/playtest/playtest_setup_screen.dart:57"
   ]
  },
  {
   "key": "Jogador {v}",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:71",
-   "lib/ui/playtest/playtest_setup_screen.dart:91"
+   "lib/ui/playtest/playtest_setup_screen.dart:58",
+   "lib/ui/playtest/playtest_setup_screen.dart:88",
+   "lib/ui/playtest/playtest_setup_screen.dart:127"
   ]
  },
  {
-  "key": "Para ensinar alguém a jogar ou testar um deck contra outro, com um só dispositivo. Para jogar a sério, cada um com o seu telemóvel, usa \"Criar sala\".",
+  "key": "Partida de teste",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:86"
+   "lib/ui/playtest/playtest_setup_screen.dart:97"
+  ]
+ },
+ {
+  "key": "Uma partida completa num só dispositivo: controlas todos os jogadores e, ao passar o turno, a mesa mostra o seguinte. Para testar decks ou ensinar alguém. Para jogar a sério, cada um com o seu telemóvel, usa \"Criar sala\".",
+  "where": [
+   "lib/ui/playtest/playtest_setup_screen.dart:104"
+  ]
+ },
+ {
+  "key": "Menos",
+  "where": [
+   "lib/ui/playtest/playtest_setup_screen.dart:111"
+  ]
+ },
+ {
+  "key": "Mais",
+  "where": [
+   "lib/ui/playtest/playtest_setup_screen.dart:120",
+   "lib/ui/table/table_screen.dart:503"
   ]
  },
  {
   "key": "Mesa partilhada (frente a frente)",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:121"
+   "lib/ui/playtest/playtest_setup_screen.dart:159"
   ]
  },
  {
   "key": "O ecrã fica dividido: cada um vê a sua metade virada para si.",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:122"
+   "lib/ui/playtest/playtest_setup_screen.dart:160"
   ]
  },
  {
   "key": "Mãos abertas",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:128"
+   "lib/ui/playtest/playtest_setup_screen.dart:166"
   ]
  },
  {
   "key": "As duas mãos ficam à vista: bom para ensinar.",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:129"
+   "lib/ui/playtest/playtest_setup_screen.dart:167"
   ]
  },
  {
   "key": "Primeiro jogador ao acaso",
   "where": [
-   "lib/ui/playtest/playtest_setup_screen.dart:135"
+   "lib/ui/playtest/playtest_setup_screen.dart:174"
   ]
  },
  {
@@ -4146,7 +4269,7 @@
   "key": "Moeda",
   "where": [
    "lib/ui/room_screen.dart:368",
-   "lib/ui/table/tablet_table_screen.dart:229"
+   "lib/ui/table/tablet_table_screen.dart:254"
   ]
  },
  {
@@ -4678,10 +4801,10 @@
   "where": [
    "lib/ui/table/table_card.dart:123",
    "lib/ui/table/table_card.dart:328",
-   "lib/ui/table/table_sheets.dart:79",
-   "lib/ui/table/table_sheets.dart:380",
-   "lib/ui/table/table_sheets.dart:1243",
-   "lib/ui/table/tablet_table_screen.dart:303",
+   "lib/ui/table/table_sheets.dart:75",
+   "lib/ui/table/table_sheets.dart:376",
+   "lib/ui/table/table_sheets.dart:1239",
+   "lib/ui/table/tablet_table_screen.dart:335",
    "glossary"
   ]
  },
@@ -4786,14 +4909,14 @@
   "key": "Quem ganhou?",
   "where": [
    "lib/ui/table/table_screen.dart:260",
-   "lib/ui/table/tablet_table_screen.dart:75"
+   "lib/ui/table/tablet_table_screen.dart:93"
   ]
  },
  {
   "key": "Sem vencedor",
   "where": [
    "lib/ui/table/table_screen.dart:270",
-   "lib/ui/table/tablet_table_screen.dart:84"
+   "lib/ui/table/tablet_table_screen.dart:102"
   ]
  },
  {
@@ -4801,8 +4924,8 @@
   "where": [
    "lib/ui/table/table_screen.dart:291",
    "lib/ui/table/table_screen.dart:458",
-   "lib/ui/table/tablet_table_screen.dart:102",
-   "lib/ui/table/tablet_table_screen.dart:199"
+   "lib/ui/table/tablet_table_screen.dart:120",
+   "lib/ui/table/tablet_table_screen.dart:224"
   ]
  },
  {
@@ -4815,21 +4938,21 @@
   "key": "{v} ganhou",
   "where": [
    "lib/ui/table/table_screen.dart:294",
-   "lib/ui/table/tablet_table_screen.dart:102"
+   "lib/ui/table/tablet_table_screen.dart:120"
   ]
  },
  {
   "key": "Turno {turn} · guardado no histórico.",
   "where": [
    "lib/ui/table/table_screen.dart:295",
-   "lib/ui/table/tablet_table_screen.dart:103"
+   "lib/ui/table/tablet_table_screen.dart:121"
   ]
  },
  {
   "key": "Ver a mesa",
   "where": [
    "lib/ui/table/table_screen.dart:297",
-   "lib/ui/table/tablet_table_screen.dart:105"
+   "lib/ui/table/tablet_table_screen.dart:123"
   ]
  },
  {
@@ -4866,7 +4989,7 @@
   "key": "Terminar jogo",
   "where": [
    "lib/ui/table/table_screen.dart:360",
-   "lib/ui/table/tablet_table_screen.dart:231"
+   "lib/ui/table/tablet_table_screen.dart:256"
   ]
  },
  {
@@ -4879,14 +5002,14 @@
   "key": "Criar token",
   "where": [
    "lib/ui/table/table_screen.dart:366",
-   "lib/ui/table/table_sheets.dart:1198"
+   "lib/ui/table/table_sheets.dart:1194"
   ]
  },
  {
   "key": "Apontar para… (carta ou jogador)",
   "where": [
    "lib/ui/table/table_screen.dart:371",
-   "lib/ui/table/table_sheets.dart:253"
+   "lib/ui/table/table_sheets.dart:249"
   ]
  },
  {
@@ -4905,7 +5028,7 @@
   "key": "Lançar d20",
   "where": [
    "lib/ui/table/table_screen.dart:386",
-   "lib/ui/table/tablet_table_screen.dart:225"
+   "lib/ui/table/tablet_table_screen.dart:250"
   ]
  },
  {
@@ -4957,24 +5080,11 @@
   ]
  },
  {
-  "key": "Desfazer",
-  "where": [
-   "lib/ui/table/table_screen.dart:494",
-   "lib/ui/table/tablet_table_screen.dart:207"
-  ]
- },
- {
   "key": "Registo",
   "where": [
    "lib/ui/table/table_screen.dart:499",
-   "lib/ui/table/table_sheets.dart:1264",
-   "lib/ui/table/tablet_table_screen.dart:220"
-  ]
- },
- {
-  "key": "Mais",
-  "where": [
-   "lib/ui/table/table_screen.dart:503"
+   "lib/ui/table/table_sheets.dart:1260",
+   "lib/ui/table/tablet_table_screen.dart:245"
   ]
  },
  {
@@ -4994,7 +5104,7 @@
   "key": "Campo de {v}",
   "where": [
    "lib/ui/table/table_screen.dart:840",
-   "lib/ui/table/table_sheets.dart:417"
+   "lib/ui/table/table_sheets.dart:413"
   ]
  },
  {
@@ -5017,7 +5127,7 @@
   "key": "Cemitério",
   "where": [
    "lib/ui/table/table_screen.dart:1043",
-   "lib/ui/table/table_sheets.dart:838",
+   "lib/ui/table/table_sheets.dart:834",
    "glossary"
   ]
  },
@@ -5061,540 +5171,540 @@
  {
   "key": "Usar (lealdade {loyalty} → {delta})",
   "where": [
-   "lib/ui/table/table_sheets.dart:174"
+   "lib/ui/table/table_sheets.dart:170"
   ]
  },
  {
   "key": "Lealdade insuficiente ({loyalty})",
   "where": [
-   "lib/ui/table/table_sheets.dart:175"
+   "lib/ui/table/table_sheets.dart:171"
   ]
  },
  {
   "key": "{v} · dono: {v2}",
   "where": [
-   "lib/ui/table/table_sheets.dart:196"
+   "lib/ui/table/table_sheets.dart:192"
   ]
  },
  {
   "key": "controlado por {v}",
   "where": [
-   "lib/ui/table/table_sheets.dart:198"
+   "lib/ui/table/table_sheets.dart:194"
   ]
  },
  {
   "key": "Taxa de comandante: +{tax}",
   "where": [
-   "lib/ui/table/table_sheets.dart:199"
+   "lib/ui/table/table_sheets.dart:195"
   ]
  },
  {
   "key": "Tirar destaque",
   "where": [
-   "lib/ui/table/table_sheets.dart:206"
+   "lib/ui/table/table_sheets.dart:202"
   ]
  },
  {
   "key": "Destacar para todos",
   "where": [
-   "lib/ui/table/table_sheets.dart:206"
+   "lib/ui/table/table_sheets.dart:202"
   ]
  },
  {
   "key": "Desvirar os {n} terrenos",
   "where": [
-   "lib/ui/table/table_sheets.dart:214"
+   "lib/ui/table/table_sheets.dart:210"
   ]
  },
  {
   "key": "Virar os {n} terrenos (tap)",
   "where": [
-   "lib/ui/table/table_sheets.dart:215"
+   "lib/ui/table/table_sheets.dart:211"
   ]
  },
  {
   "key": "Desvirar só esta",
   "where": [
-   "lib/ui/table/table_sheets.dart:219"
+   "lib/ui/table/table_sheets.dart:215"
   ]
  },
  {
   "key": "Virar só esta",
   "where": [
-   "lib/ui/table/table_sheets.dart:219"
+   "lib/ui/table/table_sheets.dart:215"
   ]
  },
  {
   "key": "Desvirar",
   "where": [
-   "lib/ui/table/table_sheets.dart:223"
+   "lib/ui/table/table_sheets.dart:219"
   ]
  },
  {
   "key": "Virar (tap)",
   "where": [
-   "lib/ui/table/table_sheets.dart:223",
+   "lib/ui/table/table_sheets.dart:219",
    "glossary"
   ]
  },
  {
   "key": "Valor de X",
   "where": [
-   "lib/ui/table/table_sheets.dart:229"
+   "lib/ui/table/table_sheets.dart:225"
   ]
  },
  {
   "key": "Contadores",
   "where": [
-   "lib/ui/table/table_sheets.dart:235",
-   "lib/ui/table/table_sheets.dart:611"
+   "lib/ui/table/table_sheets.dart:231",
+   "lib/ui/table/table_sheets.dart:607"
   ]
  },
  {
   "key": "Transformar (outra face)",
   "where": [
-   "lib/ui/table/table_sheets.dart:240"
+   "lib/ui/table/table_sheets.dart:236"
   ]
  },
  {
   "key": "Virar para cima",
   "where": [
-   "lib/ui/table/table_sheets.dart:242"
+   "lib/ui/table/table_sheets.dart:238"
   ]
  },
  {
   "key": "Virar para baixo",
   "where": [
-   "lib/ui/table/table_sheets.dart:242"
+   "lib/ui/table/table_sheets.dart:238"
   ]
  },
  {
   "key": "Anexar a…",
   "where": [
-   "lib/ui/table/table_sheets.dart:244"
+   "lib/ui/table/table_sheets.dart:240"
   ]
  },
  {
   "key": "Desanexar",
   "where": [
-   "lib/ui/table/table_sheets.dart:244"
+   "lib/ui/table/table_sheets.dart:240"
   ]
  },
  {
   "key": "Anexar a",
   "where": [
-   "lib/ui/table/table_sheets.dart:250"
+   "lib/ui/table/table_sheets.dart:246"
   ]
  },
  {
   "key": "Dar o controlo a…",
   "where": [
-   "lib/ui/table/table_sheets.dart:257"
+   "lib/ui/table/table_sheets.dart:253"
   ]
  },
  {
   "key": "Novo controlador",
   "where": [
-   "lib/ui/table/table_sheets.dart:259"
+   "lib/ui/table/table_sheets.dart:255"
   ]
  },
  {
   "key": "Duplicar como token",
   "where": [
-   "lib/ui/table/table_sheets.dart:264"
+   "lib/ui/table/table_sheets.dart:260"
   ]
  },
  {
   "key": "Quantidade ({stackQty})",
   "where": [
-   "lib/ui/table/table_sheets.dart:273"
+   "lib/ui/table/table_sheets.dart:269"
   ]
  },
  {
   "key": "Quantidade",
   "where": [
-   "lib/ui/table/table_sheets.dart:275",
-   "lib/ui/table/table_sheets.dart:1200"
+   "lib/ui/table/table_sheets.dart:271",
+   "lib/ui/table/table_sheets.dart:1196"
   ]
  },
  {
   "key": "Separar da pilha…",
   "where": [
-   "lib/ui/table/table_sheets.dart:279"
+   "lib/ui/table/table_sheets.dart:275"
   ]
  },
  {
   "key": "Quantos separar?",
   "where": [
-   "lib/ui/table/table_sheets.dart:281"
+   "lib/ui/table/table_sheets.dart:277"
   ]
  },
  {
   "key": "Por exemplo, para atacar só com alguns",
   "where": [
-   "lib/ui/table/table_sheets.dart:283"
+   "lib/ui/table/table_sheets.dart:279"
   ]
  },
  {
   "key": "Para o topo do grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:292"
+   "lib/ui/table/table_sheets.dart:288"
   ]
  },
  {
   "key": "Para o fundo do grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:296"
+   "lib/ui/table/table_sheets.dart:292"
   ]
  },
  {
   "key": "O comandante",
   "where": [
-   "lib/ui/table/table_sheets.dart:315",
+   "lib/ui/table/table_sheets.dart:311",
    "tutorial:cmd-deck"
   ]
  },
  {
   "key": "Na regra do Commander, o dono pode pô-lo na zona de comando em vez disso.",
   "where": [
-   "lib/ui/table/table_sheets.dart:321"
+   "lib/ui/table/table_sheets.dart:317"
   ]
  },
  {
   "key": "Para o campo",
   "where": [
-   "lib/ui/table/table_sheets.dart:334",
-   "lib/ui/table/table_sheets.dart:953"
+   "lib/ui/table/table_sheets.dart:330",
+   "lib/ui/table/table_sheets.dart:949"
   ]
  },
  {
   "key": "Para a mão",
   "where": [
-   "lib/ui/table/table_sheets.dart:335",
-   "lib/ui/table/table_sheets.dart:952"
+   "lib/ui/table/table_sheets.dart:331",
+   "lib/ui/table/table_sheets.dart:948"
   ]
  },
  {
   "key": "Para o cemitério",
   "where": [
-   "lib/ui/table/table_sheets.dart:336",
-   "lib/ui/table/table_sheets.dart:955"
+   "lib/ui/table/table_sheets.dart:332",
+   "lib/ui/table/table_sheets.dart:951"
   ]
  },
  {
   "key": "Para o exílio",
   "where": [
-   "lib/ui/table/table_sheets.dart:337",
-   "lib/ui/table/table_sheets.dart:956"
+   "lib/ui/table/table_sheets.dart:333",
+   "lib/ui/table/table_sheets.dart:952"
   ]
  },
  {
   "key": "Para a zona de comando",
   "where": [
-   "lib/ui/table/table_sheets.dart:338"
+   "lib/ui/table/table_sheets.dart:334"
   ]
  },
  {
   "key": "Para o grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:339"
+   "lib/ui/table/table_sheets.dart:335"
   ]
  },
  {
   "key": "{name} vai para o campo",
   "where": [
-   "lib/ui/table/table_sheets.dart:343"
+   "lib/ui/table/table_sheets.dart:339"
   ]
  },
  {
   "key": "{name} vai para a mão",
   "where": [
-   "lib/ui/table/table_sheets.dart:344"
+   "lib/ui/table/table_sheets.dart:340"
   ]
  },
  {
   "key": "{name} vai para o cemitério",
   "where": [
-   "lib/ui/table/table_sheets.dart:345"
+   "lib/ui/table/table_sheets.dart:341"
   ]
  },
  {
   "key": "{name} vai para o exílio",
   "where": [
-   "lib/ui/table/table_sheets.dart:346"
+   "lib/ui/table/table_sheets.dart:342"
   ]
  },
  {
   "key": "{name} vai para a zona de comando",
   "where": [
-   "lib/ui/table/table_sheets.dart:347"
+   "lib/ui/table/table_sheets.dart:343"
   ]
  },
  {
   "key": "{name} vai para o grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:348"
+   "lib/ui/table/table_sheets.dart:344"
   ]
  },
  {
   "key": "Apontar para…",
   "where": [
-   "lib/ui/table/table_sheets.dart:402"
+   "lib/ui/table/table_sheets.dart:398"
   ]
  },
  {
   "key": "Outro contador",
   "where": [
-   "lib/ui/table/table_sheets.dart:557",
-   "lib/ui/table/table_sheets.dart:621"
+   "lib/ui/table/table_sheets.dart:553",
+   "lib/ui/table/table_sheets.dart:617"
   ]
  },
  {
   "key": "Ex.: page, verse, fuse",
   "where": [
-   "lib/ui/table/table_sheets.dart:561"
+   "lib/ui/table/table_sheets.dart:557"
   ]
  },
  {
   "key": "Juntar",
   "where": [
-   "lib/ui/table/table_sheets.dart:567"
+   "lib/ui/table/table_sheets.dart:563"
   ]
  },
  {
   "key": "Carta",
   "where": [
-   "lib/ui/table/table_sheets.dart:582"
+   "lib/ui/table/table_sheets.dart:578"
   ]
  },
  {
   "key": "Poder e resistência (equipamentos, efeitos)",
   "where": [
-   "lib/ui/table/table_sheets.dart:602"
+   "lib/ui/table/table_sheets.dart:598"
   ]
  },
  {
   "key": "Poder ±",
   "where": [
-   "lib/ui/table/table_sheets.dart:605"
+   "lib/ui/table/table_sheets.dart:601"
   ]
  },
  {
   "key": "Resistência ±",
   "where": [
-   "lib/ui/table/table_sheets.dart:607"
+   "lib/ui/table/table_sheets.dart:603"
   ]
  },
  {
   "key": "Habilidades dadas por efeitos",
   "where": [
-   "lib/ui/table/table_sheets.dart:627"
+   "lib/ui/table/table_sheets.dart:623"
   ]
  },
  {
   "key": "Lançar (vai para o cemitério)",
   "where": [
-   "lib/ui/table/table_sheets.dart:688"
+   "lib/ui/table/table_sheets.dart:684"
   ]
  },
  {
   "key": "Jogar para o campo",
   "where": [
-   "lib/ui/table/table_sheets.dart:690"
+   "lib/ui/table/table_sheets.dart:686"
   ]
  },
  {
   "key": "Jogar virada para baixo",
   "where": [
-   "lib/ui/table/table_sheets.dart:691"
+   "lib/ui/table/table_sheets.dart:687"
   ]
  },
  {
   "key": "Descartar",
   "where": [
-   "lib/ui/table/table_sheets.dart:694"
+   "lib/ui/table/table_sheets.dart:690"
   ]
  },
  {
   "key": "Exilar",
   "where": [
-   "lib/ui/table/table_sheets.dart:695"
+   "lib/ui/table/table_sheets.dart:691"
   ]
  },
  {
   "key": "Pôr no topo do grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:696"
+   "lib/ui/table/table_sheets.dart:692"
   ]
  },
  {
   "key": "Pôr no fundo do grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:698"
+   "lib/ui/table/table_sheets.dart:694"
   ]
  },
  {
   "key": "Revelar a todos",
   "where": [
-   "lib/ui/table/table_sheets.dart:702"
+   "lib/ui/table/table_sheets.dart:698"
   ]
  },
  {
   "key": "uma carta da mão",
   "where": [
-   "lib/ui/table/table_sheets.dart:704"
+   "lib/ui/table/table_sheets.dart:700"
   ]
  },
  {
   "key": "Grimório ({v})",
   "where": [
-   "lib/ui/table/table_sheets.dart:728"
+   "lib/ui/table/table_sheets.dart:724"
   ]
  },
  {
   "key": "Comprar 1",
   "where": [
-   "lib/ui/table/table_sheets.dart:731"
+   "lib/ui/table/table_sheets.dart:727"
   ]
  },
  {
   "key": "Comprar N…",
   "where": [
-   "lib/ui/table/table_sheets.dart:735"
+   "lib/ui/table/table_sheets.dart:731"
   ]
  },
  {
   "key": "Comprar",
   "where": [
-   "lib/ui/table/table_sheets.dart:735"
+   "lib/ui/table/table_sheets.dart:731"
   ]
  },
  {
   "key": "Baralhar",
   "where": [
-   "lib/ui/table/table_sheets.dart:736"
+   "lib/ui/table/table_sheets.dart:732"
   ]
  },
  {
   "key": "Scry N…",
   "where": [
-   "lib/ui/table/table_sheets.dart:740"
+   "lib/ui/table/table_sheets.dart:736"
   ]
  },
  {
   "key": "Scry",
   "where": [
-   "lib/ui/table/table_sheets.dart:741",
-   "lib/ui/table/table_sheets.dart:846"
+   "lib/ui/table/table_sheets.dart:737",
+   "lib/ui/table/table_sheets.dart:842"
   ]
  },
  {
   "key": "Surveil N…",
   "where": [
-   "lib/ui/table/table_sheets.dart:742"
+   "lib/ui/table/table_sheets.dart:738"
   ]
  },
  {
   "key": "Surveil",
   "where": [
-   "lib/ui/table/table_sheets.dart:743",
-   "lib/ui/table/table_sheets.dart:846"
+   "lib/ui/table/table_sheets.dart:739",
+   "lib/ui/table/table_sheets.dart:842"
   ]
  },
  {
   "key": "Ver o topo (só eu)…",
   "where": [
-   "lib/ui/table/table_sheets.dart:744"
+   "lib/ui/table/table_sheets.dart:740"
   ]
  },
  {
   "key": "Ver o topo",
   "where": [
-   "lib/ui/table/table_sheets.dart:745"
+   "lib/ui/table/table_sheets.dart:741"
   ]
  },
  {
   "key": "Revelar o topo a todos",
   "where": [
-   "lib/ui/table/table_sheets.dart:746"
+   "lib/ui/table/table_sheets.dart:742"
   ]
  },
  {
   "key": "o topo do grimório",
   "where": [
-   "lib/ui/table/table_sheets.dart:750"
+   "lib/ui/table/table_sheets.dart:746"
   ]
  },
  {
   "key": "Mill N…",
   "where": [
-   "lib/ui/table/table_sheets.dart:753"
+   "lib/ui/table/table_sheets.dart:749"
   ]
  },
  {
   "key": "Mill",
   "where": [
-   "lib/ui/table/table_sheets.dart:754"
+   "lib/ui/table/table_sheets.dart:750"
   ]
  },
  {
   "key": "Exilar o topo",
   "where": [
-   "lib/ui/table/table_sheets.dart:755"
+   "lib/ui/table/table_sheets.dart:751"
   ]
  },
  {
   "key": "Procurar uma carta",
   "where": [
-   "lib/ui/table/table_sheets.dart:759"
+   "lib/ui/table/table_sheets.dart:755"
   ]
  },
  {
   "key": "Mulligan (London)",
   "where": [
-   "lib/ui/table/table_sheets.dart:763"
+   "lib/ui/table/table_sheets.dart:759"
   ]
  },
  {
   "key": "Escolhe {n} para o fundo",
   "where": [
-   "lib/ui/table/table_sheets.dart:788"
+   "lib/ui/table/table_sheets.dart:784"
   ]
  },
  {
   "key": "Confirmar ({n}/{n2})",
   "where": [
-   "lib/ui/table/table_sheets.dart:821"
+   "lib/ui/table/table_sheets.dart:817"
   ]
  },
  {
   "key": "Fundo",
   "where": [
-   "lib/ui/table/table_sheets.dart:838"
+   "lib/ui/table/table_sheets.dart:834"
   ]
  },
  {
   "key": "Topo do grimório (só tu vês)",
   "where": [
-   "lib/ui/table/table_sheets.dart:844"
+   "lib/ui/table/table_sheets.dart:840"
   ]
  },
  {
   "key": "{v} {n} · arrasta para ordenar (o primeiro fica no topo)",
   "where": [
-   "lib/ui/table/table_sheets.dart:845"
+   "lib/ui/table/table_sheets.dart:841"
   ]
  },
  {
   "key": "Topo",
   "where": [
-   "lib/ui/table/table_sheets.dart:873"
+   "lib/ui/table/table_sheets.dart:869"
   ]
  },
  {
   "key": "Concluir",
   "where": [
-   "lib/ui/table/table_sheets.dart:905",
+   "lib/ui/table/table_sheets.dart:901",
    "lib/ui/tutorial/tutorial_screen.dart:296",
    "lib/ui/tutorial/tutorial_screen.dart:393"
   ]
@@ -5602,145 +5712,145 @@
  {
   "key": "Nome ou tipo (ex.: land)",
   "where": [
-   "lib/ui/table/table_sheets.dart:939"
+   "lib/ui/table/table_sheets.dart:935"
   ]
  },
  {
   "key": "Para o topo",
   "where": [
-   "lib/ui/table/table_sheets.dart:954"
+   "lib/ui/table/table_sheets.dart:950"
   ]
  },
  {
   "key": "{v} de {v2} ({n})",
   "where": [
-   "lib/ui/table/table_sheets.dart:999"
+   "lib/ui/table/table_sheets.dart:995"
   ]
  },
  {
   "key": "Vazio",
   "where": [
-   "lib/ui/table/table_sheets.dart:1005"
+   "lib/ui/table/table_sheets.dart:1001"
   ]
  },
  {
   "key": "Dano de comandante (desconta na vida)",
   "where": [
-   "lib/ui/table/table_sheets.dart:1091"
+   "lib/ui/table/table_sheets.dart:1087"
   ]
  },
  {
   "key": "Veneno",
   "where": [
-   "lib/ui/table/table_sheets.dart:1104"
+   "lib/ui/table/table_sheets.dart:1100"
   ]
  },
  {
   "key": "Energia",
   "where": [
-   "lib/ui/table/table_sheets.dart:1105"
+   "lib/ui/table/table_sheets.dart:1101"
   ]
  },
  {
   "key": "Experiência",
   "where": [
-   "lib/ui/table/table_sheets.dart:1106"
+   "lib/ui/table/table_sheets.dart:1102"
   ]
  },
  {
   "key": "Rad",
   "where": [
-   "lib/ui/table/table_sheets.dart:1107"
+   "lib/ui/table/table_sheets.dart:1103"
   ]
  },
  {
   "key": "Apontar para este jogador",
   "where": [
-   "lib/ui/table/table_sheets.dart:1113"
+   "lib/ui/table/table_sheets.dart:1109"
   ]
  },
  {
   "key": "Monarca",
   "where": [
-   "lib/ui/table/table_sheets.dart:1121"
+   "lib/ui/table/table_sheets.dart:1117"
   ]
  },
  {
   "key": "Iniciativa",
   "where": [
-   "lib/ui/table/table_sheets.dart:1127"
+   "lib/ui/table/table_sheets.dart:1123"
   ]
  },
  {
   "key": "Bênção da cidade (City's Blessing)",
   "where": [
-   "lib/ui/table/table_sheets.dart:1133"
+   "lib/ui/table/table_sheets.dart:1129"
   ]
  },
  {
   "key": "Derrotado",
   "where": [
-   "lib/ui/table/table_sheets.dart:1139"
+   "lib/ui/table/table_sheets.dart:1135"
   ]
  },
  {
   "key": "{query} is:token",
   "where": [
-   "lib/ui/table/table_sheets.dart:1168"
+   "lib/ui/table/table_sheets.dart:1164"
   ]
  },
  {
   "key": "Procurar token (ex.: treasure, soldier)",
   "where": [
-   "lib/ui/table/table_sheets.dart:1211"
+   "lib/ui/table/table_sheets.dart:1207"
   ]
  },
  {
   "key": "Do teu deck",
   "where": [
-   "lib/ui/table/table_sheets.dart:1218"
+   "lib/ui/table/table_sheets.dart:1214"
   ]
  },
  {
   "key": "Comuns",
   "where": [
-   "lib/ui/table/table_sheets.dart:1219"
+   "lib/ui/table/table_sheets.dart:1215"
   ]
  },
  {
   "key": "Personalizado",
   "where": [
-   "lib/ui/table/table_sheets.dart:1236"
+   "lib/ui/table/table_sheets.dart:1232"
   ]
  },
  {
   "key": "P/R",
   "where": [
-   "lib/ui/table/table_sheets.dart:1240"
+   "lib/ui/table/table_sheets.dart:1236"
   ]
  },
  {
   "key": "{v} revelou {what}",
   "where": [
-   "lib/ui/table/table_sheets.dart:1294"
+   "lib/ui/table/table_sheets.dart:1290"
   ]
  },
  {
   "key": "O jogo termina e não fica no histórico (usa \"Terminar jogo\" para o guardar).",
   "where": [
-   "lib/ui/table/tablet_table_screen.dart:60"
+   "lib/ui/table/tablet_table_screen.dart:78"
   ]
  },
  {
   "key": "Turno {turn} · {v}",
   "where": [
-   "lib/ui/table/tablet_table_screen.dart:200"
+   "lib/ui/table/tablet_table_screen.dart:225"
   ]
  },
  {
   "key": "Passar",
   "where": [
-   "lib/ui/table/tablet_table_screen.dart:315"
+   "lib/ui/table/tablet_table_screen.dart:341"
   ]
  },
  {

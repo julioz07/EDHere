@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../l10n/l10n.dart';
 
-/// Um jogo solo (goldfish ou 1 contra 1 neste dispositivo) gravado para
+/// Um jogo solo (goldfish ou partida de teste neste dispositivo) gravado para
 /// continuar depois. Grava-se sozinho enquanto se joga, para não se perder
 /// se o Android fechar a app.
 class SoloSave {

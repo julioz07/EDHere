@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Table, Intent;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mesa_core/mesa_core.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -8,6 +9,7 @@ import '../../data/providers.dart';
 import '../../game/game_controller.dart';
 import 'table_screen.dart';
 import 'table_sheets.dart';
+import 'table_turns.dart';
 import '../../l10n/l10n.dart';
 
 /// Mesa partilhada: dois jogadores frente a frente com um tablet (ou
@@ -31,10 +33,25 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
   GameController get ctrl => widget.ctrl;
   late bool _wasOver = ctrl.state.over;
 
+  /// Fixa a orientação enquanto se joga: o tablet está pousado na mesa e,
+  /// ao mexer-lhe, o ecrã não pode rodar.
+  static const _orientation = MethodChannel('edhere/orientation');
+
+  static Future<void> _lockOrientation(bool lock) async {
+    try {
+      await _orientation.invokeMethod<void>(lock ? 'lock' : 'unlock');
+    } on MissingPluginException {
+      // Fora do Android não há canal (o iOS fica para quando houver versão).
+    } on PlatformException {
+      // Sem bloqueio, o jogo continua.
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    _lockOrientation(true);
     ctrl.addListener(_onChange);
   }
 
@@ -42,6 +59,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
   void dispose() {
     ctrl.removeListener(_onChange);
     WakelockPlus.disable();
+    _lockOrientation(false);
     super.dispose();
   }
 
@@ -121,16 +139,23 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
     // jogadores sentam-se nas pontas: o ecrã divide-se à esquerda e à direita
     // e cada metade roda 90°, para cada um ter uma área alta e não uma faixa
     // fina. Com o ecrã ao alto, divide-se em cima e em baixo.
+    // TableTurns: os menus e detalhes abertos numa metade aparecem virados
+    // para o jogador dessa metade.
     Widget half(List<int> list, int turns) => Expanded(
-          child: RotatedBox(
-            quarterTurns: turns,
-            child: Row(children: [
-              for (final s in list) Expanded(child: _SeatArea(ctrl: ctrl, seat: s, openHand: widget.openHands)),
-            ]),
+          child: TableTurns(
+            turns: turns,
+            child: RotatedBox(
+              quarterTurns: turns,
+              child: Row(children: [
+                for (final s in list) Expanded(child: _SeatArea(ctrl: ctrl, seat: s, openHand: widget.openHands)),
+              ]),
+            ),
           ),
         );
 
-    Widget bar(int turns) => RotatedBox(
+    Widget bar(int turns) => TableTurns(
+        turns: turns,
+        child: RotatedBox(
           quarterTurns: turns,
           child: _CenterBar(
             ctrl: ctrl,
@@ -139,7 +164,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
             },
             onFinish: _finish,
           ),
-        );
+        ));
 
     return PopScope(
       canPop: false,
@@ -299,14 +324,15 @@ class _SeatArea extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                IconButton(
-                  tooltip: tr('Token'),
-                  visualDensity: VisualDensity.compact,
+                // Com texto: só com o ícone, ninguém percebia onde se criam tokens.
+                TextButton.icon(
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
                   onPressed: () {
                     ctrl.actAs(seat);
                     showTokenSheet(context, ctrl);
                   },
-                  icon: const Icon(Icons.toll_outlined),
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: Text(tr('Token')),
                 ),
                 if (active)
                   FilledButton(

@@ -26,6 +26,12 @@
         android:label="EDHere"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- No Android 16, em tablets, o sistema ignora os pedidos de orientação
+             das apps; a mesa partilhada precisa de fixar o ecrã (pousado na
+             mesa, não pode rodar). -->
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY"
+            android:value="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

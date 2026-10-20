@@ -9,9 +9,13 @@ import 'deck_editor_screen.dart';
 import '../widgets/responsive.dart';
 import '../../l10n/l10n.dart';
 
-/// Importar uma lista colada (Moxfield, Archidekt, MTGO, Arena).
+/// Importar uma lista colada (Moxfield, Archidekt, MTGO, Arena). Com
+/// [intoDeckId], importa para um deck que já existe: junta às cartas que lá
+/// estão ou substitui-as.
 class DeckImportScreen extends ConsumerStatefulWidget {
-  const DeckImportScreen({super.key});
+  const DeckImportScreen({super.key, this.intoDeckId});
+
+  final int? intoDeckId;
 
   @override
   ConsumerState<DeckImportScreen> createState() => _DeckImportScreenState();
@@ -20,7 +24,11 @@ class DeckImportScreen extends ConsumerStatefulWidget {
 class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
   final _name = TextEditingController();
   final _text = TextEditingController();
-  String _format = 'commander';
+  late String _format = _target?.format ?? 'commander';
+  late final Deck? _target = widget.intoDeckId == null ? null : ref.read(deckStoreProvider).getDeck(widget.intoDeckId!);
+
+  /// Num deck que já existe: substituir as cartas (senão junta-as).
+  bool _replace = false;
   List<ParsedLine>? _unresolved;
   int _found = 0;
 
@@ -127,14 +135,31 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
         _progress = null;
       });
     }
+    final notes = r.unresolved.isEmpty
+        ? ''
+        : tr('Não encontradas na importação:\n{v}', {'v': r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')});
+    if (_target case final target?) {
+      var d = _replace ? target.copyWith(entries: const []) : target;
+      for (final e in entries) {
+        d = d.add(e.oracleId, qty: e.qty, board: e.board, category: e.category, printId: e.printId);
+      }
+      if (notes.isNotEmpty) d = d.copyWith(notes: [d.notes, notes].where((n) => n.isNotEmpty).join('\n\n'));
+      ref.read(decksProvider).save(d);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(warning ??
+              (entries.fold<int>(0, (n, e) => n + e.qty) == 1
+                  ? tr('1 carta importada para {v}.', {'v': d.name})
+                  : tr('{found} cartas importadas para {v}.',
+                      {'found': entries.fold<int>(0, (n, e) => n + e.qty), 'v': d.name})))));
+      Navigator.of(context).pop(true);
+      return;
+    }
     final deck = ref.read(decksProvider).save(Deck(
           name: name,
           format: _format,
           entries: entries,
-          notes: r.unresolved.isEmpty
-              ? ''
-              : tr('Não encontradas na importação:\n{v}',
-                  {'v': r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')}),
+          notes: notes,
         ));
     if (warning != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(warning)));
@@ -149,7 +174,7 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('Importar lista')),
+        title: Text(_target == null ? tr('Importar lista') : tr('Importar para {v}', {'v': _target.name})),
         actions: [
           IconButton(tooltip: tr('Ler QR de um deck'), onPressed: _scan, icon: const Icon(Icons.qr_code_scanner)),
         ],
@@ -161,20 +186,32 @@ class _DeckImportScreenState extends ConsumerState<DeckImportScreen> {
               child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              TextField(
-                controller: _name,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: tr('Nome do deck')),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _format,
-                decoration: InputDecoration(labelText: tr('Formato')),
-                items: [
-                  for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
-                ],
-                onChanged: (v) => setState(() => _format = v ?? _format),
-              ),
+              if (_target == null) ...[
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: tr('Nome do deck')),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _format,
+                  decoration: InputDecoration(labelText: tr('Formato')),
+                  items: [
+                    for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
+                  ],
+                  onChanged: (v) => setState(() => _format = v ?? _format),
+                ),
+              ] else
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment(
+                        value: false, icon: const Icon(Icons.playlist_add), label: Text(tr('Juntar às que lá estão'))),
+                    ButtonSegment(
+                        value: true, icon: const Icon(Icons.swap_horiz), label: Text(tr('Substituir o deck'))),
+                  ],
+                  selected: {_replace},
+                  onSelectionChanged: (v) => setState(() => _replace = v.first),
+                ),
               const SizedBox(height: 12),
               TextField(
                 controller: _text,

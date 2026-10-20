@@ -190,6 +190,23 @@ Sideboard
       expect(p.single.category, 'Ramp');
     });
 
+    test('"Commander", linha em branco e o resto sem cabeçalho: o resto é o deck', () {
+      final p = parseDeckText('Commander\n1 Krenko, Mob Boss\n\n1 Sol Ring\n1 Lightning Bolt\n30 Mountain',
+          hasCommandZone: true);
+      expect({for (final l in p) l.name: l.board}, {
+        'Krenko, Mob Boss': Board.command,
+        'Sol Ring': Board.main,
+        'Lightning Bolt': Board.main,
+        'Mountain': Board.main,
+      });
+    });
+
+    test('mais de dois comandantes sem deck: só o primeiro fica no comando', () {
+      final p = parseDeckText('Commander\n1 Krenko, Mob Boss\n1 Sol Ring\n1 Lightning Bolt\n30 Mountain');
+      expect(p.where((l) => l.board == Board.command).map((l) => l.name), ['Krenko, Mob Boss']);
+      expect(p.where((l) => l.board == Board.main), hasLength(3));
+    });
+
     test('exportar e voltar a importar dá o mesmo deck', () {
       final r = resolveDeckText(parseDeckText(moxfield), repo.findByName);
       final deck = Deck(name: 'x', format: 'commander', entries: r.entries);
