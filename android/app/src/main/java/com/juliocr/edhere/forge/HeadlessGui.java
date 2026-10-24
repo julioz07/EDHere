@@ -4,6 +4,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import org.jupnp.UpnpServiceConfiguration;
@@ -31,16 +34,45 @@ final class HeadlessGui implements IGuiBase {
         this.assetsDir = assetsDir.endsWith("/") ? assetsDir : assetsDir + "/";
     }
 
+    /**
+     * A "thread da interface" do Forge. Não é a do Android: é uma thread
+     * nossa onde correm os toques da pessoa, para a thread do jogo poder
+     * ficar à espera deles (o Forge verifica que espera fora desta thread).
+     */
+    private static volatile Thread edtThread;
+    private static final ExecutorService edt = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(null, r, "forge-edt", 16L << 20);
+        edtThread = t;
+        return t;
+    });
+
+    static void runInEdt(Runnable r) { edt.execute(r); }
+
     // "desktop" para o Forge usar as pastas do forge.profile.properties
     @Override public boolean isRunningOnDesktop() { return true; }
     @Override public boolean isLibgdxPort() { return false; }
     @Override public String getCurrentVersion() { return "edhere"; }
     @Override public String getUserAgent() { return "Forge (EDHere)"; }
     @Override public void invokeInEdtNow(Runnable r) { r.run(); }
-    @Override public void invokeInEdtLater(Runnable r) { r.run(); }
-    @Override public void invokeInEdtAndWait(Runnable r) { r.run(); }
+    @Override public void invokeInEdtLater(Runnable r) { edt.execute(r); }
+
+    @Override
+    public void invokeInEdtAndWait(Runnable r) {
+        if (isGuiThread()) {
+            r.run();
+            return;
+        }
+        try {
+            edt.submit(r).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        }
+    }
+
     @Override public void runBackgroundTask(String message, Runnable task) { task.run(); }
-    @Override public boolean isGuiThread() { return true; }
+    @Override public boolean isGuiThread() { return Thread.currentThread() == edtThread; }
     @Override public String getAssetsDir() { return assetsDir; }
     @Override public ImageFetcher getImageFetcher() { return null; }
     @Override public ISkinImage getSkinIcon(FSkinProp p) { return null; }

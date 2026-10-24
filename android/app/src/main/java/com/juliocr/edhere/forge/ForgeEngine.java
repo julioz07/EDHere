@@ -22,7 +22,6 @@ import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import forge.LobbyPlayer;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
@@ -31,11 +30,17 @@ import forge.game.GameEndReason;
 import forge.game.GameRules;
 import forge.game.GameType;
 import forge.game.Match;
+import forge.game.card.Card;
 import forge.game.player.Player;
 import forge.game.player.RegisteredPlayer;
+import forge.game.spellability.SpellAbilityStackInstance;
+import forge.gamemodes.match.HostedMatch;
 import forge.gui.GuiBase;
+import forge.gui.interfaces.IGuiGame;
+import forge.interfaces.IGameController;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.model.FModel;
+import forge.player.LobbyPlayerHuman;
 
 /**
  * O motor do Forge dentro da app. Tudo o que toca no Forge corre fora da
@@ -173,6 +178,10 @@ public final class ForgeEngine {
             // carregadas, a memória chega aos 130 MB (o limite é ~192 MB).
             prefs.setPref(FPref.LOAD_CARD_SCRIPTS_LAZILY, true);
             prefs.setPref(FPref.UI_LANGUAGE, language);
+            // passa a vez sozinho quando a pessoa não tem nada que possa fazer
+            prefs.setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS, true);
+            // sem gravações de partidas (e o código delas precisa do netty, que não vem na app)
+            prefs.setPref(FPref.UI_RECORD_REPLAYS, false);
             return null;
         });
     }
@@ -212,25 +221,30 @@ public final class ForgeEngine {
                 GameType type = "commander".equals(args.get("format")) ? GameType.Commander : GameType.Constructed;
                 List<Map<String, Object>> seats = (List<Map<String, Object>>) args.get("seats");
                 List<RegisteredPlayer> players = new ArrayList<>();
-                List<String> difficulty = new ArrayList<>();
+                Map<Integer, String> difficulty = new HashMap<>(); // índice do lugar -> dificuldade
+                RegisteredPlayer human = null;
                 boolean hardBot = false;
-                for (Map<String, Object> s : seats) {
+                for (int i = 0; i < seats.size(); i++) {
+                    Map<String, Object> s = seats.get(i);
                     Deck deck = buildDeck(s, new ArrayList<>());
                     RegisteredPlayer rp = type == GameType.Commander ? RegisteredPlayer.forCommander(deck) : new RegisteredPlayer(deck);
                     String bot = (String) s.get("bot");
                     String name = (String) s.get("name");
-                    LobbyPlayer lp = ForgeBots.create(name, bot == null ? ForgeBots.NORMAL : bot);
-                    rp.setPlayer(lp);
+                    if (bot == null && human == null) {
+                        rp.setPlayer(new LobbyPlayerHuman(name));
+                        human = rp;
+                    } else {
+                        rp.setPlayer(ForgeBots.create(name, bot == null ? ForgeBots.NORMAL : bot));
+                        difficulty.put(i, bot == null ? ForgeBots.NORMAL : bot);
+                        hardBot |= ForgeBots.HARD.equals(bot);
+                    }
                     players.add(rp);
-                    difficulty.add(bot);
-                    hardBot |= ForgeBots.HARD.equals(bot);
                 }
                 GameRules rules = new GameRules(type);
                 rules.setAppliedVariants(EnumSet.of(type));
                 rules.setAllowCheatShuffle(hardBot);
                 Number pace = (Number) args.get("pace");
-                ForgeMatch m = new ForgeMatch(new Match(rules, players, "EDHere"), difficulty,
-                        pace == null ? 0 : pace.intValue(), sink);
+                ForgeMatch m = new ForgeMatch(rules, players, human, difficulty, pace == null ? 0 : pace.intValue(), sink);
                 match = m;
                 m.start();
                 reply.ok(null);
@@ -269,40 +283,80 @@ public final class ForgeEngine {
         return deck;
     }
 
-    /** Uma partida a correr na sua thread. */
+    /** Um toque da pessoa: {kind: card|player|ok|cancel|stack|concede, id}. */
+    public static void act(Map<String, Object> args) {
+        ForgeMatch m = match;
+        if (m != null) m.act(args);
+    }
+
+    /** A resposta a uma pergunta ("ask") da partida. */
+    public static void answer(int id, Object value) {
+        ForgeMatch m = match;
+        if (m != null && m.gui != null) m.gui.answer(id, value);
+    }
+
+    /**
+     * Uma partida a correr na sua thread. Só com bots, corre o Match
+     * diretamente; com uma pessoa, passa pelo HostedMatch do Forge, que liga o
+     * controlador humano à nossa interface (EdhereGui).
+     */
     static final class ForgeMatch {
-        private final Match match;
-        private final List<String> difficulty;
+        private final GameRules rules;
+        private final List<RegisteredPlayer> players;
+        private final RegisteredPlayer human;
+        private final Map<Integer, String> difficulty;
         private final ForgeObserver observer;
+        final EdhereGui gui;
         private Thread thread;
         private volatile Game game;
         private volatile boolean running;
 
-        ForgeMatch(Match match, List<String> difficulty, int paceMs, Sink sink) {
-            this.match = match;
+        ForgeMatch(GameRules rules, List<RegisteredPlayer> players, RegisteredPlayer human,
+                   Map<Integer, String> difficulty, int paceMs, Sink sink) {
+            this.rules = rules;
+            this.players = players;
+            this.human = human;
             this.difficulty = difficulty;
             this.observer = new ForgeObserver(paceMs, sink);
+            this.gui = human == null ? null : new EdhereGui(sink, observer, this::onGame);
         }
 
         boolean isRunning() { return running; }
 
         void start() {
             running = true;
-            thread = new Thread(null, this::run, "forge-match", 64L << 20);
+            // "Game..." no nome: o Forge trata-a como thread do jogo e corre a
+            // partida aqui mesmo (com pilha grande: a IA é recursiva)
+            thread = new Thread(null, this::run, "Game-EDHere", 64L << 20);
             thread.start();
+        }
+
+        /** O jogo acabou de ser criado: liga o observador e configura os bots. */
+        private void onGame(Game g) {
+            game = g;
+            for (Player p : g.getRegisteredPlayers()) {
+                int seat = players.indexOf(p.getRegisteredPlayer());
+                String level = difficulty.get(seat);
+                if (level != null) ForgeBots.configure(p, level);
+                else observer.setHumans(java.util.Collections.singletonList(p));
+            }
+            observer.attach(g);
         }
 
         private void run() {
             try {
-                Game g = match.createGame();
-                game = g;
-                g.setNoGUIUser();
-                List<Player> seats = g.getRegisteredPlayers();
-                for (int i = 0; i < seats.size(); i++) {
-                    ForgeBots.configure(seats.get(i), difficulty.get(i));
+                if (human == null) {
+                    Match match = new Match(rules, players, "EDHere");
+                    Game g = match.createGame();
+                    g.setNoGUIUser();
+                    onGame(g);
+                    match.startGame(g);
+                } else {
+                    HostedMatch hosted = new HostedMatch();
+                    Map<RegisteredPlayer, IGuiGame> guis = new HashMap<>();
+                    guis.put(human, gui);
+                    hosted.startMatch(rules, null, players, guis, null);
                 }
-                observer.attach(g);
-                match.startGame(g);
                 observer.finished();
             } catch (Throwable e) {
                 Log.e(TAG, "match", e);
@@ -312,13 +366,60 @@ public final class ForgeEngine {
             }
         }
 
+        /** Os toques correm na thread da interface do Forge, como num ecrã do próprio Forge. */
+        void act(Map<String, Object> args) {
+            if (gui == null) return;
+            HeadlessGui.runInEdt(() -> {
+                try {
+                    IGameController c = gui.controller();
+                    Game g = game;
+                    if (c == null || g == null) return;
+                    String kind = (String) args.get("kind");
+                    Number id = (Number) args.get("id");
+                    switch (kind) {
+                        case "ok": c.selectButtonOk(); break;
+                        case "cancel": c.selectButtonCancel(); break;
+                        case "card": {
+                            Card card = g.findById(id.intValue());
+                            if (card != null) c.selectCard(card.getView(), null, null);
+                            break;
+                        }
+                        case "player": {
+                            Player p = g.getPlayer(id.intValue());
+                            if (p != null) c.selectPlayer(p.getView(), null);
+                            break;
+                        }
+                        case "stack": {
+                            for (SpellAbilityStackInstance si : g.getStack()) {
+                                if (si.getId() == id.intValue()) c.selectStackItem(si.getView());
+                            }
+                            break;
+                        }
+                        case "concede": c.concede(); break;
+                        default: log("toque desconhecido: " + kind);
+                    }
+                } catch (Throwable e) {
+                    Log.e(TAG, "act", e);
+                }
+            });
+        }
+
         void stop() {
             observer.stop();
+            if (gui != null) {
+                gui.close();
+                IGameController c = gui.controller();
+                if (c != null) HeadlessGui.runInEdt(() -> {
+                    try { c.concede(); } catch (Throwable ignored) { }
+                });
+            }
             Game g = game;
             if (g != null && !g.isGameOver()) {
                 try { g.setGameOver(GameEndReason.Draw); } catch (Throwable ignored) { }
             }
-            if (thread != null) thread.interrupt();
+            // a ver bots, acorda a thread das pausas; com uma pessoa, o concede
+            // já liberta o jogo (interromper faz o Forge registar um "bug")
+            if (thread != null && gui == null) thread.interrupt();
         }
     }
 }

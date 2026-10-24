@@ -193,6 +193,15 @@ class MainActivity : FlutterActivity() {
                     ForgeEngine.stopMatch()
                     result.success(null)
                 }
+                // Toques da pessoa e respostas às perguntas da partida.
+                "act" -> {
+                    ForgeEngine.act(call.arguments()!!)
+                    result.success(null)
+                }
+                "answer" -> {
+                    ForgeEngine.answer(call.argument<Int>("id")!!, call.argument<Any>("value"))
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

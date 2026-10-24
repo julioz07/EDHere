@@ -35,7 +35,8 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     }
   }
 
-  Future<void> _start() async {
+  /// [watch]: o meu deck também fica com um bot (para ver o motor a jogar).
+  Future<void> _start({bool watch = false}) async {
     final store = ref.read(deckStoreProvider);
     final repo = ref.read(cardRepoProvider);
     final mine = store.getDeck(_myDeck!);
@@ -47,10 +48,10 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
       return;
     }
     final player = ref.read(playerNameProvider);
-    // Por agora o bot joga contra outro bot (ver o motor a jogar na mesa);
-    // jogar contra ele é o passo seguinte.
     final seats = [
-      ForgeSeat(name: player.isEmpty ? tr('Bot 1') : player, deck: mine, bot: BotLevel.normal),
+      watch
+          ? ForgeSeat(name: tr('Bot 1'), deck: mine, bot: BotLevel.normal)
+          : ForgeSeat(name: player.isEmpty ? tr('Jogador') : player, deck: mine),
       ForgeSeat(name: tr('Bot ({v})', {'v': _level.label}), deck: theirs, bot: _level),
     ];
     setState(() => _busy = true);
@@ -151,12 +152,17 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
           ),
         ),
         BottomActions(children: [
+          OutlinedButton.icon(
+            onPressed: _busy || _myDeck == null || _botDeck == null ? null : () => _start(watch: true),
+            icon: const Icon(Icons.visibility_outlined),
+            label: Text(tr('Ver o bot a jogar')),
+          ),
           FilledButton.icon(
             onPressed: _busy || _myDeck == null || _botDeck == null ? null : _start,
             icon: _busy
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.smart_toy_outlined),
-            label: Text(_busy ? tr('A preparar o bot…') : tr('Ver o bot a jogar')),
+                : const Icon(Icons.play_arrow_rounded),
+            label: Text(_busy ? tr('A preparar o bot…') : tr('Jogar')),
           ),
         ]),
       ]),

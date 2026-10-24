@@ -29,14 +29,100 @@ class ForgePlayer {
   int get poison => counters['poison'] ?? 0;
 }
 
+/// O que o Forge espera da pessoa: a mensagem, os dois botões e o que se pode escolher.
+class ForgePrompt {
+  ForgePrompt.fromMap(Map m)
+      : message = m['msg'] as String? ?? '',
+        cardId = m['pcard'] as int?,
+        ok = ForgeButton.fromMap(m['ok'] as Map?),
+        cancel = ForgeButton.fromMap(m['cancel'] as Map?),
+        selectableCards = {for (final id in (m['sel'] as List? ?? const [])) id as int},
+        selectablePlayers = {for (final id in (m['selP'] as List? ?? const [])) id as int},
+        chosen = {for (final id in (m['chosen'] as List? ?? const [])) id as int};
+
+  final String message;
+  final int? cardId;
+  final ForgeButton ok;
+  final ForgeButton cancel;
+  final Set<int> selectableCards;
+  final Set<int> selectablePlayers;
+
+  /// Já escolhidos (alvos, atacantes...).
+  final Set<int> chosen;
+}
+
+class ForgeButton {
+  const ForgeButton(this.label, this.enabled);
+  ForgeButton.fromMap(Map? m)
+      : label = m?['label'] as String? ?? '',
+        enabled = m?['on'] == true;
+
+  final String label;
+  final bool enabled;
+}
+
+/// Uma opção de uma pergunta: o texto e, se for, a carta ou o jogador.
+class ForgeOption {
+  ForgeOption.fromMap(Map m)
+      : label = m['label'] as String? ?? '',
+        cardId = m['card'] as int?,
+        cardName = m['n'] as String?,
+        playerId = m['player'] as int?;
+
+  final String label;
+  final int? cardId;
+  final String? cardName;
+  final int? playerId;
+}
+
+/// Uma pergunta do Forge à espera de resposta (o jogo fica parado até lá).
+class ForgeAsk {
+  ForgeAsk.fromMap(Map m)
+      : id = m['id'] as int,
+        kind = m['kind'] as String? ?? 'choose',
+        title = m['title'] as String?,
+        message = m['msg'] as String?,
+        cardId = m['card'] as int?,
+        min = m['min'] as int? ?? 1,
+        max = m['max'] as int? ?? 1,
+        amount = m['amount'] as int? ?? 0,
+        atLeastOne = m['atLeastOne'] == true,
+        numeric = m['numeric'] == true,
+        initial = m['initial'] as String? ?? '',
+        labels = [for (final l in (m['labels'] as List? ?? const [])) l as String],
+        selected = [for (final i in (m['selected'] as List? ?? const [])) i as int],
+        options = [for (final o in (m['options'] as List? ?? const [])) ForgeOption.fromMap(o as Map)];
+
+  final int id;
+
+  /// choose, order, confirm, input ou distribute.
+  final String kind;
+  final String? title;
+  final String? message;
+  final int? cardId;
+  final int min;
+  final int max;
+  final int amount;
+  final bool atLeastOne;
+  final bool numeric;
+  final String initial;
+
+  /// Os textos dos botões de "confirm" (sim, não).
+  final List<String> labels;
+  final List<int> selected;
+  final List<ForgeOption> options;
+}
+
 /// Um objeto na pilha.
 class ForgeStackItem {
   ForgeStackItem.fromMap(Map m)
-      : sourceId = m['src'] as int?,
+      : id = m['id'] as int?,
+        sourceId = m['src'] as int?,
         name = m['n'] as String?,
         text = m['text'] as String? ?? '',
         controller = m['ctrl'] as int?;
 
+  final int? id;
   final int? sourceId;
   final String? name;
   final String text;
@@ -83,6 +169,8 @@ class ForgeTableState {
   final int? winner;
 
   ForgePlayer? player(int id) => players.where((p) => p.id == id).firstOrNull;
+
+  ForgeCardView? card(int id) => cards.where((c) => c.instance.id == id).firstOrNull;
 
   Iterable<ForgeCardView> zone(int playerId, Zone z) =>
       cards.where((c) => c.instance.zone == z && c.instance.controller == playerId);

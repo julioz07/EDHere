@@ -8,14 +8,18 @@ import '../l10n/l10n.dart';
 
 /// Dificuldade do bot (ver ForgeBots.java).
 enum BotLevel {
-  easy('easy', 'Fácil'),
-  normal('normal', 'Normal'),
-  hard('hard', 'Difícil');
+  easy('easy'),
+  normal('normal'),
+  hard('hard');
 
-  const BotLevel(this.id, this._label);
+  const BotLevel(this.id);
   final String id;
-  final String _label;
-  String get label => tr(_label);
+
+  String get label => switch (this) {
+        BotLevel.easy => tr('Fácil'),
+        BotLevel.normal => tr('Normal'),
+        BotLevel.hard => tr('Difícil'),
+      };
 }
 
 /// Um lugar na partida contra o bot: quem joga e com que deck.
@@ -96,6 +100,12 @@ abstract final class ForgeEngine {
       });
 
   static Future<void> stop() => _ch.invokeMethod('stop');
+
+  /// Um toque da pessoa: [kind] é card, player, stack, ok, cancel ou concede.
+  static Future<void> act(String kind, [int? id]) => _ch.invokeMethod('act', {'kind': kind, if (id != null) 'id': id});
+
+  /// A resposta a uma pergunta ("ask") do Forge.
+  static Future<void> answer(int id, Object? value) => _ch.invokeMethod('answer', {'id': id, 'value': value});
 
   /// As línguas do Forge que temos (as mensagens do registo de jogo).
   static String _forgeLanguage() => switch (L10n.lang) {

@@ -1,0 +1,19 @@
+[
+["=Fácil", "Easy", "Fácil", "Facile"],
+["=Difícil", "Hard", "Difícil", "Difficile"],
+["=Escolhe", "Choose", "Elige", "Scegli"],
+["=Escolhe {n}.", "Choose {n}.", "Elige {n}.", "Scegline {n}."],
+["=Escolhe de {a} a {b}.", "Choose {a} to {b}.", "Elige de {a} a {b}.", "Scegline da {a} a {b}."],
+["=OK", "OK", "OK", "OK"],
+["=Confirmar", "Confirm", "Confirmar", "Conferma"],
+["=Sim", "Yes", "Sí", "Sì"],
+["=Arrasta para mudar a ordem. O primeiro fica em cima.", "Drag to change the order. The first one goes on top.", "Arrastra para cambiar el orden. El primero queda arriba.", "Trascina per cambiare l'ordine. Il primo va in cima."],
+["=Dividir", "Divide", "Dividir", "Dividi"],
+["=Por dividir: {n}", "Left to divide: {n}", "Por dividir: {n}", "Da dividere: {n}"],
+["=Desistir da partida?", "Concede the game?", "¿Rendirse en la partida?", "Abbandonare la partita?"],
+["=O bot ganha esta partida.", "The bot wins this game.", "El bot gana esta partida.", "Il bot vince questa partita."],
+["=Continuar a jogar", "Keep playing", "Seguir jugando", "Continua a giocare"],
+["=Desistir", "Concede", "Rendirse", "Abbandona"],
+["=Contra o bot", "Against the bot", "Contra el bot", "Contro il bot"],
+["=O bot está a pensar…", "The bot is thinking…", "El bot está pensando…", "Il bot sta pensando…"]
+]
