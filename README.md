@@ -7,15 +7,23 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.6.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.7.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
 O EDHere é uma app Flutter (Android; iOS preparado) que funciona como **mesa de jogo, não como motor de regras**: gere zonas, vida, contadores, turnos e tokens, e as regras ficam a cargo dos jogadores, como numa mesa física. O foco é **Commander/EDH**, mas a mesa serve qualquer formato.
 
+A exceção é **jogar contra o bot**: aí as regras são aplicadas pelo motor do [Forge](https://github.com/Card-Forge/forge), que vem dentro da app e também é quem joga do outro lado.
+
 A internet só é usada para descarregar a base de cartas e as imagens (do [Scryfall](https://scryfall.com)). Tudo o resto funciona em modo avião.
 
 ## Funcionalidades
+
+**Contra o bot** (Android 8.0 ou mais recente)
+- Partida 1 contra 1 com as regras completas, sem internet: o motor do [Forge](https://github.com/Card-Forge/forge) aplica as regras e joga do outro lado, na mesa do EDHere (imagens, cartas e língua da app).
+- Três dificuldades: fácil (o bot comete erros de propósito), normal e difícil (pensa mais em cada jogada e tem melhor mana).
+- Commander ou outro formato, com os teus decks; antes de começar avisa se o motor ainda não conhecer alguma carta.
+- Tocar numa carta joga-a (as que se podem jogar ficam destacadas), tocar sem largar abre a ficha; as perguntas do jogo (alvos, custos opcionais, ordem dos gatilhos, dividir dano) aparecem como diálogos. Também dá para ver o bot a jogar contra outro bot.
 
 **Cartas e decks**
 - Base de cartas offline (~36 mil cartas, ~25 MB a descarregar) com pesquisa instantânea e sintaxe parecida com a do Scryfall (`t:dragon id:rg mv<=3`, `f:commander`, `is:commander`…).
@@ -79,7 +87,10 @@ A internet só é usada para descarregar a base de cartas e as imagens (do [Scry
 | `tool/l10n` | Traduções (`src/*.json`) e ferramentas: `extract.py` recolhe as frases, `build.py` gera as tabelas e diz o que falta |
 | `lib/game` | `GameController` (núcleo ↔ UI), `NetworkGame` (lobby e jogo em rede), draft, jogos gravados |
 | `lib/ui` | Ecrãs |
-| `android/.../MainActivity.kt` | Hotspot local (`LocalOnlyHotspot`) por platform channel |
+| `android/.../MainActivity.kt` | Hotspot local (`LocalOnlyHotspot`), orientação, partilha e o canal do bot, por platform channels |
+| `android/.../forge/` | Ponte para o motor do Forge (Java): arranque sem interface, partidas, estado da mesa, perguntas e toques |
+| `lib/bot` | Lado Flutter do bot: canal com o motor e estado da mesa vindo do Forge |
+| `tool/forge` | `build_forge.py`: compila o Forge num commit fixo e gera os jars e os dados que vão na app |
 | `tool/` | Geradores (glifos da fonte Mana, ícones da app, dados de boosters) |
 | `assets/boosters` | Composição dos boosters por set e pacotes JumpStart (gerados do MTGJSON) |
 
@@ -87,9 +98,10 @@ O plano completo do projeto está em [`App Commander Offline — Arquitetura e P
 
 ## Compilar
 
-Requisitos: Flutter 3.24 (Dart 3.5), Android SDK 35, JDK 17+ (o do Android Studio serve).
+Requisitos: Flutter 3.24 (Dart 3.5), Android SDK 35, JDK 17+ (o do Android Studio serve) e, para o motor do bot, Maven e git.
 
 ```sh
+python tool/forge/build_forge.py              # motor do Forge (uma vez, ou ao mudar o commit fixado)
 flutter pub get
 flutter run                                   # num dispositivo ou emulador
 flutter build apk --release --split-per-abi   # APKs por arquitetura
@@ -101,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.7.0 | Jogar contra o bot: partida 1 contra 1 com as regras completas pelo motor do Forge (GPL-3.0), dentro da app e sem internet, com três dificuldades; ver o bot a jogar contra outro bot. O código do EDHere passa a ser aberto, sob a GPL-3.0 |
 | 1.6.0 | Partida de teste de 2 a 6 jogadores no mesmo aparelho (controlas todos; ao passar o turno a mesa mostra o seguinte). Mesa partilhada: o ecrã deixa de rodar, os menus e detalhes das cartas abrem virados para quem tocou e na metade dele, e o botão "Token" tem texto. Editor de decks: seleção de várias cartas (toque longo) para mover (incluindo para comandante), mudar a categoria ou remover, com desfazer; importar uma lista para um deck que já existe (juntar ou substituir). Importação: "Commander" seguido do resto sem cabeçalho já não põe tudo como comandante |
 | 1.5.0 | Pronta para a Play Store: identificador `com.juliocr.edhere` (instala-se ao lado da app antiga; passa os decks por backup), assinatura com a chave de upload, Android 16 (targetSdk 36). Ficha da loja, imagens e política de privacidade em `docs/play-store/` |
 | 1.4.3 | Telemóveis pequenos (testado em 360×640 dp e com letra a 130%): no lobby, "Escolher deck", "Estou pronto" e "Começar" ficam fixos em baixo; "Abrir sala", "Começar" (1 contra 1), "Abrir boosters" e "Verificar/Importar" ficam sempre à vista, mesmo com o teclado; na mesa, a mão, as zonas e os jogadores encolhem para o campo caber, e a letra da mesa só cresce até 115%; o guia do tutorial tem altura limitada e o "Continuar" sobe para o título; cartões de jogo gravado e de pools com os botões por baixo do texto; editor de decks com o nome inteiro, miniaturas menores e separadores que não transbordam; introdução com os pontos todos à vista; tipo das cartas traduzido nas listas do deck; texto do draft "N jogadores e M bots" traduzido |
@@ -146,9 +159,12 @@ EDHere é **conteúdo de fãs não oficial**, permitido pela [Fan Content Policy
 - Composição dos boosters e pacotes JumpStart: [MTGJSON](https://mtgjson.com) (licença MIT).
 - Símbolos dos sets: fonte [Keyrune](https://github.com/andrewgioia/keyrune), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/keyrune_LICENSE.md`). Para sets novos: atualizar `assets/fonts/keyrune.ttf` e correr `python -I tool/gen_keyrune_glyphs.py keyrune.css`.
 - Símbolos de mana, contadores e habilidades: fonte [Mana](https://github.com/andrewgioia/mana), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/mana_OFL.txt`).
+- Motor de regras e bot: [Forge](https://github.com/Card-Forge/forge) (GPL-3.0), usado sem alterações; o commit usado está em `tool/forge/build_forge.py`.
 
 A app é e será **100% gratuita**: sem anúncios, sem funcionalidades pagas, sem contas.
 
-## Direitos
+## Licença
 
-© Júlio Rodrigues. Todos os direitos reservados. O EDHere é gratuito, mas o código não é aberto: este repositório é privado e não pode ser copiado, modificado nem redistribuído sem autorização. Sugestões são bem-vindas.
+O código do EDHere é software livre, sob a [GNU General Public License v3.0](LICENSE) (a mesma do Forge, que vem dentro da app): podes usá-lo, estudá-lo, alterá-lo e redistribuí-lo nos termos dessa licença.
+
+O nome **EDHere** e o logótipo não fazem parte da licença: versões alteradas têm de usar outro nome e outro logótipo. Sugestões e contribuições são bem-vindas.

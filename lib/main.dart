@@ -21,6 +21,10 @@ Future<void> main() async {
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(
         ['Mana (Andrew Gioia)'], await rootBundle.loadString('assets/licenses/mana_OFL.txt'));
+    // O EDHere e o motor do bot (Forge) são GPL-3.0.
+    final gpl = await rootBundle.loadString('assets/licenses/gpl-3.0.txt');
+    yield LicenseEntryWithLineBreaks(['EDHere'], gpl);
+    yield LicenseEntryWithLineBreaks(['Forge (motor de regras do bot)'], gpl);
   });
   final prefs = await SharedPreferences.getInstance();
   // A língua da app: a escolhida nas Definições ou a do telemóvel. Quem já

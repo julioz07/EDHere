@@ -32,6 +32,11 @@ UMA MESA COMPLETA
 • Comprar, baralhar, scry, surveil, mill, procurar e mulligan
 • Registo de jogadas, desfazer, dados e moeda, histórico e estatísticas
 
+CONTRA O BOT
+• Partida 1 contra 1 com as regras completas, contra o bot, sem internet
+• Três dificuldades: fácil, normal e difícil
+• Com os teus decks, em Commander ou noutro formato (Android 8 ou mais recente)
+
 DECKS E CARTAS
 • Pesquisa instantânea e offline de mais de 36 mil cartas
 • Importa listas do Moxfield, Archidekt, MTGO e Arena
@@ -56,10 +61,10 @@ Goldfish para testar um deck, ou 1 contra 1 no mesmo telemóvel ou tablet.
 
 Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as imagens. Depois, funciona em modo avião.
 
-O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON.
+O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (1.5.0)
-Primeira versão na Play Store: a app em quatro línguas, cartas na tua língua, tutorial completo e uma interface revista para telemóveis pequenos.
+### Notas da versão (1.7.0)
+Novo: joga contra o bot! Partida 1 contra 1 com as regras completas, sem internet, com três dificuldades (Android 8 ou mais recente). O código do EDHere passa a ser aberto.
 
 ---
 
@@ -91,6 +96,11 @@ A COMPLETE TABLE
 • Draw, shuffle, scry, surveil, mill, search and mulligan
 • Game log, undo, dice and coin, history and stats
 
+AGAINST THE BOT
+• 1 vs 1 games with the full rules against the bot, no internet needed
+• Three difficulty levels: easy, normal and hard
+• With your own decks, in Commander or other formats (Android 8 or newer)
+
 DECKS AND CARDS
 • Instant offline search of more than 36,000 cards
 • Import lists from Moxfield, Archidekt, MTGO and Arena
@@ -115,10 +125,10 @@ Goldfish to test a deck, or 1 vs 1 on the same phone or tablet.
 
 You only need the internet to download the cards once (about 25 MB) and their images. After that, it works in airplane mode.
 
-EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON.
+EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (1.5.0)
-First Play Store release: the app in four languages, cards in your language, a full tutorial and a layout reworked for small phones.
+### Release notes (1.7.0)
+New: play against the bot! 1 vs 1 games with the full rules, no internet needed, with three difficulty levels (Android 8 or newer). EDHere is now open source.
 
 ---
 
@@ -150,6 +160,11 @@ UNA MESA COMPLETA
 • Robar, barajar, adivinar, vigilar, moler, buscar y mulligan
 • Registro de jugadas, deshacer, dados y moneda, historial y estadísticas
 
+CONTRA EL BOT
+• Partidas 1 contra 1 con las reglas completas contra el bot, sin internet
+• Tres dificultades: fácil, normal y difícil
+• Con tus mazos, en Commander u otros formatos (Android 8 o más reciente)
+
 MAZOS Y CARTAS
 • Búsqueda instantánea y sin conexión de más de 36 000 cartas
 • Importa listas de Moxfield, Archidekt, MTGO y Arena
@@ -174,10 +189,10 @@ Goldfish para probar un mazo, o 1 contra 1 en el mismo móvil o tableta.
 
 Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imágenes. Después, funciona en modo avión.
 
-EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON.
+EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (1.5.0)
-Primera versión en Google Play: la app en cuatro idiomas, cartas en tu idioma, tutorial completo e interfaz revisada para móviles pequeños.
+### Notas de la versión (1.7.0)
+Nuevo: ¡juega contra el bot! Partidas 1 contra 1 con las reglas completas, sin internet, con tres dificultades (Android 8 o más reciente). El código de EDHere pasa a ser abierto.
 
 ---
 
@@ -209,6 +224,11 @@ UN TAVOLO COMPLETO
 • Pescare, mescolare, profetizzare, sorvegliare, macinare, cercare e mulligan
 • Registro delle giocate, annulla, dadi e moneta, cronologia e statistiche
 
+CONTRO IL BOT
+• Partite 1 contro 1 con le regole complete contro il bot, senza internet
+• Tre livelli di difficoltà: facile, normale e difficile
+• Con i tuoi mazzi, in Commander o in altri formati (Android 8 o successivo)
+
 MAZZI E CARTE
 • Ricerca istantanea e offline di oltre 36.000 carte
 • Importa liste da Moxfield, Archidekt, MTGO e Arena
@@ -233,7 +253,7 @@ Goldfish per provare un mazzo, oppure 1 contro 1 sullo stesso telefono o tablet.
 
 Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro immagini. Dopo funziona in modalità aereo.
 
-EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON.
+EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (1.5.0)
-Prima versione su Google Play: l'app in quattro lingue, le carte nella tua lingua, un tutorial completo e un'interfaccia rivista per i telefoni piccoli.
+### Note sulla versione (1.7.0)
+Novità: gioca contro il bot! Partite 1 contro 1 con le regole complete, senza internet, con tre livelli di difficoltà (Android 8 o successivo). Il codice di EDHere ora è aperto.

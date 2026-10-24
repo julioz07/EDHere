@@ -45,6 +45,13 @@ class AboutScreen extends StatelessWidget {
               tr('Os símbolos dos sets são da fonte Keyrune, de Andrew Gioia (SIL OFL 1.1). Os símbolos originais são marcas da Wizards of the Coast.')),
           section(tr('Símbolos de mana'),
               tr('Os símbolos de mana são desenhados pela própria app e mostram sempre a letra da cor.')),
+          section(tr('O bot'),
+              tr('O bot usa o motor do Forge, que aplica as regras e joga do outro lado. O Forge é software livre, feito por uma comunidade de voluntários, sob a licença GPL-3.0, e vem dentro da app sem alterações.')),
+          const SelectableText('https://github.com/Card-Forge/forge'),
+          const SizedBox(height: 20),
+          section(tr('Código aberto'),
+              tr('O código do EDHere é aberto, sob a licença GPL-3.0: pode ser estudado, alterado e partilhado nos termos dessa licença. O nome e o logótipo do EDHere não fazem parte da licença.')),
+          const SelectableText('https://github.com/julioz07/EDHere'),
         ],
       )),
     );
