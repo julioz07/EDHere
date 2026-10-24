@@ -340,7 +340,6 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         ),
                       ]),
                     if (g.isHost) ...[
-                      const SizedBox(height: 8),
                       FilledButton.icon(
                         onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
                         icon: const Icon(Icons.play_arrow_rounded),

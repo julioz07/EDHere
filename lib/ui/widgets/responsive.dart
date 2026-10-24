@@ -41,8 +41,10 @@ class BottomActions extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Column(
-                  mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              // 8 de espaço entre os botões: colados pareciam um só
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                for (var i = 0; i < children.length; i++) ...[if (i > 0) const SizedBox(height: 8), children[i]],
+              ]),
             ),
           ),
         ),

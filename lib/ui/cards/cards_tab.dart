@@ -149,6 +149,7 @@ class NoDataMessage extends ConsumerWidget {
                 icon: const Icon(Icons.download),
                 label: Text(tr('Descarregar cartas')),
               ),
+              const SizedBox(height: 8),
               TextButton(onPressed: onOpenData, child: Text(tr('Opções de dados'))),
             ],
           ]),
