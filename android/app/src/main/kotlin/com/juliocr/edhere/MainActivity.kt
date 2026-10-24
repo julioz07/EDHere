@@ -12,13 +12,16 @@ import androidx.core.content.FileProvider
 import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import com.juliocr.edhere.forge.ForgeEngine
 
 class MainActivity : FlutterActivity() {
     private var reservation: WifiManager.LocalOnlyHotspotReservation? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        configureForge(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/hotspot")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -152,8 +155,52 @@ class MainActivity : FlutterActivity() {
         reservation = null
     }
 
+    // Bot (motor do Forge). O Forge corre nas suas threads; as respostas e os
+    // estados da mesa voltam à thread principal antes de irem para o Dart.
+    private val main = Handler(Looper.getMainLooper())
+    private var forgeEvents: EventChannel.EventSink? = null
+
+    private fun configureForge(flutterEngine: FlutterEngine) {
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        EventChannel(messenger, "edhere/forge/events").setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+                forgeEvents = events
+            }
+
+            override fun onCancel(arguments: Any?) {
+                forgeEvents = null
+            }
+        })
+        val sink = ForgeEngine.Sink { event -> main.post { forgeEvents?.success(event) } }
+        MethodChannel(messenger, "edhere/forge").setMethodCallHandler { call, result ->
+            val reply = object : ForgeEngine.Reply {
+                override fun ok(value: Any?) {
+                    main.post { result.success(value) }
+                }
+
+                override fun fail(code: String, message: String?) {
+                    main.post { result.error(code, message, null) }
+                }
+            }
+            when (call.method) {
+                // O Forge usa APIs do Java que só existem a partir do Android 8.0.
+                "supported" -> result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                "status" -> result.success(ForgeEngine.status())
+                "init" -> ForgeEngine.init(this, call.argument<String>("language") ?: "en-US", reply)
+                "checkDecks" -> ForgeEngine.checkDecks(call.argument("seats")!!, reply)
+                "start" -> ForgeEngine.startMatch(call.arguments()!!, sink, reply)
+                "stop" -> {
+                    ForgeEngine.stopMatch()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
     override fun onDestroy() {
         stopHotspot()
+        ForgeEngine.stopMatch()
         super.onDestroy()
     }
 }

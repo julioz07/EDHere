@@ -18,13 +18,15 @@ android {
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
+    // Java 17, como o Forge. Também é o que faz o AGP converter os records do
+    // Forge nos builds de debug (só liga os "global synthetics" acima do Java 14).
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -57,4 +59,15 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Motor do Forge para o bot (GPL-3.0) e as bibliotecas de que precisa.
+    // Gerados por tool/forge/build_forge.py (fora do git).
+    implementation fileTree(dir: "libs/forge", include: ["*.jar"])
+}
+
+configurations.configureEach {
+    // O AndroidX traz o ListenableFuture à parte; o Guava do Forge já o tem.
+    exclude group: "com.google.guava", module: "listenablefuture"
 }

@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/release
 tool/boosters/.cache/
 .playwright-mcp/
+
+# Motor do Forge (bot): gerados por tool/forge/build_forge.py
+/android/app/libs/forge/
+/android/app/src/main/assets/forge/
+/tool/forge/.cache/

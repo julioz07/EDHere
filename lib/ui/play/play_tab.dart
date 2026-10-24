@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../bot/forge_engine.dart';
 import '../../data/providers.dart';
 import '../../data/settings.dart';
 import '../../net/discovery.dart';
+import '../bot/bot_setup_screen.dart';
 import '../create_room_screen.dart';
 import '../join_screen.dart';
 import '../limited/jumpstart_screen.dart';
@@ -30,6 +32,17 @@ class _PlayTabState extends ConsumerState<PlayTab> {
   /// Ao voltar de outro ecrã o Flutter devolve o foco ao campo do nome (e
   /// abre o teclado). Enquanto há outro ecrã por cima, o campo não o aceita.
   final _nameFocus = FocusNode();
+
+  /// O bot (motor do Forge) só corre no Android 8.0+; null enquanto não se sabe.
+  bool? _botSupported;
+
+  @override
+  void initState() {
+    super.initState();
+    ForgeEngine.supported().then((v) {
+      if (mounted) setState(() => _botSupported = v);
+    });
+  }
 
   /// Abre outro ecrã sem que o campo do nome fique com o foco ao voltar.
   Future<void> _push(Widget screen) async {
@@ -146,6 +159,20 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(tr('Descarrega primeiro a base de cartas (Definições → Dados).'),
+                    style: theme.textTheme.bodySmall),
+              ),
+            const SizedBox(height: 24),
+            Text(tr('Contra o computador'), style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: hasData && hasDecks && _botSupported == true ? () => _go((_) => const BotSetupScreen()) : null,
+              icon: const Icon(Icons.smart_toy_outlined),
+              label: Text(tr('Jogar contra o bot')),
+            ),
+            if (_botSupported == false)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(tr('O bot precisa do Android 8.0 ou mais recente. O resto da app funciona normalmente.'),
                     style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 24),
