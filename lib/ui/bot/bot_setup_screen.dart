@@ -33,6 +33,9 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
       _myDeck = ids.first;
       _botDeck = ids.length > 1 ? ids[1] : ids.first;
     }
+    // O motor demora uns segundos a arrancar: começa já, enquanto se escolhem
+    // os decks. Se falhar, "Jogar" tenta outra vez e mostra o erro.
+    ForgeEngine.init().catchError((Object _) {});
   }
 
   /// [watch]: o meu deck também fica com um bot (para ver o motor a jogar).

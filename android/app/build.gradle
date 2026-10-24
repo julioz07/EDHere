@@ -52,7 +52,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // -PsignWithDebugKey: release assinada com a chave de debug, para a
+            // instalar por cima da de debug sem perder os dados (testar o R8)
+            signingConfig = keystorePropertiesFile.exists() && !project.hasProperty("signWithDebugKey")
+                    ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
