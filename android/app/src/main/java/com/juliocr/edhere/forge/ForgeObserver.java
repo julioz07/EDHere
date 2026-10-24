@@ -276,6 +276,7 @@ final class ForgeObserver {
                 if (c.getDamage() > 0) m.put("dmg", c.getDamage());
             }
             if (combat != null && combat.isAttacking(c)) m.put("atk", true);
+            if (combat != null && combat.isBlocking(c)) m.put("blk", true);
             if (c.getAttachedTo() != null) m.put("at", c.getAttachedTo().getId());
             Map<String, Object> counters = counters(c.getCounters());
             if (!counters.isEmpty()) m.put("cn", counters);

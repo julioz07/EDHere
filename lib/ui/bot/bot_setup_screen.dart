@@ -133,6 +133,8 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
               Text(tr('Dificuldade'), style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
               SegmentedButton<BotLevel>(
+                // sem o visto: em ecrãs pequenos parte "Normal" em duas linhas
+                showSelectedIcon: false,
                 segments: [for (final l in BotLevel.values) ButtonSegment(value: l, label: Text(l.label))],
                 selected: {_level},
                 onSelectionChanged: (s) => setState(() => _level = s.first),

@@ -20,10 +20,13 @@ import forge.game.player.IHasIcon;
 import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbilityView;
 import forge.game.spellability.StackItemView;
+import forge.ai.AvailableActions;
 import forge.gamemodes.match.AbstractGuiGame;
+import forge.gamemodes.match.input.InputPassPriority;
 import forge.gamemodes.match.Selection;
 import forge.item.PaperCard;
 import forge.localinstance.skin.FSkinProp;
+import forge.player.PlayerControllerHuman;
 import forge.trackable.TrackableCollection;
 import forge.trackable.TrackableObject;
 import forge.util.FSerializableFunction;
@@ -125,8 +128,35 @@ final class EdhereGui extends AbstractGuiGame {
             m.put("selP", players);
             m.put("chosen", chosen);
         }
+        List<Object> playable = playable();
+        if (!playable.isEmpty()) m.put("play", playable);
         sink.emit(m);
         observer.markDirty();
+    }
+
+    private Object playableFor;
+    private List<Object> playableIds = new ArrayList<>();
+
+    /**
+     * Com a prioridade, as cartas que se podem jogar agora (com mana e alvos),
+     * para a mesa as destacar. Calcula-se uma vez por input (os prompts chegam
+     * em várias chamadas) e com o jogo parado à espera da pessoa.
+     */
+    private List<Object> playable() {
+        if (!(getGameController() instanceof PlayerControllerHuman)) return new ArrayList<>();
+        PlayerControllerHuman h = (PlayerControllerHuman) getGameController();
+        Object input = h.getInputQueue().getInput();
+        if (!(input instanceof InputPassPriority)) return new ArrayList<>();
+        if (input != playableFor) {
+            playableFor = input;
+            playableIds = new ArrayList<>();
+            try {
+                for (CardView c : AvailableActions.collectActionable(h.getPlayer(), 300)) playableIds.add(c.getId());
+            } catch (RuntimeException e) {
+                ForgeEngine.log("playable: " + e);
+            }
+        }
+        return playableIds;
     }
 
     private static Map<String, Object> button(String label, boolean enabled) {

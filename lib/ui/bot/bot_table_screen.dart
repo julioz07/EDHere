@@ -63,6 +63,14 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
   }
 
   void _onEvent(Map<String, dynamic> e) {
+    // só em debug: o que o Forge pede, para seguir uma partida pelo logcat
+    assert(() {
+      if (e['type'] == 'prompt' || e['type'] == 'ask') {
+        debugPrint(
+            'forge ${e['type']} t${e['turn'] ?? ''}: ${'${e['msg'] ?? e['title'] ?? ''}'.replaceAll('\n', ' | ')}');
+      }
+      return true;
+    }());
     if (!mounted) return;
     switch (e['type']) {
       case 'error':
@@ -135,42 +143,51 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
   @override
   Widget build(BuildContext context) {
     final s = _state;
+    final narrow = MediaQuery.sizeOf(context).width < 560;
+    final phase = s == null ? '' : phaseLabel(s.phase);
+    // em ecrãs estreitos a fase vai para o título e a faixa do meio só aparece com a pilha
     final title = s == null
         ? (_live ? tr('Contra o bot') : tr('Bot contra bot'))
-        : tr('Turno {v}', {'v': s.turn});
+        : [tr('Turno {v}', {'v': s.turn}), if (narrow && phase.isNotEmpty) phase].join(' · ');
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _leave();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(title),
-          actions: [
-            if (s != null)
-              IconButton(
-                tooltip: tr('Registo'),
-                icon: const Icon(Icons.receipt_long_outlined),
-                onPressed: () => _showLog(s),
-              ),
-          ],
+      // A mesa é densa: com a letra do sistema muito grande deixava de caber
+      // (como em TableScreen; os diálogos ficam com o tamanho escolhido).
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.15,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(title),
+            actions: [
+              if (s != null)
+                IconButton(
+                  tooltip: tr('Registo'),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  onPressed: () => _showLog(s),
+                ),
+            ],
+          ),
+          body: _error != null
+              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!)))
+              : s == null
+                  ? Center(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 12),
+                      Text(tr('A baralhar…')),
+                    ]))
+                  : _table(s),
         ),
-        body: _error != null
-            ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!)))
-            : s == null
-                ? Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 12),
-                    Text(tr('A baralhar…')),
-                  ]))
-                : _table(s),
       ),
     );
   }
 
   Widget _table(ForgeTableState s) {
     if (s.players.length < 2) return const SizedBox.shrink();
+    final narrow = MediaQuery.sizeOf(context).width < 560;
     final me = s.players[0];
     final them = s.players[1];
     final act = _Interaction(
@@ -184,7 +201,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
       child: Column(children: [
         _PlayerBar(state: s, player: them, act: act),
         Expanded(child: _Battlefield(state: s, player: them.id, flipped: true, act: act)),
-        _CenterStrip(state: s, act: act),
+        if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act),
         if (_live && !s.over) _PromptBar(prompt: _prompt, waiting: _waiting, onButton: _act),
         Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
         _PlayerBar(state: s, player: me, act: act),
@@ -223,7 +240,8 @@ class _Interaction {
   final void Function(int id)? onPlayer;
   final void Function(int id)? onStack;
 
-  bool selectable(int cardId) => prompt?.selectableCards.contains(cardId) ?? false;
+  bool selectable(int cardId) =>
+      (prompt?.selectableCards.contains(cardId) ?? false) || (prompt?.playable.contains(cardId) ?? false);
   bool chosen(int id) => prompt?.chosen.contains(id) ?? false;
   bool playerSelectable(int id) => prompt?.selectablePlayers.contains(id) ?? false;
 
@@ -239,7 +257,8 @@ class _Interaction {
           card: c.card,
           width: width,
           showDetails: details,
-          highlighted: c.attacking || selectable(c.instance.id),
+          // em combate (a atacar ou a bloquear) ou à espera de ser escolhida
+          highlighted: c.attacking || c.blocking || selectable(c.instance.id),
           targeted: chosen(c.instance.id),
         ),
       ),
@@ -260,38 +279,48 @@ class _PromptBar extends StatelessWidget {
     final theme = Theme.of(context);
     final p = prompt;
     final busy = waiting || p == null;
+    final narrow = MediaQuery.sizeOf(context).width < 560;
+    final message = busy
+        ? Row(children: [
+            const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 8),
+            Flexible(child: Text(tr('O bot está a pensar…'), style: theme.textTheme.bodyMedium)),
+          ])
+        // o Forge separa as frases com linhas em branco, que gastavam as linhas visíveis
+        : Text(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').trim(),
+            maxLines: narrow ? 2 : 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium);
+    final buttons = [
+      if (!busy && p.cancel.label.isNotEmpty) ...[
+        const SizedBox(width: 6),
+        OutlinedButton(
+          // o tema dá largura infinita aos botões; numa linha precisam de largura própria
+          style: OutlinedButton.styleFrom(minimumSize: const Size(72, 40)),
+          onPressed: p.cancel.enabled ? () => onButton('cancel') : null,
+          child: Text(p.cancel.label),
+        ),
+      ],
+      if (!busy && p.ok.label.isNotEmpty) ...[
+        const SizedBox(width: 6),
+        FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(72, 40)),
+          onPressed: p.ok.enabled ? () => onButton('ok') : null,
+          child: Text(p.ok.label),
+        ),
+      ],
+    ];
     return Container(
       width: double.infinity,
       color: theme.colorScheme.secondaryContainer,
       padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
-      child: Row(children: [
-        Expanded(
-          child: busy
-              ? Row(children: [
-                  const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                  const SizedBox(width: 8),
-                  Text(tr('O bot está a pensar…'), style: theme.textTheme.bodyMedium),
-                ])
-              : Text(p.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
-        ),
-        if (!busy && p.cancel.label.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          OutlinedButton(
-            // o tema dá largura infinita aos botões; numa linha precisam de largura própria
-            style: OutlinedButton.styleFrom(minimumSize: const Size(80, 40)),
-            onPressed: p.cancel.enabled ? () => onButton('cancel') : null,
-            child: Text(p.cancel.label),
-          ),
-        ],
-        if (!busy && p.ok.label.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(80, 40)),
-            onPressed: p.ok.enabled ? () => onButton('ok') : null,
-            child: Text(p.ok.label),
-          ),
-        ],
-      ]),
+      child: narrow
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              message,
+              if (buttons.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
+              ],
+            ])
+          : Row(children: [Expanded(child: message), ...buttons]),
     );
   }
 }
@@ -314,21 +343,33 @@ class _PlayerBar extends StatelessWidget {
     final command = state.zone(player.id, Zone.command).toList();
     final graveyard = state.zone(player.id, Zone.graveyard).toList();
     final exile = state.zone(player.id, Zone.exile).toList();
-    Widget chip(IconData icon, String text, {VoidCallback? onTap}) => Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: ActionChip(
-            visualDensity: VisualDensity.compact,
-            avatar: Icon(icon, size: 16),
-            label: Text(text),
-            onPressed: onTap,
-          ),
-        );
+    final narrow = MediaQuery.sizeOf(context).width < 560;
+    Widget chip(IconData icon, String text, {VoidCallback? onTap}) => narrow
+        ? InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, size: 14, color: onTap == null ? null : theme.colorScheme.primary),
+                const SizedBox(width: 2),
+                Text(text, style: theme.textTheme.labelMedium),
+              ]),
+            ),
+          )
+        : Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: ActionChip(
+              visualDensity: VisualDensity.compact,
+              avatar: Icon(icon, size: 16),
+              label: Text(text),
+              onPressed: onTap,
+            ),
+          );
     return Container(
       decoration: BoxDecoration(
         color: active ? theme.colorScheme.primaryContainer.withOpacity(0.5) : null,
-        border: pickable || chosen
-            ? Border.all(color: chosen ? targetGlow : theme.colorScheme.primary, width: 2)
-            : null,
+        border:
+            pickable || chosen ? Border.all(color: chosen ? targetGlow : theme.colorScheme.primary, width: 2) : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(children: [
@@ -348,12 +389,14 @@ class _PlayerBar extends StatelessWidget {
           ),
         ),
         if (player.poison > 0) chip(Icons.coronavirus_outlined, '${player.poison}'),
-        for (final c in command) Padding(padding: const EdgeInsets.only(left: 6), child: act.card(c, 28, details: false)),
+        for (final c in command)
+          Padding(padding: const EdgeInsets.only(left: 6), child: act.card(c, 28, details: false)),
         chip(Icons.back_hand_outlined, '${player.handCount}'),
         chip(Icons.layers_outlined, '${player.libraryCount}'),
         chip(Icons.delete_outline, '${graveyard.length}',
             onTap: graveyard.isEmpty ? null : () => _zoneSheet(context, tr('Cemitério'), graveyard)),
-        if (exile.isNotEmpty) chip(Icons.block, '${exile.length}', onTap: () => _zoneSheet(context, tr('Exílio'), exile)),
+        if (exile.isNotEmpty)
+          chip(Icons.block, '${exile.length}', onTap: () => _zoneSheet(context, tr('Exílio'), exile)),
       ]),
     );
   }
@@ -474,7 +517,7 @@ class _CenterStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         Text(
-          '${active?.name ?? ''} · ${phaseLabel(state.phase)}',
+          [if (active != null) active.name, phaseLabel(state.phase)].where((t) => t.isNotEmpty).join(' · '),
           style: theme.textTheme.labelLarge,
           overflow: TextOverflow.ellipsis,
         ),
@@ -508,7 +551,7 @@ class _Hand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = big ? 84.0 : 62.0;
+    final w = big && MediaQuery.sizeOf(context).width >= 560 ? 84.0 : 62.0;
     return SizedBox(
       height: w / cardAspect + 8,
       child: ListView.separated(

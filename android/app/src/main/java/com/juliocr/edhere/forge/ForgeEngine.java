@@ -243,6 +243,9 @@ public final class ForgeEngine {
                 GameRules rules = new GameRules(type);
                 rules.setAppliedVariants(EnumSet.of(type));
                 rules.setAllowCheatShuffle(hardBot);
+                // sem o aviso "o bot não sabe jogar bem estas cartas do deck dele":
+                // é sobre o deck do bot e só atrapalha quem joga
+                rules.setWarnAboutAICards(false);
                 Number pace = (Number) args.get("pace");
                 ForgeMatch m = new ForgeMatch(rules, players, human, difficulty, pace == null ? 0 : pace.intValue(), sink);
                 match = m;
