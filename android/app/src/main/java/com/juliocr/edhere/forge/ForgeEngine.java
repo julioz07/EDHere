@@ -292,6 +292,12 @@ public final class ForgeEngine {
         if (m != null) m.act(args);
     }
 
+    /** Muda o ritmo do bot (base das pausas, em ms) a meio da partida. */
+    public static void setPace(int ms) {
+        ForgeMatch m = match;
+        if (m != null) m.observer.setPace(ms);
+    }
+
     /** A resposta a uma pergunta ("ask") da partida. */
     public static void answer(int id, Object value) {
         ForgeMatch m = match;
@@ -308,7 +314,7 @@ public final class ForgeEngine {
         private final List<RegisteredPlayer> players;
         private final RegisteredPlayer human;
         private final Map<Integer, String> difficulty;
-        private final ForgeObserver observer;
+        final ForgeObserver observer;
         final EdhereGui gui;
         private Thread thread;
         private volatile Game game;

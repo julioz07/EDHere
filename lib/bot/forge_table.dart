@@ -117,6 +117,33 @@ class ForgeAsk {
   final List<ForgeOption> options;
 }
 
+/// Uma jogada do bot para destacar: lançar, ativar, jogar um terreno ou atacar.
+class ForgeSpot {
+  ForgeSpot.fromMap(Map m)
+      : kind = m['kind'] as String? ?? '',
+        by = m['by'] as int?,
+        cardId = m['card'] as int?,
+        name = m['n'] as String?,
+        text = m['text'] as String?,
+        targets = m['targets'] as String?,
+        cards = [for (final id in (m['cards'] as List? ?? const [])) id as int],
+        names = [for (final n in (m['names'] as List? ?? const [])) n as String],
+        duration = Duration(milliseconds: m['ms'] as int? ?? 1500);
+
+  /// cast, ability, land ou attack.
+  final String kind;
+  final int? by;
+  final int? cardId;
+  final String? name;
+  final String? text;
+  final String? targets;
+
+  /// Atacantes (ids e nomes, pela mesma ordem).
+  final List<int> cards;
+  final List<String> names;
+  final Duration duration;
+}
+
 /// Um objeto na pilha.
 class ForgeStackItem {
   ForgeStackItem.fromMap(Map m)

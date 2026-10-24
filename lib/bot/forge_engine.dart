@@ -22,6 +22,26 @@ enum BotLevel {
       };
 }
 
+/// A velocidade do bot: a base das pausas depois de cada jogada dele (ms).
+enum BotSpeed {
+  slow('slow', 1600),
+  normal('normal', 1000),
+  fast('fast', 500);
+
+  const BotSpeed(this.id, this.paceMs);
+  final String id;
+  final int paceMs;
+
+  String get label => switch (this) {
+        BotSpeed.slow => tr('Lenta'),
+        BotSpeed.normal => tr('Normal'),
+        BotSpeed.fast => tr('Rápida'),
+      };
+
+  static const prefKey = 'bot_speed';
+  static BotSpeed byId(String? id) => values.where((s) => s.id == id).firstOrNull ?? normal;
+}
+
 /// Um lugar na partida contra o bot: quem joga e com que deck.
 class ForgeSeat {
   const ForgeSeat({required this.name, required this.deck, this.bot});
@@ -91,7 +111,7 @@ abstract final class ForgeEngine {
     required List<ForgeSeat> seats,
     required db.CardRepository repo,
     required bool commander,
-    int paceMs = 700,
+    int paceMs = 1000,
   }) =>
       _ch.invokeMethod('start', {
         'format': commander ? 'commander' : 'constructed',
@@ -100,6 +120,9 @@ abstract final class ForgeEngine {
       });
 
   static Future<void> stop() => _ch.invokeMethod('stop');
+
+  /// Muda a velocidade do bot a meio da partida.
+  static Future<void> setPace(int ms) => _ch.invokeMethod('pace', {'ms': ms});
 
   /// Um toque da pessoa: [kind] é card, player, stack, ok, cancel ou concede.
   static Future<void> act(String kind, [int? id]) => _ch.invokeMethod('act', {'kind': kind, if (id != null) 'id': id});

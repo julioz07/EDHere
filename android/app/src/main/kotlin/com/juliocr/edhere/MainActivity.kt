@@ -198,6 +198,10 @@ class MainActivity : FlutterActivity() {
                     ForgeEngine.act(call.arguments()!!)
                     result.success(null)
                 }
+                "pace" -> {
+                    ForgeEngine.setPace(call.argument<Int>("ms")!!)
+                    result.success(null)
+                }
                 "answer" -> {
                     ForgeEngine.answer(call.argument<Int>("id")!!, call.argument<Any>("value"))
                     result.success(null)

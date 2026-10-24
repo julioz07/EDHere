@@ -1,0 +1,18 @@
+[
+["=Lenta", "Slow", "Lenta", "Lenta"],
+["=Rápida", "Fast", "Rápida", "Veloce"],
+["={v} lança", "{v} casts", "{v} lanza", "{v} lancia"],
+["={v} ativa", "{v} activates", "{v} activa", "{v} attiva"],
+["=Habilidade de {v}", "{v}'s ability", "Habilidad de {v}", "Abilità di {v}"],
+["={v} joga um terreno", "{v} plays a land", "{v} juega una tierra", "{v} gioca una terra"],
+["={v} ataca com 1 criatura", "{v} attacks with 1 creature", "{v} ataca con 1 criatura", "{v} attacca con 1 creatura"],
+["={v} ataca com {n} criaturas", "{v} attacks with {n} creatures", "{v} ataca con {n} criaturas", "{v} attacca con {n} creature"],
+["=Início", "Beginning", "Inicio", "Inizio"],
+["=Fim", "End", "Final", "Fine"],
+["=Atacantes", "Attackers", "Atacantes", "Attaccanti"],
+["=Bloqueadores", "Blockers", "Bloqueadores", "Bloccanti"],
+["=Dano", "Damage", "Daño", "Danno"],
+["=O teu turno", "Your turn", "Tu turno", "Il tuo turno"],
+["=Turno de {v}", "{v}'s turn", "Turno de {v}", "Turno di {v}"],
+["=Velocidade do bot", "Bot speed", "Velocidad del bot", "Velocità del bot"]
+]

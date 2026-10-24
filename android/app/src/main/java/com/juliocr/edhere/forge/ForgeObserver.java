@@ -23,11 +23,16 @@ import forge.game.card.CounterType;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventAttackersDeclared;
 import forge.game.event.GameEventBlockersDeclared;
+import forge.game.event.GameEventCardChangeZone;
+import forge.game.event.GameEventCardDamaged;
 import forge.game.event.GameEventGameOutcome;
 import forge.game.event.GameEventLandPlayed;
+import forge.game.event.GameEventPlayerDamaged;
 import forge.game.event.GameEventSpellAbilityCast;
 import forge.game.event.GameEventSpellResolved;
+import forge.game.event.GameEventTokenCreated;
 import forge.game.event.GameEventTurnBegan;
+import forge.game.event.GameEventTurnPhase;
 import forge.game.phase.PhaseHandler;
 import forge.game.player.Player;
 import forge.game.player.PlayerView;
@@ -46,7 +51,8 @@ final class ForgeObserver {
     };
     private static final int MIN_GAP_MS = 120; // entre estados sem pausa, para não inundar o Flutter
 
-    private final int paceMs;
+    /** Base das pausas (ms): cada jogada do bot espera um múltiplo disto. Muda-se a meio do jogo. */
+    private volatile int paceMs;
     private final ForgeEngine.Sink sink;
     /** As pessoas a jogar (ids do Forge): só se vê a mão delas. Vazio = bot contra bot, vê-se tudo. */
     private final Set<Integer> humans = new HashSet<>();
@@ -67,6 +73,8 @@ final class ForgeObserver {
         this.paceMs = paceMs;
         this.sink = sink;
     }
+
+    void setPace(int ms) { paceMs = ms; }
 
     void setHumans(Iterable<Player> players) {
         for (Player p : players) humans.add(p.getId());
@@ -103,35 +111,110 @@ final class ForgeObserver {
         flusher.shutdownNow();
     }
 
+    /**
+     * O ritmo do jogo: depois de cada acontecimento do bot, envia o estado (e,
+     * nas jogadas, um destaque com a carta) e espera um múltiplo de [paceMs],
+     * para se perceber o que fez. As jogadas da própria pessoa não esperam.
+     */
     @Subscribe
     public void onEvent(GameEvent ev) {
         if (stopped) return;
-        double pause;
-        if (ev instanceof GameEventSpellAbilityCast) pause = 1.2;
-        else if (ev instanceof GameEventAttackersDeclared || ev instanceof GameEventBlockersDeclared) pause = 1.0;
-        else if (ev instanceof GameEventSpellResolved) pause = 0.6;
-        else if (ev instanceof GameEventLandPlayed) pause = 0.5;
-        else if (ev instanceof GameEventTurnBegan) pause = 0.4;
-        else if (ev instanceof GameEventGameOutcome) {
+        if (ev instanceof GameEventGameOutcome) {
             emit(snapshot());
             return;
-        } else pause = 0;
+        }
+        boolean human = byHuman(ev);
+        double pause = 0;
+        Map<String, Object> spot = null;
+        if (ev instanceof GameEventSpellAbilityCast) {
+            GameEventSpellAbilityCast e = (GameEventSpellAbilityCast) ev;
+            pause = human ? 0 : 2.0;
+            if (!human) spot = castSpot(e);
+        } else if (ev instanceof GameEventAttackersDeclared) {
+            GameEventAttackersDeclared e = (GameEventAttackersDeclared) ev;
+            if (!human && !e.attackersMap().isEmpty()) {
+                pause = 1.6;
+                spot = spot("attack", e.player(), null);
+                spot.put("count", e.attackersMap().size());
+                // as criaturas atacantes, para o destaque as mostrar lado a lado
+                List<Object> attackers = new ArrayList<>();
+                List<Object> names = new ArrayList<>();
+                for (forge.game.card.CardView c : e.attackersMap().values()) {
+                    attackers.add(c.getId());
+                    names.add(c.getName());
+                }
+                spot.put("cards", attackers);
+                spot.put("names", names);
+            }
+        } else if (ev instanceof GameEventBlockersDeclared) {
+            pause = human ? 0 : 1.4;
+        } else if (ev instanceof GameEventLandPlayed) {
+            GameEventLandPlayed e = (GameEventLandPlayed) ev;
+            if (!human) {
+                pause = 1.0;
+                spot = spot("land", e.player(), e.land());
+            }
+        } else if (ev instanceof GameEventSpellResolved) {
+            pause = human ? 0 : 0.8;
+        } else if (ev instanceof GameEventTurnBegan) {
+            pause = 0.8;
+        } else if (ev instanceof GameEventPlayerDamaged || ev instanceof GameEventCardDamaged) {
+            pause = 0.5; // de quem for: vê-se a vida a descer e a carta marcada
+        } else if (ev instanceof GameEventCardChangeZone) {
+            GameEventCardChangeZone e = (GameEventCardChangeZone) ev;
+            boolean dies = e.from() != null && e.to() != null
+                    && e.from().zoneType() == ZoneType.Battlefield && e.to().zoneType() == ZoneType.Graveyard;
+            if (dies) pause = 0.6;
+        } else if (ev instanceof GameEventTokenCreated) {
+            pause = 0.4;
+        } else if (ev instanceof GameEventTurnPhase) {
+            // no turno do bot as fases andam devagar o suficiente para se verem
+            GameEventTurnPhase e = (GameEventTurnPhase) ev;
+            if (e.playerTurn() != null && !humans.isEmpty() && !humans.contains(e.playerTurn().getId())) pause = 0.25;
+        }
 
-        if (byHuman(ev)) pause = 0;
         long now = System.currentTimeMillis();
-        if (pause == 0 && now - lastEmit < MIN_GAP_MS) {
+        if (pause == 0 && spot == null && now - lastEmit < MIN_GAP_MS) {
             dirty = true;
             return;
         }
         dirty = false;
         emit(snapshot());
-        if (pause > 0 && paceMs > 0) {
+        int ms = (int) (pause * paceMs);
+        if (spot != null && paceMs > 0) {
+            spot.put("ms", Math.max(ms, 600));
+            emit(spot);
+        }
+        if (ms > 0) {
             try {
-                Thread.sleep((long) (pause * paceMs));
+                Thread.sleep(ms);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private static Map<String, Object> spot(String kind, PlayerView who, forge.game.card.CardView card) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("type", "spot");
+        m.put("kind", kind);
+        if (who != null) m.put("by", who.getId());
+        if (card != null) {
+            m.put("card", card.getId());
+            m.put("n", card.getName());
+        }
+        return m;
+    }
+
+    /** Um feitiço ou habilidade do bot: a carta, o que faz e os alvos. */
+    private static Map<String, Object> castSpot(GameEventSpellAbilityCast e) {
+        forge.game.card.CardView host = e.sa() == null ? null : e.sa().getHostCard();
+        PlayerView who = e.si() == null ? null : e.si().getActivatingPlayer();
+        String kind = e.si() == null ? "cast" : e.si().isTrigger() ? "trigger" : e.si().isAbility() ? "ability" : "cast";
+        Map<String, Object> m = spot(kind, who, host);
+        if (e.si() != null && e.si().getText() != null) m.put("text", e.si().getText());
+        if (e.targetDescription() != null && !e.targetDescription().isEmpty()) m.put("targets", e.targetDescription());
+        return m;
     }
 
     /** Pede um estado novo daqui a pouco (por exemplo depois de um prompt, que pode apanhar o jogo a meio). */

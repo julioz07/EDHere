@@ -13,6 +13,7 @@ import '../cards/card_detail_screen.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
 import 'bot_dialogs.dart';
+import 'bot_effects.dart';
 
 /// A mesa de uma partida no motor do Forge. As regras e as jogadas do bot são
 /// do Forge; a mesa desenha o estado e, se houver uma pessoa a jogar, manda os
@@ -42,6 +43,15 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
   /// Cartas cujas imagens já foram pedidas.
   final _requested = <String>{};
 
+  /// A jogada do bot em destaque (popup com a carta) e a faixa de início de turno.
+  ForgeSpot? _spot;
+  Timer? _spotTimer;
+  ({String text, bool mine})? _banner;
+  Timer? _bannerTimer;
+  int _lastTurn = 0;
+
+  late BotSpeed _speed = BotSpeed.byId(ref.read(prefsProvider).getString(BotSpeed.prefKey));
+
   @override
   void initState() {
     super.initState();
@@ -50,13 +60,16 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
     _requested.addAll(ids);
     ref.read(imagesProvider).ensure(_repo.getMany(ids).values);
     _sub = ForgeEngine.events.listen(_onEvent);
-    ForgeEngine.start(seats: widget.seats, repo: _repo, commander: widget.commander).catchError((Object e) {
+    ForgeEngine.start(seats: widget.seats, repo: _repo, commander: widget.commander, paceMs: _speed.paceMs)
+        .catchError((Object e) {
       if (mounted) setState(() => _error = '$e');
     });
   }
 
   @override
   void dispose() {
+    _spotTimer?.cancel();
+    _bannerTimer?.cancel();
     _sub?.cancel();
     ForgeEngine.stop();
     super.dispose();
@@ -79,6 +92,14 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
       case 'ask':
         _ask(ForgeAsk.fromMap(e));
         return;
+      case 'spot':
+        final spot = ForgeSpot.fromMap(e);
+        _spotTimer?.cancel();
+        _spotTimer = Timer(spot.duration, () {
+          if (mounted) setState(() => _spot = null);
+        });
+        setState(() => _spot = spot);
+        return;
       case 'info':
         final msg = [e['title'], e['msg']].whereType<String>().where((s) => s.trim().isNotEmpty).join('\n');
         if (msg.isNotEmpty) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -91,6 +112,20 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
         if (c.card != null && _requested.add(c.card!.oracleId)) c.card!,
     ];
     if (fresh.isNotEmpty) ref.read(imagesProvider).ensure(fresh);
+    // faixa no início de cada turno, a dizer de quem é
+    if (s.players.isNotEmpty && s.turn > 0 && s.turn != _lastTurn && !s.over) {
+      _lastTurn = s.turn;
+      final active = s.player(s.active ?? -1);
+      final mine = _live && s.active == s.players.first.id;
+      _bannerTimer?.cancel();
+      _banner = (
+        text: mine ? tr('O teu turno') : tr('Turno de {v}', {'v': active?.name ?? ''}),
+        mine: mine,
+      );
+      _bannerTimer = Timer(const Duration(milliseconds: 1400), () {
+        if (mounted) setState(() => _banner = null);
+      });
+    }
     setState(() {
       if (s.players.isNotEmpty) _state = s;
       if (e['type'] == 'prompt') {
@@ -143,12 +178,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
   @override
   Widget build(BuildContext context) {
     final s = _state;
-    final narrow = MediaQuery.sizeOf(context).width < 560;
-    final phase = s == null ? '' : phaseLabel(s.phase);
-    // em ecrãs estreitos a fase vai para o título e a faixa do meio só aparece com a pilha
-    final title = s == null
-        ? (_live ? tr('Contra o bot') : tr('Bot contra bot'))
-        : [tr('Turno {v}', {'v': s.turn}), if (narrow && phase.isNotEmpty) phase].join(' · ');
+    final title = s == null ? (_live ? tr('Contra o bot') : tr('Bot contra bot')) : tr('Turno {v}', {'v': s.turn});
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -162,6 +192,15 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
           appBar: AppBar(
             title: Text(title),
             actions: [
+              PopupMenuButton<BotSpeed>(
+                tooltip: tr('Velocidade do bot'),
+                icon: const Icon(Icons.speed),
+                initialValue: _speed,
+                onSelected: _setSpeed,
+                itemBuilder: (_) => [
+                  for (final v in BotSpeed.values) PopupMenuItem(value: v, child: Text(v.label)),
+                ],
+              ),
               if (s != null)
                 IconButton(
                   tooltip: tr('Registo'),
@@ -179,10 +218,28 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
                       const SizedBox(height: 12),
                       Text(tr('A baralhar…')),
                     ]))
-                  : _table(s),
+                  : Stack(children: [
+                      Positioned.fill(child: _table(s)),
+                      if (_banner != null) Positioned.fill(child: TurnBanner(text: _banner!.text, mine: _banner!.mine)),
+                      if (_spot != null)
+                        Positioned.fill(
+                          child: BotSpotlight(
+                            spot: _spot!,
+                            state: s,
+                            lookup: _lookup,
+                            onClose: () => setState(() => _spot = null),
+                          ),
+                        ),
+                    ]),
         ),
       ),
     );
+  }
+
+  void _setSpeed(BotSpeed v) {
+    setState(() => _speed = v);
+    ref.read(prefsProvider).setString(BotSpeed.prefKey, v.id);
+    ForgeEngine.setPace(v.paceMs);
   }
 
   Widget _table(ForgeTableState s) {
@@ -201,6 +258,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> {
       child: Column(children: [
         _PlayerBar(state: s, player: them, act: act),
         Expanded(child: _Battlefield(state: s, player: them.id, flipped: true, act: act)),
+        PhaseBar(phase: s.phase, mine: _live && s.active == me.id, compact: narrow),
         if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act),
         if (_live && !s.over) _PromptBar(prompt: _prompt, waiting: _waiting, onButton: _act),
         Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
@@ -252,16 +310,71 @@ class _Interaction {
       onLongPress: () => onDetails(c),
       child: Opacity(
         opacity: c.sick ? 0.75 : 1,
-        child: TableCardView(
-          instance: c.instance,
-          card: c.card,
-          width: width,
-          showDetails: details,
-          // em combate (a atacar ou a bloquear) ou à espera de ser escolhida
-          highlighted: c.attacking || c.blocking || selectable(c.instance.id),
-          targeted: chosen(c.instance.id),
-        ),
+        child: Stack(clipBehavior: Clip.none, children: [
+          Container(
+            // em combate: vermelho a atacar, azul a bloquear (como no Arena)
+            decoration: c.attacking || c.blocking
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(width * 0.06),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  )
+                : null,
+            child: TableCardView(
+              instance: c.instance,
+              card: c.card,
+              width: width,
+              showDetails: details,
+              highlighted: selectable(c.instance.id),
+              targeted: chosen(c.instance.id),
+            ),
+          ),
+          if (c.attacking || c.blocking)
+            Positioned(
+              top: -6,
+              left: -6,
+              child: _Badge(
+                icon: c.attacking ? Icons.sports_martial_arts : Icons.shield,
+                color: c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5),
+              ),
+            ),
+          if (c.damage > 0)
+            Positioned(
+              bottom: -4,
+              right: -4,
+              child: _Badge(text: '-${c.damage}', color: const Color(0xFFB71C1C)),
+            ),
+        ]),
       ),
+    );
+  }
+}
+
+/// Uma marca sobre a carta: combate (ícone num círculo) ou dano (texto).
+class _Badge extends StatelessWidget {
+  const _Badge({required this.color, this.icon, this.text});
+
+  final Color color;
+  final IconData? icon;
+  final String? text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(text == null ? 3 : 4),
+      decoration: BoxDecoration(
+        color: color,
+        shape: text == null ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: text == null ? null : BorderRadius.circular(6),
+      ),
+      child: text == null
+          ? Icon(icon, size: 14, color: Colors.white)
+          : Text(text!, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
 }
@@ -384,7 +497,7 @@ class _PlayerBar extends StatelessWidget {
                   style: theme.textTheme.titleSmall,
                 ),
               ),
-              Text('${player.life}', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              AnimatedLife(life: player.life, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             ]),
           ),
         ),
@@ -509,23 +622,19 @@ class _CenterStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final active = state.player(state.active ?? -1);
     final last = state.log.isEmpty ? '' : state.log.first;
     return Container(
       width: double.infinity,
       color: theme.colorScheme.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        Text(
-          [if (active != null) active.name, phaseLabel(state.phase)].where((t) => t.isNotEmpty).join(' · '),
-          style: theme.textTheme.labelLarge,
-          overflow: TextOverflow.ellipsis,
-        ),
+        // a fase está na barra de fases; aqui fica a pilha ou o último acontecimento
         for (final item in state.stack.reversed)
           InkWell(
             onTap: act.onStack == null || item.id == null ? null : () => act.onStack!(item.id!),
             child: Text(
-              '↳ ${item.text}',
+              // sem os ids internos do Forge ("Goblin Guide (89)")
+              '↳ ${item.text.replaceAll(RegExp(r' \(\d+\)'), '')}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -534,7 +643,8 @@ class _CenterStrip extends StatelessWidget {
             ),
           ),
         if (state.stack.isEmpty && last.isNotEmpty)
-          Text(last, maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
+          Text(last.replaceAll(RegExp(r' \(\d+\)'), ''),
+              maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
       ]),
     );
   }
