@@ -41,6 +41,7 @@ import forge.interfaces.IGameController;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.model.FModel;
 import forge.player.LobbyPlayerHuman;
+import forge.player.PlayerControllerHuman;
 
 /**
  * O motor do Forge dentro da app. Tudo o que toca no Forge corre fora da
@@ -335,6 +336,12 @@ public final class ForgeEngine {
         if (m != null) m.observer.setPace(ms);
     }
 
+    /** As paragens da pessoa (fases onde o Forge espera por ela) e o controlo total. */
+    public static void setStops(List<String> mine, List<String> theirs, boolean full) {
+        ForgeMatch m = match;
+        if (m != null && m.gui != null) m.gui.setStops(mine, theirs, full);
+    }
+
     /** A resposta a uma pergunta ("ask") da partida. */
     public static void answer(int id, Object value) {
         ForgeMatch m = match;
@@ -425,6 +432,13 @@ public final class ForgeEngine {
                     switch (kind) {
                         case "ok": c.selectButtonOk(); break;
                         case "cancel": c.selectButtonCancel(); break;
+                        // o Cancelar do Forge desfaz, se puder, e só senão termina o
+                        // turno; a mesa tem um botão para cada coisa
+                        case "undo": c.undoLastAction(); break;
+                        case "endTurn":
+                            if (c instanceof PlayerControllerHuman) ((PlayerControllerHuman) c).autoPassUntilEndOfTurn();
+                            c.selectButtonOk();
+                            break;
                         case "card": {
                             Card card = g.findById(id.intValue());
                             if (card != null) c.selectCard(card.getView(), null, null);

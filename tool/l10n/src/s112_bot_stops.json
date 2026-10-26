@@ -1,0 +1,15 @@
+[
+["=Ganhaste o lançamento da moeda!", "You won the coin toss!", "¡Ganaste el lanzamiento de la moneda!", "Hai vinto il lancio della moneta!"],
+["=O bot ganhou o lançamento da moeda", "The bot won the coin toss", "El bot ganó el lanzamiento de la moneda", "Il bot ha vinto il lancio della moneta"],
+["=Som", "Sound", "Sonido", "Suono"],
+["=Paragens…", "Stops…", "Paradas…", "Stop…"],
+["=Paragens", "Stops", "Paradas", "Stop"],
+["=Onde o jogo espera por ti. Nas outras fases passa sozinho, a não ser que tenhas de decidir alguma coisa.", "Where the game waits for you. In the other phases it passes on its own, unless you have something to decide.", "Donde el juego te espera. En las demás fases pasa solo, salvo que tengas que decidir algo.", "Dove il gioco ti aspetta. Nelle altre fasi passa da solo, a meno che tu non debba decidere qualcosa."],
+["=Meu turno", "My turn", "Mi turno", "Mio turno"],
+["=Turno do bot", "Bot's turn", "Turno del bot", "Turno del bot"],
+["=Controlo total", "Full control", "Control total", "Controllo totale"],
+["=Pára em todas as fases e nunca passa sozinho. Para jogadores experientes.", "Stops at every phase and never passes on its own. For experienced players.", "Se detiene en todas las fases y nunca pasa solo. Para jugadores expertos.", "Si ferma in ogni fase e non passa mai da solo. Per giocatori esperti."],
+["={p}: vida {a} → {b}", "{p}: life {a} → {b}", "{p}: vida {a} → {b}", "{p}: vita {a} → {b}"],
+["=Escolhe quem ataca: toca nas tuas criaturas ou arrasta-as para o adversário.", "Choose your attackers: tap your creatures or drag them onto the opponent.", "Elige quién ataca: toca tus criaturas o arrástralas hacia el rival.", "Scegli chi attacca: tocca le tue creature o trascinale sull'avversario."],
+["=Escolhe quem bloqueia: arrasta uma criatura tua para cima de um atacante.", "Choose your blockers: drag one of your creatures onto an attacker.", "Elige quién bloquea: arrastra una de tus criaturas sobre un atacante.", "Scegli chi blocca: trascina una tua creatura su un attaccante."]
+]

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Os efeitos sonoros do bot carregam-se pelo nome (getIdentifier): o
+     shrinkResources não os pode cortar. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@raw/sfx_*" />

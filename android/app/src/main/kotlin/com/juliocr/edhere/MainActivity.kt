@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.location.LocationManager
+import android.media.AudioAttributes
+import android.media.SoundPool
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
@@ -22,6 +24,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         configureForge(flutterEngine)
+        configureSfx(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/hotspot")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -203,6 +206,14 @@ class MainActivity : FlutterActivity() {
                     ForgeEngine.setPace(call.argument<Int>("ms")!!)
                     result.success(null)
                 }
+                "stops" -> {
+                    ForgeEngine.setStops(
+                        call.argument<List<String>>("mine")!!,
+                        call.argument<List<String>>("theirs")!!,
+                        call.argument<Boolean>("full") ?: false,
+                    )
+                    result.success(null)
+                }
                 "answer" -> {
                     ForgeEngine.answer(call.argument<Int>("id")!!, call.argument<Any>("value"))
                     result.success(null)
@@ -212,7 +223,46 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // Efeitos sonoros do bot (res/raw/sfx_*.wav, gerados por tool/sfx/gen_sfx.py).
+    // SoundPool: latência baixa e sem dependências no Flutter.
+    private var sfx: SoundPool? = null
+    private val sfxIds = HashMap<String, Int>()
+
+    private fun configureSfx(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "edhere/sfx").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "play" -> {
+                    playSfx(call.argument<String>("name") ?: "", (call.argument<Double>("volume") ?: 1.0).toFloat())
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun playSfx(name: String, volume: Float) {
+        val pool = sfx ?: SoundPool.Builder()
+            .setMaxStreams(4)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .build().also { pool ->
+                sfx = pool
+                for (n in listOf("card", "land", "attack", "hit", "death", "gain", "turn", "win", "lose")) {
+                    val res = resources.getIdentifier("sfx_$n", "raw", packageName)
+                    if (res != 0) sfxIds[n] = pool.load(this, res, 1)
+                }
+            }
+        val id = sfxIds[name] ?: return
+        pool.play(id, volume, volume, 1, 0, 1f)
+    }
+
     override fun onDestroy() {
+        sfx?.release()
+        sfx = null
         stopHotspot()
         ForgeEngine.stopMatch()
         super.onDestroy()

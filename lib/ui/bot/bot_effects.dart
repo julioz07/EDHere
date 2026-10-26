@@ -195,7 +195,14 @@ class TurnBanner extends StatelessWidget {
 /// As fases do turno numa faixa: início, principal 1, combate, principal 2 e
 /// fim, com a atual acesa na cor de quem joga e o passo do combate por extenso.
 class PhaseBar extends StatelessWidget {
-  const PhaseBar({super.key, required this.phase, required this.mine, required this.compact});
+  const PhaseBar(
+      {super.key, required this.phase, required this.mine, required this.compact, this.stops = const {}, this.onTap});
+
+  /// Os segmentos onde o jogo pára à minha espera neste turno (um ponto em cima).
+  final Set<int> stops;
+
+  /// Tocar na barra abre as paragens.
+  final VoidCallback? onTap;
 
   /// O PhaseType do Forge.
   final String? phase;
@@ -230,39 +237,52 @@ class PhaseBar extends StatelessWidget {
       (Icons.looks_two_outlined, tr('Principal 2')),
       (Icons.nightlight_outlined, tr('Fim')),
     ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(children: [
-        for (var i = 0; i < segments.length; i++)
-          Expanded(
-            // no telemóvel a fase atual é mais larga, para o nome caber
-            flex: compact && i == current ? 4 : 1,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(
-                color: i == current ? on : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(segments[i].$1, size: 14, color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
-                if (!compact || i == current) ...[
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      // no combate, o passo em que está
-                      i == current && i == 2 && phase != 'COMBAT_BEGIN' ? _combatStep(phase) : segments[i].$2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(children: [
+          for (var i = 0; i < segments.length; i++)
+            Expanded(
+              // no telemóvel a fase atual é mais larga, para o nome caber
+              flex: compact && i == current ? 4 : 1,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                decoration: BoxDecoration(
+                  color: i == current ? on : scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  if (stops.contains(i))
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        color: i == current ? scheme.onPrimary : const Color(0xFFFF9800),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                ],
-              ]),
+                  Icon(segments[i].$1, size: 14, color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
+                  if (!compact || i == current) ...[
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        // no combate, o passo em que está
+                        i == current && i == 2 && phase != 'COMBAT_BEGIN' ? _combatStep(phase) : segments[i].$2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ]),
+              ),
             ),
-          ),
-      ]),
+        ]),
+      ),
     );
   }
 
@@ -549,4 +569,65 @@ class _LifeChart extends CustomPainter {
 
   @override
   bool shouldRepaint(_LifeChart oldDelegate) => true;
+}
+
+/// A moeda ao ar no início da partida (como no Arena): roda e mostra quem
+/// ganhou o lançamento. Não bloqueia os toques e some sozinha.
+class CoinFlip extends StatelessWidget {
+  const CoinFlip({super.key, required this.won});
+
+  final bool won;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IgnorePointer(
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 1300),
+          curve: Curves.easeOutCubic,
+          builder: (context, t, _) {
+            // 5 ou 6 voltas a abrandar, a acabar na face de quem ganhou (eu ou o bot)
+            final angle = t * pi * (won ? 12 : 11);
+            final face = cos(angle);
+            final heads = face >= 0;
+            return Column(mainAxisSize: MainAxisSize.min, children: [
+              Transform.translate(
+                offset: Offset(0, -80 * sin(pi * t)),
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..scale(max(0.05, face.abs()), 1.0),
+                  child: Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                          colors: heads
+                              ? const [Color(0xFFFFE082), Color(0xFFFFA000)]
+                              : const [Color(0xFFE0E0E0), Color(0xFF9E9E9E)]),
+                      boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
+                    ),
+                    child: Icon(heads ? Icons.person : Icons.smart_toy, size: 48, color: Colors.black54),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Opacity(
+                opacity: ((t - 0.8) / 0.2).clamp(0.0, 1.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration:
+                      BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(12)),
+                  child: Text(won ? tr('Ganhaste o lançamento da moeda!') : tr('O bot ganhou o lançamento da moeda'),
+                      style: theme.textTheme.titleMedium?.copyWith(color: Colors.white)),
+                ),
+              ),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
 }

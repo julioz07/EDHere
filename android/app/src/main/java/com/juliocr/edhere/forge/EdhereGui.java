@@ -478,9 +478,24 @@ final class EdhereGui extends AbstractGuiGame {
      */
     @Override
     public boolean isUiSetToSkipPhase(PlayerView playerTurn, PhaseType phase) {
+        if (fullControl) return false;
         boolean mine = getLocalPlayers().contains(playerTurn);
-        if (mine) return phase != PhaseType.MAIN1 && phase != PhaseType.MAIN2;
-        return phase != PhaseType.COMBAT_DECLARE_ATTACKERS && phase != PhaseType.END_OF_TURN;
+        return !(mine ? myStops : theirStops).contains(phase.name());
+    }
+
+    /** As paragens (PhaseType) no meu turno e no do bot; por defeito as fases principais e o ataque/fim dele. */
+    private volatile java.util.Set<String> myStops = new java.util.HashSet<>(java.util.Arrays.asList("MAIN1", "MAIN2"));
+    private volatile java.util.Set<String> theirStops =
+            new java.util.HashSet<>(java.util.Arrays.asList("COMBAT_DECLARE_ATTACKERS", "END_OF_TURN"));
+    private volatile boolean fullControl;
+
+    void setStops(List<String> mine, List<String> theirs, boolean full) {
+        myStops = new java.util.HashSet<>(mine);
+        theirStops = new java.util.HashSet<>(theirs);
+        fullControl = full;
+        // em controlo total o Forge também deixa de passar sozinho quando não há jogadas
+        forge.model.FModel.getPreferences().setPref(
+                forge.localinstance.properties.ForgePreferences.FPref.YIELD_AUTO_PASS_NO_ACTIONS, !full);
     }
 
     @Override protected void updateCurrentPlayer(PlayerView player) { }

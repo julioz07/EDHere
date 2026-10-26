@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../bot/forge_engine.dart';
 import '../../bot/forge_table.dart';
+import '../../bot/sfx.dart';
 import '../../data/providers.dart';
 import '../../data/settings.dart';
 import '../../l10n/l10n.dart';
@@ -51,6 +52,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   /// A jogada do bot em destaque (popup com a carta) e a faixa de início de turno.
   ForgeSpot? _spot;
   Timer? _spotTimer;
+  Timer? _waitTimer;
   ({String text, bool mine})? _banner;
   Timer? _bannerTimer;
   int _lastTurn = 0;
@@ -59,7 +61,12 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   final _lifeHistory = <int, List<int>>{};
   bool _overShown = false;
 
+  /// A moeda ao ar do início: null antes do primeiro prompt; depois quem ganhou (some sozinha).
+  bool? _coinWon;
+  bool _coinShown = false;
+
   late BotSpeed _speed = BotSpeed.byId(ref.read(prefsProvider).getString(BotSpeed.prefKey));
+  late final BotStops _stops = BotStops.load(ref.read(prefsProvider));
 
   // Movimento: onde está cada carta, as que estão a voar (escondidas no
   // destino até chegarem), o abanão do dano e o pulsar das setas de combate.
@@ -97,7 +104,10 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     _sub = ForgeEngine.events.listen(_onEvent);
     // o ecrã não se apaga enquanto o bot pensa
     WakelockPlus.enable();
+    Sfx.enabled = ref.read(prefsProvider).getBool(Sfx.prefKey) ?? true;
+    Sfx.warm();
     ForgeEngine.start(seats: widget.seats, repo: _repo, commander: widget.commander, paceMs: _speed.paceMs)
+        .then((_) => ForgeEngine.setStops(_stops))
         .catchError((Object e) {
       if (mounted) setState(() => _error = '$e');
     });
@@ -107,6 +117,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   void dispose() {
     _spotTimer?.cancel();
     _bannerTimer?.cancel();
+    _waitTimer?.cancel();
     _sub?.cancel();
     _shake.dispose();
     _pulse.dispose();
@@ -134,6 +145,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
         return;
       case 'spot':
         final spot = ForgeSpot.fromMap(e);
+        if (spot.kind == 'attack') Sfx.attack();
         _spotTimer?.cancel();
         _spotTimer = Timer(spot.duration, () {
           if (mounted) setState(() => _spot = null);
@@ -161,6 +173,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     // faixa no início de cada turno, a dizer de quem é
     if (s.players.isNotEmpty && s.turn > 0 && s.turn != _lastTurn && !s.over) {
       _lastTurn = s.turn;
+      Sfx.turn();
       final active = s.player(s.active ?? -1);
       final mine = _live && s.active == s.players.first.id;
       _bannerTimer?.cancel();
@@ -179,6 +192,14 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       if (e['type'] == 'prompt') {
         _prompt = ForgePrompt.fromMap(e);
         _waiting = false;
+        // o primeiro prompt diz quem ganhou a moeda: se me pergunta se começo, fui eu
+        if (_live && !_coinShown && s.turn == 0 && _prompt!.input != 'wait') {
+          _coinShown = true;
+          _coinWon = _prompt!.input != 'mulligan';
+          Timer(const Duration(milliseconds: 2600), () {
+            if (mounted) setState(() => _coinWon = null);
+          });
+        }
       }
       if (s.over) _prompt = null;
     });
@@ -247,14 +268,19 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
         if (i.sourceId != null) i.sourceId!,
     };
     final specs = <FlightSpec>[];
-    var played = false, died = false;
+    var played = false, died = false, landPlayed = false;
     for (final id in ids) {
       final a = _where(old, id), b = _where(now, id);
       // sem sítio conhecido (a meio de um lançamento, na biblioteca...): não voa
       if (a == b || b == null) continue;
       final c = now.card(id) ?? old.card(id);
-      if (a != null && a.startsWith('hand:$meId') && (b == 'stack' || b.startsWith('battlefield'))) {
-        played = true;
+      if (a != null && a.startsWith('hand') && (b == 'stack' || b.startsWith('battlefield'))) {
+        if (a.startsWith('hand:$meId')) played = true;
+        if (b.startsWith('battlefield') && (c?.card?.isLand ?? false)) {
+          landPlayed = true;
+        } else {
+          Sfx.card();
+        }
       }
       if ((a?.startsWith('battlefield') ?? false) && b.startsWith('graveyard')) died = true;
       // de onde vem: a própria carta, se se via, senão o contador da zona
@@ -277,10 +303,14 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       if (!vanish) _hidden.add(id);
       if (specs.length >= 10) break;
     }
+    if (landPlayed) Sfx.land();
+    if (died) Sfx.death();
     // dano: abanar a mesa (mais quando sou eu a sofrer) e vibrar
     for (final p in now.players) {
       final before = old.player(p.id);
+      if (before != null && p.life > before.life) Sfx.gain();
       if (before == null || p.life >= before.life) continue;
+      Sfx.hit();
       final dmg = before.life - p.life;
       final mine = _live && p.id == meId;
       if (_shakeOn) {
@@ -292,7 +322,11 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     }
     if (played) _haptic(HapticFeedback.lightImpact);
     if (died) _haptic(HapticFeedback.selectionClick);
-    if (now.over && !old.over) _haptic(HapticFeedback.heavyImpact);
+    if (now.over && !old.over) {
+      _haptic(HapticFeedback.heavyImpact);
+      final meWon = _live && now.winner == meId;
+      _live && now.winner != null && !meWon ? Sfx.lose() : Sfx.win();
+    }
     return specs;
   }
 
@@ -320,6 +354,12 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     if (!_live || _state?.over == true) return;
     setState(() => _waiting = true);
     ForgeEngine.act(kind, id);
+    // um toque que o Forge ignora (pagar sem mana que chegue, carta que não se
+    // pode jogar) não traz prompt novo: os botões voltam, senão ficava preso
+    _waitTimer?.cancel();
+    _waitTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted && _waiting) setState(() => _waiting = false);
+    });
   }
 
   void _peekCard(ForgeCardView c) {
@@ -383,6 +423,11 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                   const PopupMenuDivider(),
                   CheckedPopupMenuItem(value: 'shake', checked: _shakeOn, child: Text(tr('Abanar a mesa com o dano'))),
                   CheckedPopupMenuItem(value: 'haptics', checked: _hapticsOn, child: Text(tr('Vibração'))),
+                  CheckedPopupMenuItem(value: 'sound', checked: Sfx.enabled, child: Text(tr('Som'))),
+                  if (_live) ...[
+                    const PopupMenuDivider(),
+                    PopupMenuItem(value: 'stops', child: Text(tr('Paragens…'))),
+                  ],
                 ],
               ),
               if (s != null)
@@ -418,8 +463,8 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                       Positioned.fill(
                         child: IgnorePointer(
                           child: CustomPaint(
-                            painter:
-                                CombatArrowsPainter(geo: _geo, origin: _areaKey, arrows: s.over ? const [] : _arrows(s), pulse: _pulse),
+                            painter: CombatArrowsPainter(
+                                geo: _geo, origin: _areaKey, arrows: s.over ? const [] : _arrows(s), pulse: _pulse),
                           ),
                         ),
                       ),
@@ -446,6 +491,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                       ),
                       Positioned.fill(child: FlightLayer(key: _flightKey, duration: _flightTime, onLanded: _landed)),
                       if (_banner != null) Positioned.fill(child: TurnBanner(text: _banner!.text, mine: _banner!.mine)),
+                      if (_coinWon != null) Positioned.fill(child: CoinFlip(won: _coinWon!)),
                       Positioned.fill(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 220),
@@ -496,7 +542,94 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       setState(() => prefs.setBool(_shakeKey, !_shakeOn));
     } else if (v == 'haptics') {
       setState(() => prefs.setBool(_hapticsKey, !_hapticsOn));
+    } else if (v == 'sound') {
+      setState(() => Sfx.enabled = !Sfx.enabled);
+      prefs.setBool(Sfx.prefKey, Sfx.enabled);
+    } else if (v == 'stops') {
+      _editStops();
     }
+  }
+
+  /// As paragens (como no Arena): em que fases o jogo espera por mim, no meu
+  /// turno e no do bot, e o controlo total.
+  Future<void> _editStops() async {
+    final labels = [tr('Início'), tr('Principal 1'), tr('Combate'), tr('Principal 2'), tr('Fim')];
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        void changed() {
+          setSheet(() {});
+          setState(() {});
+          _stops.save(ref.read(prefsProvider));
+          ForgeEngine.setStops(_stops);
+        }
+
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tr('Paragens'), style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                  tr('Onde o jogo espera por ti. Nas outras fases passa sozinho, a não ser que tenhas de decidir alguma coisa.'),
+                  style: theme.textTheme.bodySmall),
+              const SizedBox(height: 8),
+              Row(children: [
+                const Expanded(child: SizedBox()),
+                SizedBox(
+                    width: 88,
+                    child: Text(tr('Meu turno'), textAlign: TextAlign.center, style: theme.textTheme.labelMedium)),
+                SizedBox(
+                    width: 88,
+                    child: Text(tr('Turno do bot'), textAlign: TextAlign.center, style: theme.textTheme.labelMedium)),
+              ]),
+              for (var i = 0; i < labels.length; i++)
+                Row(children: [
+                  Expanded(child: Text(labels[i])),
+                  SizedBox(
+                    width: 88,
+                    child: Checkbox(
+                      value: _stops.full || _stops.mine.contains(i),
+                      onChanged: _stops.full
+                          ? null
+                          : (v) {
+                              v == true ? _stops.mine.add(i) : _stops.mine.remove(i);
+                              changed();
+                            },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 88,
+                    child: Checkbox(
+                      value: _stops.full || _stops.theirs.contains(i),
+                      onChanged: _stops.full
+                          ? null
+                          : (v) {
+                              v == true ? _stops.theirs.add(i) : _stops.theirs.remove(i);
+                              changed();
+                            },
+                    ),
+                  ),
+                ]),
+              const Divider(),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(tr('Controlo total')),
+                subtitle: Text(tr('Pára em todas as fases e nunca passa sozinho. Para jogadores experientes.')),
+                value: _stops.full,
+                onChanged: (v) {
+                  _stops.full = v;
+                  changed();
+                },
+              ),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 
   /// As setas de combate: cada atacante para quem ataca, cada bloqueador para quem bloqueia.
@@ -524,6 +657,15 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       onStack: _live ? (id) => _act('stack', id) : null,
       geo: _geo,
       hidden: _hidden,
+      meId: me.id,
+      // arrastar: o atacante para a barra do bot, o bloqueador para o atacante
+      onAttack: _live ? (id) => _act('card', id) : null,
+      onBlock: _live
+          ? (attacker, blocker) {
+              ForgeEngine.act('card', attacker);
+              _act('card', blocker);
+            }
+          : null,
     );
     // o fundo da mesa escolhido nas Definições, como na mesa normal
     return Container(
@@ -542,7 +684,13 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
           _PlayerBar(
               state: s, player: them, act: act, thinking: _live && !s.over && (_waiting || _prompt?.input == 'wait')),
           Expanded(child: _Battlefield(state: s, player: them.id, flipped: true, act: act)),
-          PhaseBar(phase: s.phase, mine: _live && s.active == me.id, compact: narrow),
+          PhaseBar(
+            phase: s.phase,
+            mine: _live && s.active == me.id,
+            compact: narrow,
+            stops: !_live ? const {} : (s.active == me.id ? _stops.mine : _stops.theirs),
+            onTap: _live ? _editStops : null,
+          ),
           if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act, lookup: _lookup),
           if (_live && !s.over) _PromptBar(prompt: _prompt, waiting: _waiting, onButton: _act, state: s, meId: me.id),
           Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
@@ -564,7 +712,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       showDragHandle: true,
       builder: (ctx) => ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(l))],
+        children: [for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(logLine(l)))],
       ),
     );
   }
@@ -580,7 +728,17 @@ class _Interaction {
     required this.onStack,
     required this.geo,
     required this.hidden,
+    required this.meId,
+    this.onAttack,
+    this.onBlock,
   });
+
+  final int meId;
+  final void Function(int attacker)? onAttack;
+  final void Function(int attacker, int blocker)? onBlock;
+
+  bool get attacking => prompt?.input == 'attack';
+  bool get blocking => prompt?.input == 'block';
 
   final TableGeometry geo;
 
@@ -604,6 +762,52 @@ class _Interaction {
 
   /// Uma carta da mesa com os toques: tocar joga (ou abre a ficha, a ver), tocar sem largar abre a ficha.
   Widget card(ForgeCardView c, double width, {bool details = true}) {
+    final view = _cardView(c, width, details: details);
+    final id = c.instance.id;
+    final mineCreature = c.instance.controller == meId &&
+        c.instance.zone == Zone.battlefield &&
+        ((c.card?.frontType.contains('Creature') ?? false) || c.instance.isToken);
+    Widget out = view;
+    // a criatura agarrada segue o dedo; a original fica meio transparente
+    if ((attacking && onAttack != null && selectable(id) && mineCreature) ||
+        (blocking && onBlock != null && mineCreature && !c.attacking)) {
+      out = Draggable<int>(
+        data: id,
+        feedback: Material(
+          color: Colors.transparent,
+          child: Transform.rotate(
+            angle: -0.05,
+            child: SizedBox(
+              width: width * 1.15,
+              child: c.card == null ? const CardBack() : CardImage(c.card!, radius: width * 0.06),
+            ),
+          ),
+        ),
+        childWhenDragging: Opacity(opacity: 0.35, child: view),
+        child: view,
+      );
+    }
+    // a bloquear: largar a minha criatura em cima de um atacante
+    if (blocking && onBlock != null && c.attacking) {
+      // o builder corre depois: tem de ver a carta, não o próprio DragTarget
+      final target = out;
+      out = DragTarget<int>(
+        onAcceptWithDetails: (d) => onBlock!(id, d.data),
+        builder: (context, candidates, _) => Container(
+          decoration: candidates.isEmpty
+              ? null
+              : BoxDecoration(
+                  borderRadius: BorderRadius.circular(width * 0.06),
+                  boxShadow: const [BoxShadow(color: Color(0xFF1E88E5), blurRadius: 18, spreadRadius: 4)],
+                ),
+          child: target,
+        ),
+      );
+    }
+    return out;
+  }
+
+  Widget _cardView(ForgeCardView c, double width, {bool details = true}) {
     return GestureDetector(
       key: geo.key('c${c.instance.id}'),
       onTap: () => onCard(c),
@@ -684,6 +888,15 @@ class _Badge extends StatelessWidget {
   }
 }
 
+/// Uma linha do registo do Forge sem os ids internos ("Lightning Bolt (2)"). As
+/// mudanças de vida vêm sempre em inglês ("Life: Bot 40 > 38"): essas são nossas.
+String logLine(String t) {
+  t = t.replaceAll(RegExp(r' \(\d+\)'), '');
+  final life = RegExp(r'^Life: (.+) (\d+) > (\d+)$').firstMatch(t.trim());
+  if (life == null) return t;
+  return tr('{p}: vida {a} → {b}', {'p': life[1]!, 'a': life[2]!, 'b': life[3]!});
+}
+
 /// O que o jogo espera de mim e os dois botões. Na prioridade, as mensagens
 /// são nossas ("A tua fase principal: joga uma carta ou passa") em vez das do
 /// Forge ("Prioridade: Ana | Turno: 2 | Fase: ..."), e o OK diz o que faz.
@@ -700,9 +913,10 @@ class _PromptBar extends StatelessWidget {
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
     // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
     final forge = p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim();
+    // quando dá para desfazer, o Desfazer tem botão próprio (ver build) e este
+    // continua a ser o Terminar o turno: o botão não muda de função debaixo do dedo
     String cancel() => switch (p.cancelKind) {
-          'undo' => tr('Desfazer'),
-          'endTurn' => tr('Terminar o turno'),
+          'undo' || 'endTurn' => tr('Terminar o turno'),
           _ => p.cancel.label,
         };
     switch (p.input) {
@@ -732,6 +946,18 @@ class _PromptBar extends StatelessWidget {
         );
       case 'mulligan':
         return (message: tr('Ficas com esta mão?'), ok: p.ok.label, cancel: p.cancel.label);
+      case 'attack':
+        return (
+          message: tr('Escolhe quem ataca: toca nas tuas criaturas ou arrasta-as para o adversário.'),
+          ok: p.ok.label,
+          cancel: p.cancel.label,
+        );
+      case 'block':
+        return (
+          message: tr('Escolhe quem bloqueia: arrasta uma criatura tua para cima de um atacante.'),
+          ok: p.ok.label,
+          cancel: p.cancel.label,
+        );
       default:
         return (message: forge, ok: p.ok.label, cancel: p.cancel.label);
     }
@@ -752,13 +978,24 @@ class _PromptBar extends StatelessWidget {
             Flexible(child: Text(tr('O bot está a pensar…'), style: theme.textTheme.bodyMedium)),
           ])
         : Text(texts!.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium);
+    final priority = !busy && p.input == 'priority';
     final buttons = [
+      if (priority && p.cancelKind == 'undo')
+        IconButton(
+          tooltip: tr('Desfazer'),
+          onPressed: () => onButton('undo'),
+          icon: const Icon(Icons.undo),
+        ),
       if (!busy && texts!.cancel.isNotEmpty) ...[
         const SizedBox(width: 6),
         OutlinedButton(
           // o tema dá largura infinita aos botões; numa linha precisam de largura própria
           style: OutlinedButton.styleFrom(minimumSize: const Size(72, 40)),
-          onPressed: p.cancel.enabled ? () => onButton('cancel') : null,
+          onPressed: priority && p.cancelKind != null
+              ? () => onButton('endTurn')
+              : p.cancel.enabled
+                  ? () => onButton('cancel')
+                  : null,
           child: Text(texts.cancel),
         ),
       ],
@@ -833,7 +1070,7 @@ class _PlayerBar extends StatelessWidget {
                   onPressed: onTap,
                 ),
               ));
-    return Container(
+    final bar = Container(
       key: act.geo.key('player:${player.id}'),
       decoration: BoxDecoration(
         // fundo próprio: por cima do fundo da mesa, o nome e a vida têm de se ler
@@ -875,6 +1112,15 @@ class _PlayerBar extends StatelessWidget {
           chip(Icons.block, '${exile.length}',
               anchor: 'exile:${player.id}', onTap: () => _zoneSheet(context, tr('Exílio'), exile)),
       ]),
+    );
+    if (!act.attacking || act.onAttack == null || player.id == act.meId) return bar;
+    return DragTarget<int>(
+      onAcceptWithDetails: (d) => act.onAttack!(d.data),
+      builder: (context, candidates, _) => Container(
+        foregroundDecoration:
+            candidates.isEmpty ? null : BoxDecoration(border: Border.all(color: const Color(0xFFE53935), width: 3)),
+        child: bar,
+      ),
     );
   }
 
@@ -985,7 +1231,7 @@ class _CenterStrip extends StatelessWidget {
   final _Interaction act;
   final ForgeCardLookup lookup;
 
-  static String _clean(String t) => t.replaceAll(RegExp(r' \(\d+\)'), '');
+  static String _clean(String t) => logLine(t);
 
   @override
   Widget build(BuildContext context) {

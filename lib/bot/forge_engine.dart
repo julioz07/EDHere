@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/l10n.dart';
 
@@ -40,6 +41,43 @@ enum BotSpeed {
 
   static const prefKey = 'bot_speed';
   static BotSpeed byId(String? id) => values.where((s) => s.id == id).firstOrNull ?? normal;
+}
+
+/// Onde o jogo pára à minha espera, por segmento da barra de fases (0 início,
+/// 1 principal 1, 2 combate, 3 principal 2, 4 fim). Como as paragens do Arena.
+class BotStops {
+  BotStops({required this.mine, required this.theirs, this.full = false});
+
+  /// Por defeito: as minhas fases principais; o ataque e o fim do turno do bot.
+  factory BotStops.defaults() => BotStops(mine: {1, 3}, theirs: {2, 4});
+
+  final Set<int> mine;
+  final Set<int> theirs;
+
+  /// Controlo total: pára em todas as fases e nunca passa sozinho.
+  bool full;
+
+  static List<String> phases(int segment, {required bool mine}) => switch (segment) {
+        0 => ['UPKEEP', 'DRAW'],
+        1 => ['MAIN1'],
+        2 => mine ? ['COMBAT_BEGIN'] : ['COMBAT_DECLARE_ATTACKERS'],
+        3 => ['MAIN2'],
+        _ => ['END_OF_TURN'],
+      };
+
+  static const _kMine = 'bot_stops_mine', _kTheirs = 'bot_stops_theirs', _kFull = 'bot_full_control';
+
+  static BotStops load(SharedPreferences p) {
+    final d = BotStops.defaults();
+    Set<int> read(String k, Set<int> def) => p.getStringList(k)?.map(int.parse).toSet() ?? def;
+    return BotStops(mine: read(_kMine, d.mine), theirs: read(_kTheirs, d.theirs), full: p.getBool(_kFull) ?? false);
+  }
+
+  void save(SharedPreferences p) {
+    p.setStringList(_kMine, [for (final i in mine) '$i']);
+    p.setStringList(_kTheirs, [for (final i in theirs) '$i']);
+    p.setBool(_kFull, full);
+  }
 }
 
 /// Um lugar na partida contra o bot: quem joga e com que deck.
@@ -126,6 +164,13 @@ abstract final class ForgeEngine {
 
   /// Um toque da pessoa: [kind] é card, player, stack, ok, cancel ou concede.
   static Future<void> act(String kind, [int? id]) => _ch.invokeMethod('act', {'kind': kind, if (id != null) 'id': id});
+
+  /// As paragens: fases (PhaseType) onde o Forge espera por mim, no meu turno e no do bot.
+  static Future<void> setStops(BotStops stops) => _ch.invokeMethod('stops', {
+        'mine': [for (final i in stops.mine) ...BotStops.phases(i, mine: true)],
+        'theirs': [for (final i in stops.theirs) ...BotStops.phases(i, mine: false)],
+        'full': stops.full,
+      });
 
   /// A resposta a uma pergunta ("ask") do Forge.
   static Future<void> answer(int id, Object? value) => _ch.invokeMethod('answer', {'id': id, 'value': value});
