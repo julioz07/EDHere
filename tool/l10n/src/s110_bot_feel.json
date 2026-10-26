@@ -1,0 +1,13 @@
+[
+["=Ficha completa", "Full card details", "Ficha completa", "Scheda completa"],
+["=Abanar a mesa com o dano", "Shake the table on damage", "Sacudir la mesa con el daño", "Scuoti il tavolo con il danno"],
+["=Vibração", "Vibration", "Vibración", "Vibrazione"],
+["=Terminar o turno", "End turn", "Terminar el turno", "Termina il turno"],
+["={v} está na pilha. Deixa resolver ou junta outra resposta.", "{v} is on the stack. Let it resolve or add another response.", "{v} está en la pila. Deja que se resuelva o añade otra respuesta.", "{v} è in pila. Lascialo risolvere o aggiungi un'altra risposta."],
+["={v} está na pilha. Respondes ou deixas resolver?", "{v} is on the stack. Respond or let it resolve?", "{v} está en la pila. ¿Respondes o dejas que se resuelva?", "{v} è in pila. Rispondi o lo lasci risolvere?"],
+["=Resolver", "Resolve", "Resolver", "Risolvi"],
+["=A tua fase principal: joga uma carta ou passa.", "Your main phase: play a card or pass.", "Tu fase principal: juega una carta o pasa.", "La tua fase principale: gioca una carta o passa."],
+["={v}: podes jogar instantâneos ou passar.", "{v}: you can play instants or pass.", "{v}: puedes jugar instantáneos o pasar.", "{v}: puoi giocare istantanei o passare."],
+["=Turno do adversário ({v}): podes responder ou passar.", "Opponent's turn ({v}): you can respond or pass.", "Turno del rival ({v}): puedes responder o pasar.", "Turno dell'avversario ({v}): puoi rispondere o passare."],
+["=Ficas com esta mão?", "Keep this hand?", "¿Te quedas con esta mano?", "Tieni questa mano?"]
+]

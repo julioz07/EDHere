@@ -130,8 +130,29 @@ final class EdhereGui extends AbstractGuiGame {
         }
         List<Object> playable = playable();
         if (!playable.isEmpty()) m.put("play", playable);
+        // o tipo de pergunta, para a mesa escrever as suas mensagens (as do
+        // Forge para a prioridade são "Prioridade: X | Turno: N | Fase: ...")
+        m.put("input", inputKind());
+        forge.util.Localizer loc = forge.util.Localizer.getInstance();
+        if (cancelLabel.startsWith(loc.getMessage("lblUndo"))) m.put("cancelKind", "undo");
+        else if (cancelLabel.equals(loc.getMessage("lblEndTurn"))) m.put("cancelKind", "endTurn");
         sink.emit(m);
         observer.markDirty();
+    }
+
+    /** priority, mulligan, attack, block, pay, select, wait (o bot a jogar) ou other. */
+    private String inputKind() {
+        if (!(getGameController() instanceof PlayerControllerHuman)) return "wait";
+        Object in = ((PlayerControllerHuman) getGameController()).getInputQueue().getInput();
+        if (in == null || in instanceof forge.gamemodes.match.input.InputLockUI) return "wait";
+        String n = in.getClass().getSimpleName();
+        if (in instanceof InputPassPriority) return "priority";
+        if (n.contains("Mulligan")) return "mulligan";
+        if (n.equals("InputAttack")) return "attack";
+        if (n.equals("InputBlock")) return "block";
+        if (n.startsWith("InputPayMana")) return "pay";
+        if (n.startsWith("InputSelect")) return "select";
+        return "other";
     }
 
     private Object playableFor;

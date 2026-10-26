@@ -359,7 +359,19 @@ final class ForgeObserver {
                 if (c.getDamage() > 0) m.put("dmg", c.getDamage());
             }
             if (combat != null && combat.isAttacking(c)) m.put("atk", true);
-            if (combat != null && combat.isBlocking(c)) m.put("blk", true);
+            if (combat != null && combat.isBlocking(c)) {
+                m.put("blk", true);
+                // quem bloqueia, para as setas de bloqueio
+                List<Object> of = new ArrayList<>();
+                for (Card a : combat.getAttackersBlockedBy(c)) of.add(a.getId());
+                m.put("blkOf", of);
+            }
+            if (combat != null && combat.isAttacking(c)) {
+                // o alvo do ataque: um jogador ("p") ou um planeswalker/batalha ("c")
+                forge.game.GameEntity d = combat.getDefenderByAttacker(c);
+                if (d instanceof Player) m.put("atkP", ((Player) d).getId());
+                else if (d instanceof Card) m.put("atkC", ((Card) d).getId());
+            }
             if (c.getAttachedTo() != null) m.put("at", c.getAttachedTo().getId());
             Map<String, Object> counters = counters(c.getCounters());
             if (!counters.isEmpty()) m.put("cn", counters);

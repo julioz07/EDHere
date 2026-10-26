@@ -39,7 +39,9 @@ class ForgePrompt {
         selectableCards = {for (final id in (m['sel'] as List? ?? const [])) id as int},
         selectablePlayers = {for (final id in (m['selP'] as List? ?? const [])) id as int},
         chosen = {for (final id in (m['chosen'] as List? ?? const [])) id as int},
-        playable = {for (final id in (m['play'] as List? ?? const [])) id as int};
+        playable = {for (final id in (m['play'] as List? ?? const [])) id as int},
+        input = m['input'] as String? ?? 'other',
+        cancelKind = m['cancelKind'] as String?;
 
   final String message;
   final int? cardId;
@@ -53,6 +55,12 @@ class ForgePrompt {
 
   /// Com a prioridade: as cartas com alguma jogada possível agora.
   final Set<int> playable;
+
+  /// O tipo de pergunta: priority, mulligan, attack, block, pay, select, wait ou other.
+  final String input;
+
+  /// O que faz o botão da esquerda na prioridade: undo, endTurn ou null.
+  final String? cancelKind;
 }
 
 class ForgeButton {
@@ -163,7 +171,13 @@ class ForgeStackItem {
 /// Uma carta como a mesa a desenha: a instância e a carta da base (para a imagem).
 class ForgeCardView {
   ForgeCardView(this.instance, this.card,
-      {this.sick = false, this.attacking = false, this.blocking = false, this.damage = 0});
+      {this.sick = false,
+      this.attacking = false,
+      this.blocking = false,
+      this.damage = 0,
+      this.attackPlayer,
+      this.attackCard,
+      this.blockingOf = const []});
 
   final CardInstance instance;
   final db.Card? card;
@@ -171,6 +185,13 @@ class ForgeCardView {
   final bool attacking;
   final bool blocking;
   final int damage;
+
+  /// A atacar: o jogador ou a carta (planeswalker, batalha) atacados.
+  final int? attackPlayer;
+  final int? attackCard;
+
+  /// A bloquear: os atacantes que bloqueia.
+  final List<int> blockingOf;
 }
 
 /// Um estado da mesa enviado pelo Forge, já com as cartas da base de dados.
@@ -301,6 +322,12 @@ class ForgeCardLookup {
       }
     }
     return ForgeCardView(inst, card,
-        sick: c['sick'] == true, attacking: c['atk'] == true, blocking: c['blk'] == true, damage: c['dmg'] as int? ?? 0);
+        sick: c['sick'] == true,
+        attacking: c['atk'] == true,
+        blocking: c['blk'] == true,
+        damage: c['dmg'] as int? ?? 0,
+        attackPlayer: c['atkP'] as int?,
+        attackCard: c['atkC'] as int?,
+        blockingOf: [for (final id in (c['blkOf'] as List? ?? const [])) id as int]);
   }
 }

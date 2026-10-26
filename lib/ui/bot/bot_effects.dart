@@ -7,16 +7,16 @@ import '../../bot/forge_table.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/card_view.dart';
 
-/// Destaque de uma jogada do bot (como no Arena): a carta em grande no meio da
-/// mesa com o que vai fazer, ou as criaturas que atacam. Some sozinho ao fim
-/// da pausa do Forge; tocar fecha-o antes.
+/// Destaque de uma jogada do bot (como no Arena): a carta em grande sobre o
+/// campo do bot com o que vai fazer, ou as criaturas que atacam. Não tapa a
+/// mesa nem os toques (a lição do Runeterra: os efeitos nunca bloqueiam quem
+/// joga) e some sozinho ao fim da pausa do Forge.
 class BotSpotlight extends StatelessWidget {
-  const BotSpotlight({super.key, required this.spot, required this.state, required this.lookup, required this.onClose});
+  const BotSpotlight({super.key, required this.spot, required this.state, required this.lookup});
 
   final ForgeSpot spot;
   final ForgeTableState? state;
   final ForgeCardLookup lookup;
-  final VoidCallback onClose;
 
   db.Card? _card(int? id, String? name) {
     final onTable = id == null ? null : state?.card(id)?.card;
@@ -28,6 +28,7 @@ class BotSpotlight extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final size = MediaQuery.sizeOf(context);
+    final wide = size.width >= 560;
     final who = state?.player(spot.by ?? -1)?.name ?? tr('O bot');
     final attack = spot.kind == 'attack';
     final title = switch (spot.kind) {
@@ -39,12 +40,12 @@ class BotSpotlight extends StatelessWidget {
           ? tr('{v} ataca com 1 criatura', {'v': who})
           : tr('{v} ataca com {n} criaturas', {'v': who, 'n': spot.cards.length}),
     };
-    // a carta ocupa boa parte do ecrã, mas cabe sempre com o texto por baixo
-    final big = min(size.width * 0.55, size.height * 0.36).clamp(120.0, 300.0);
+    // grande o suficiente para se ler, mas a deixar ver a mesa à volta
+    final big = min(size.width * (wide ? 0.22 : 0.42), size.height * 0.3).clamp(100.0, 240.0);
     final Widget cards;
     if (attack) {
       final n = spot.cards.length;
-      final w = n <= 1 ? big : (size.width * 0.8 / n - 8).clamp(56.0, big * 0.7);
+      final w = n <= 1 ? big : (size.width * 0.7 / n - 8).clamp(48.0, big * 0.7);
       cards = Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8, children: [
         for (var i = 0; i < n; i++)
           _SpotCard(
@@ -60,40 +61,58 @@ class BotSpotlight extends StatelessWidget {
     }
     // o texto da pilha do Forge traz o nome da carta e um id entre parênteses: fica só o efeito
     final effect = spot.kind == 'land' || attack ? null : _effect(spot.text, spot.name);
-    return GestureDetector(
-      onTap: onClose,
-      child: Container(
-        color: Colors.black.withOpacity(0.55),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            cards,
-            if (effect != null && effect.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Text(effect,
-                    textAlign: TextAlign.center, style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white)),
-              ),
-            ],
-            if (spot.targets != null) ...[
-              const SizedBox(height: 8),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.gps_fixed, color: Color(0xFFFF8A80), size: 18),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(spot.targets!,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFFFF8A80))),
-                ),
-              ]),
-            ],
+    final caption = Container(
+      constraints: BoxConstraints(maxWidth: wide ? 340 : size.width * 0.86),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.72), borderRadius: BorderRadius.circular(12)),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+        if (effect != null && effect.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(effect,
+              maxLines: 5,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white)),
+        ],
+        if (spot.targets != null) ...[
+          const SizedBox(height: 6),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.gps_fixed, color: Color(0xFFFF8A80), size: 16),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(spot.targets!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFFF8A80))),
+            ),
           ]),
+        ],
+      ]),
+    );
+    return IgnorePointer(
+      child: Align(
+        // por cima do campo do bot, a deixar livre a barra de baixo e a mão
+        alignment: const Alignment(0, -0.55),
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey(spot),
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutBack,
+          builder: (_, v, child) => Opacity(
+            opacity: v.clamp(0.0, 1.0),
+            child: Transform.translate(
+                offset: Offset(0, -30 * (1 - v)), child: Transform.scale(scale: 0.8 + 0.2 * v, child: child)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: wide && !attack
+                ? Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
+                    cards,
+                    const SizedBox(width: 14),
+                    caption,
+                  ])
+                : Column(mainAxisSize: MainAxisSize.min, children: [cards, const SizedBox(height: 10), caption]),
+          ),
         ),
       ),
     );
