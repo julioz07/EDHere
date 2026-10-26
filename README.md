@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.7.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.8.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -113,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.8.0 | Jogo contra o bot com mais vida: cartas a voar entre zonas, setas de ataque e bloqueio, destaque da carta do bot, pilha com mini-cartas, tremor e flash no dano, sons e vibração, barra das fases, vida animada, indicador do bot a pensar, mão em leque, moeda e mulligan em grande, ecrã de fim com gráfico da vida e revanche. Atacar e bloquear a arrastar, paragens por fase e controlo total, velocidade do bot, Desfazer em botão próprio |
 | 1.7.0 | Jogar contra o bot: partida 1 contra 1 com as regras completas pelo motor do Forge (GPL-3.0), dentro da app e sem internet, com três dificuldades; ver o bot a jogar contra outro bot. O código do EDHere passa a ser aberto, sob a GPL-3.0 |
 | 1.6.0 | Partida de teste de 2 a 6 jogadores no mesmo aparelho (controlas todos; ao passar o turno a mesa mostra o seguinte). Mesa partilhada: o ecrã deixa de rodar, os menus e detalhes das cartas abrem virados para quem tocou e na metade dele, e o botão "Token" tem texto. Editor de decks: seleção de várias cartas (toque longo) para mover (incluindo para comandante), mudar a categoria ou remover, com desfazer; importar uma lista para um deck que já existe (juntar ou substituir). Importação: "Commander" seguido do resto sem cabeçalho já não põe tudo como comandante |
 | 1.5.0 | Pronta para a Play Store: identificador `com.juliocr.edhere` (instala-se ao lado da app antiga; passa os decks por backup), assinatura com a chave de upload, Android 16 (targetSdk 36). Ficha da loja, imagens e política de privacidade em `docs/play-store/` |

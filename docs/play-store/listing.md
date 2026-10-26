@@ -63,8 +63,8 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (1.7.0)
-Novo: joga contra o bot! Partida 1 contra 1 com as regras completas, sem internet, com três dificuldades (Android 8 ou mais recente). O código do EDHere passa a ser aberto.
+### Notas da versão (1.8.0)
+O jogo contra o bot ganha vida: cartas que voam pela mesa, setas de ataque, a carta do bot em destaque, sons e vibração, fases e vida animadas. Ataca e bloqueia a arrastar, escolhe onde o jogo pára e tens um ecrã de fim com revanche.
 
 ---
 
@@ -127,8 +127,8 @@ You only need the internet to download the cards once (about 25 MB) and their im
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (1.7.0)
-New: play against the bot! 1 vs 1 games with the full rules, no internet needed, with three difficulty levels (Android 8 or newer). EDHere is now open source.
+### Release notes (1.8.0)
+Games against the bot come alive: cards fly across the table, attack arrows, the bot's card in the spotlight, sounds and haptics, animated phases and life. Drag to attack and block, choose where the game stops, and get an end screen with rematch.
 
 ---
 
@@ -191,8 +191,8 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (1.7.0)
-Nuevo: ¡juega contra el bot! Partidas 1 contra 1 con las reglas completas, sin internet, con tres dificultades (Android 8 o más reciente). El código de EDHere pasa a ser abierto.
+### Notas de la versión (1.8.0)
+Las partidas contra el bot cobran vida: cartas que vuelan por la mesa, flechas de ataque, la carta del bot destacada, sonidos y vibración, fases y vida animadas. Ataca y bloquea arrastrando, elige dónde se detiene el juego y una pantalla final con revancha.
 
 ---
 
@@ -255,5 +255,5 @@ Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro imm
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (1.7.0)
-Novità: gioca contro il bot! Partite 1 contro 1 con le regole complete, senza internet, con tre livelli di difficoltà (Android 8 o successivo). Il codice di EDHere ora è aperto.
+### Note sulla versione (1.8.0)
+Le partite contro il bot prendono vita: carte che volano sul tavolo, frecce d'attacco, la carta del bot in primo piano, suoni e vibrazione, fasi e vita animate. Attacca e blocca trascinando, scegli dove si ferma il gioco e una schermata finale con rivincita.
