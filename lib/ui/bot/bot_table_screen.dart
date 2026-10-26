@@ -17,6 +17,7 @@ import '../../l10n/l10n.dart';
 import '../cards/card_detail_screen.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
+import '../widgets/mana.dart';
 import 'bot_dialogs.dart';
 import 'bot_effects.dart';
 import 'bot_motion.dart';
@@ -808,57 +809,68 @@ class _Interaction {
   }
 
   Widget _cardView(ForgeCardView c, double width, {bool details = true}) {
+    // a atacar a carta não se deita (ocupava o dobro do espaço): avança um
+    // pouco para o adversário e inclina-se, como no Arena
+    final lunge = c.attacking ? (c.instance.controller == meId ? -1.0 : 1.0) : 0.0;
     return GestureDetector(
       key: geo.key('c${c.instance.id}'),
       onTap: () => onCard(c),
       onLongPress: () => onDetails(c),
       child: Opacity(
         opacity: hidden.contains(c.instance.id) ? 0 : (c.sick ? 0.75 : 1),
-        child: Stack(clipBehavior: Clip.none, children: [
-          Container(
-            // em combate: vermelho a atacar, azul a bloquear (como no Arena)
-            decoration: autoTap(c.instance.id)
-                ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(width * 0.06),
-                    boxShadow: const [BoxShadow(color: Color(0xFFFFC107), blurRadius: 12, spreadRadius: 3)],
-                  )
-                : c.attacking || c.blocking
+        child: Transform.translate(
+          offset: Offset(0, lunge * width * 0.12),
+          child: Transform.rotate(
+            angle: lunge * 0.05,
+            child: Stack(clipBehavior: Clip.none, children: [
+              Container(
+                // em combate: vermelho a atacar, azul a bloquear (como no Arena)
+                decoration: autoTap(c.instance.id)
                     ? BoxDecoration(
                         borderRadius: BorderRadius.circular(width * 0.06),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
+                        boxShadow: const [BoxShadow(color: Color(0xFFFFC107), blurRadius: 12, spreadRadius: 3)],
                       )
-                    : null,
-            child: TableCardView(
-              instance: c.instance,
-              card: c.card,
-              width: width,
-              showDetails: details,
-              highlighted: selectable(c.instance.id),
-              targeted: chosen(c.instance.id),
-            ),
-          ),
-          if (c.attacking || c.blocking)
-            Positioned(
-              top: -6,
-              left: -6,
-              child: _Badge(
-                icon: c.attacking ? Icons.sports_martial_arts : Icons.shield,
-                color: c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5),
+                    : c.attacking || c.blocking
+                        ? BoxDecoration(
+                            borderRadius: BorderRadius.circular(width * 0.06),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          )
+                        : null,
+                child: TableCardView(
+                  instance: c.instance,
+                  card: c.card,
+                  width: width,
+                  showDetails: details,
+                  showTapped: !c.attacking,
+                  highlighted: selectable(c.instance.id),
+                  targeted: chosen(c.instance.id),
+                ),
               ),
-            ),
-          if (c.damage > 0)
-            Positioned(
-              bottom: -4,
-              right: -4,
-              child: _Badge(text: '-${c.damage}', color: const Color(0xFFB71C1C)),
-            ),
-        ]),
+              if (c.attacking || c.blocking)
+                Positioned(
+                  top: -6,
+                  left: -6,
+                  child: _Badge(
+                    icon: c.attacking ? Icons.sports_martial_arts : Icons.shield,
+                    color: c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5),
+                  ),
+                ),
+              if (c.damage > 0)
+                Positioned(
+                  bottom: -4,
+                  right: -4,
+                  child: _Badge(text: '-${c.damage}', color: const Color(0xFFB71C1C)),
+                ),
+            ]),
+          ),
+        ),
       ),
     );
   }
@@ -977,7 +989,7 @@ class _PromptBar extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(child: Text(tr('O bot está a pensar…'), style: theme.textTheme.bodyMedium)),
           ])
-        : Text(texts!.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium);
+        : OracleText(texts!.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium);
     final priority = !busy && p.input == 'priority';
     final buttons = [
       if (priority && p.cancelKind == 'undo')
@@ -1207,12 +1219,14 @@ class _CardRow extends StatelessWidget {
         final w = (box.maxHeight * cardAspect * 0.92).clamp(24.0, 110.0);
         return ListView.separated(
           scrollDirection: Axis.horizontal,
+          // quem ataca sai um pouco da fila
+          clipBehavior: Clip.none,
           itemCount: cards.length,
           separatorBuilder: (_, __) => const SizedBox(width: 4),
           itemBuilder: (_, i) {
             final c = cards[i];
             return SizedBox(
-              width: c.instance.tapped ? w / cardAspect : w,
+              width: c.instance.tapped && !c.attacking ? w / cardAspect : w,
               child: Center(child: act.card(c, w)),
             );
           },
@@ -1244,7 +1258,7 @@ class _CenterStrip extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: stack.isEmpty
-          ? Text(_clean(last), maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall)
+          ? OracleText(_clean(last), maxLines: 2, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall)
           : Row(children: [
               for (var i = 0; i < stack.length && i < 5; i++)
                 Padding(
@@ -1266,7 +1280,7 @@ class _CenterStrip extends StatelessWidget {
                   ),
                 ),
               Expanded(
-                child: Text(
+                child: OracleText(
                   _clean(stack.first.text),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,

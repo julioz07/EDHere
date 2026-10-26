@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../bot/forge_table.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/card_view.dart';
+import '../widgets/mana.dart';
 
 /// Mostra uma pergunta do Forge e devolve a resposta no formato que o
 /// EdhereGui espera: índices (choose, order, distribute), bool (confirm) ou
@@ -41,7 +42,7 @@ Widget? _subtitle(BuildContext context, ForgeAsk ask) {
   final t = ask.title?.trim() ?? '';
   final m = ask.message?.trim() ?? '';
   if (t.isEmpty || m.isEmpty) return null;
-  return Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(m, style: Theme.of(context).textTheme.bodyMedium));
+  return Padding(padding: const EdgeInsets.only(bottom: 8), child: OracleText(m, style: Theme.of(context).textTheme.bodyMedium));
 }
 
 class _OptionTile extends StatelessWidget {
@@ -53,16 +54,43 @@ class _OptionTile extends StatelessWidget {
   final VoidCallback? onTap;
   final bool selected;
 
+  /// Cada opção é um botão (contorno, toque, cheio quando escolhido): numa
+  /// lista de texto simples não se percebia que eram escolhas.
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      selected: selected,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: card == null ? null : SizedBox(width: 40, child: CardImage(card!, radius: 3)),
-      title: Text(card?.displayName ?? option.label),
-      subtitle: card != null && option.label != card!.name && option.label != card!.displayName ? Text(option.label) : null,
-      trailing: trailing,
-      onTap: onTap,
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final detail = card != null && option.label != card!.name && option.label != card!.displayName;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: selected ? scheme.primaryContainer : scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: selected ? scheme.primary : scheme.outline, width: selected ? 2 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(children: [
+                if (card != null) ...[SizedBox(width: 40, child: CardImage(card!, radius: 3)), const SizedBox(width: 12)],
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                    OracleText(card?.displayName ?? option.label,
+                        style: text.bodyLarge?.copyWith(color: scheme.onSurface, fontWeight: FontWeight.w500)),
+                    if (detail) OracleText(option.label, style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+                  ]),
+                ),
+                if (trailing != null) trailing!,
+              ]),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -157,7 +185,7 @@ class _ConfirmDialog extends StatelessWidget {
       title: ask.title == null ? null : Text(ask.title!),
       content: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (source != null) ...[SizedBox(width: 70, child: CardImage(source!, radius: 4)), const SizedBox(width: 12)],
-        Expanded(child: Text(ask.message ?? '')),
+        Expanded(child: OracleText(ask.message ?? '')),
       ]),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: Text(no)),

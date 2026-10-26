@@ -167,10 +167,12 @@ class ManaCost extends StatelessWidget {
 
 /// Texto Oracle com os símbolos {X} desenhados em linha.
 class OracleText extends StatelessWidget {
-  const OracleText(this.text, {super.key, this.style});
+  const OracleText(this.text, {super.key, this.style, this.maxLines, this.overflow});
 
   final String text;
   final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +190,7 @@ class OracleText extends StatelessWidget {
       last = m.end;
     }
     if (last < text.length) spans.add(TextSpan(text: text.substring(last)));
-    return Text.rich(TextSpan(children: spans), style: base);
+    return Text.rich(TextSpan(children: spans), style: base, maxLines: maxLines, overflow: overflow);
   }
 }
 

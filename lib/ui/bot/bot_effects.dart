@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../bot/forge_table.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/card_view.dart';
+import '../widgets/mana.dart';
 
 /// Destaque de uma jogada do bot (como no Arena): a carta em grande sobre o
 /// campo do bot com o que vai fazer, ou as criaturas que atacam. Não tapa a
@@ -69,7 +70,7 @@ class BotSpotlight extends StatelessWidget {
         Text(title, style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
         if (effect != null && effect.isNotEmpty) ...[
           const SizedBox(height: 4),
-          Text(effect,
+          OracleText(effect,
               maxLines: 5,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white)),
@@ -80,7 +81,8 @@ class BotSpotlight extends StatelessWidget {
             const Icon(Icons.gps_fixed, color: Color(0xFFFF8A80), size: 16),
             const SizedBox(width: 6),
             Flexible(
-              child: Text(spot.targets!,
+              // o Forge escreve "[Marwyn, the Nurturer (201)]": sem parênteses retos nem ids
+              child: Text(spot.targets!.replaceAll(RegExp(r' \(\d+\)'), '').replaceAll(RegExp(r'[\[\]]'), ''),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFFF8A80))),
