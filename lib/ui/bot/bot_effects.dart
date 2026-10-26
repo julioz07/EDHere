@@ -235,6 +235,8 @@ class PhaseBar extends StatelessWidget {
       child: Row(children: [
         for (var i = 0; i < segments.length; i++)
           Expanded(
+            // no telemóvel a fase atual é mais larga, para o nome caber
+            flex: compact && i == current ? 4 : 1,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -346,4 +348,205 @@ class _AnimatedLifeState extends State<AnimatedLife> with SingleTickerProviderSt
       },
     );
   }
+}
+
+/// Três pontos a pulsar: o bot está a decidir.
+class ThinkingDots extends StatefulWidget {
+  const ThinkingDots({super.key});
+
+  @override
+  State<ThinkingDots> createState() => _ThinkingDotsState();
+}
+
+class _ThinkingDotsState extends State<ThinkingDots> with SingleTickerProviderStateMixin {
+  late final _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat();
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.tertiary;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) => Row(mainAxisSize: MainAxisSize.min, children: [
+        for (var i = 0; i < 3; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1.5),
+            child: Opacity(
+              // cada ponto acende um pouco depois do anterior
+              opacity: 0.25 + 0.75 * (0.5 + 0.5 * sin((_anim.value - i * 0.18) * 2 * pi)).clamp(0.0, 1.0),
+              child: Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+/// O fim da partida: quem ganhou (com uma entrada animada), os turnos, um
+/// gráfico da vida de cada jogador ao longo do jogo e "Revanche".
+class GameOverPanel extends StatelessWidget {
+  const GameOverPanel({
+    super.key,
+    required this.state,
+    required this.meId,
+    required this.history,
+    required this.onRematch,
+    required this.onLog,
+    required this.onLeave,
+  });
+
+  final ForgeTableState state;
+
+  /// Eu (null a ver bot contra bot).
+  final int? meId;
+  final Map<int, List<int>> history;
+  final VoidCallback onRematch;
+  final VoidCallback onLog;
+  final VoidCallback onLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final winner = state.player(state.winner ?? -1);
+    final won = meId != null && state.winner == meId;
+    final lost = meId != null && state.winner != null && state.winner != meId;
+    final title = winner == null
+        ? tr('Empate')
+        : won
+            ? tr('Ganhaste!')
+            : lost
+                ? tr('O bot ganhou')
+                : tr('{v} ganhou', {'v': winner.name});
+    final color = won
+        ? const Color(0xFF43A047)
+        : lost
+            ? const Color(0xFFE53935)
+            : theme.colorScheme.primary;
+    final colors = [theme.colorScheme.primary, const Color(0xFFE53935), const Color(0xFF43A047), Colors.amber];
+    return Container(
+      color: Colors.black.withOpacity(0.6),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(16),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutBack,
+        builder: (_, v, child) =>
+            Opacity(opacity: v.clamp(0.0, 1.0), child: Transform.scale(scale: 0.7 + 0.3 * v, child: child)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Icon(
+                    won
+                        ? Icons.emoji_events
+                        : lost
+                            ? Icons.sentiment_dissatisfied
+                            : Icons.flag,
+                    size: 48,
+                    color: color),
+                const SizedBox(height: 8),
+                Text(title,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(tr('{n} turnos', {'n': state.turn}),
+                    textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 120,
+                  child: CustomPaint(
+                    painter: _LifeChart(
+                      [for (final p in state.players) history[p.id] ?? const <int>[]],
+                      colors,
+                      theme.colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(alignment: WrapAlignment.center, spacing: 12, children: [
+                  for (var i = 0; i < state.players.length; i++)
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(width: 10, height: 10, color: colors[i % colors.length]),
+                      const SizedBox(width: 4),
+                      Text('${state.players[i].name}: ${state.players[i].life}', style: theme.textTheme.bodySmall),
+                    ]),
+                ]),
+                const SizedBox(height: 16),
+                FilledButton.icon(onPressed: onRematch, icon: const Icon(Icons.replay), label: Text(tr('Revanche'))),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+                        onPressed: onLog,
+                        child: Text(tr('Registo'))),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+                        onPressed: onLeave,
+                        child: Text(tr('Sair'))),
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LifeChart extends CustomPainter {
+  _LifeChart(this.series, this.colors, this.grid);
+
+  final List<List<int>> series;
+  final List<Color> colors;
+  final Color grid;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final all = [for (final s in series) ...s];
+    if (all.isEmpty) return;
+    final hi = all.reduce(max).toDouble();
+    final lo = min(0, all.reduce(min)).toDouble();
+    final n = series.map((s) => s.length).fold(0, max);
+    if (n < 2) return;
+    final gridPaint = Paint()
+      ..color = grid
+      ..strokeWidth = 1;
+    for (var i = 0; i <= 4; i++) {
+      final y = size.height * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    for (var k = 0; k < series.length; k++) {
+      final s = series[k];
+      if (s.length < 2) continue;
+      final path = Path();
+      for (var i = 0; i < s.length; i++) {
+        final x = size.width * i / (n - 1);
+        final y = size.height * (1 - (s[i] - lo) / max(1, hi - lo));
+        i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+      }
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = colors[k % colors.length]
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..strokeJoin = StrokeJoin.round);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LifeChart oldDelegate) => true;
 }

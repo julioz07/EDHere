@@ -40,6 +40,7 @@ class ForgePrompt {
         selectablePlayers = {for (final id in (m['selP'] as List? ?? const [])) id as int},
         chosen = {for (final id in (m['chosen'] as List? ?? const [])) id as int},
         playable = {for (final id in (m['play'] as List? ?? const [])) id as int},
+        autoTap = {for (final id in (m['auto'] as List? ?? const [])) id as int},
         input = m['input'] as String? ?? 'other',
         cancelKind = m['cancelKind'] as String?;
 
@@ -55,6 +56,9 @@ class ForgePrompt {
 
   /// Com a prioridade: as cartas com alguma jogada possível agora.
   final Set<int> playable;
+
+  /// A pagar: as fontes de mana que o botão Auto vai virar.
+  final Set<int> autoTap;
 
   /// O tipo de pergunta: priority, mulligan, attack, block, pay, select, wait ou other.
   final String input;

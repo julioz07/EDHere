@@ -20,7 +20,6 @@ import forge.game.player.IHasIcon;
 import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbilityView;
 import forge.game.spellability.StackItemView;
-import forge.ai.AvailableActions;
 import forge.gamemodes.match.AbstractGuiGame;
 import forge.gamemodes.match.input.InputPassPriority;
 import forge.gamemodes.match.Selection;
@@ -128,8 +127,10 @@ final class EdhereGui extends AbstractGuiGame {
             m.put("selP", players);
             m.put("chosen", chosen);
         }
-        List<Object> playable = playable();
-        if (!playable.isEmpty()) m.put("play", playable);
+        // o que o Forge destaca: jogáveis (prioridade), fontes de mana (a pagar),
+        // atacantes possíveis; "auto" são as fontes que o botão Auto vai virar
+        if (!weak.isEmpty()) m.put("play", new ArrayList<>(weak));
+        if (!autoTap.isEmpty()) m.put("auto", new ArrayList<>(autoTap));
         // o tipo de pergunta, para a mesa escrever as suas mensagens (as do
         // Forge para a prioridade são "Prioridade: X | Turno: N | Fase: ...")
         m.put("input", inputKind());
@@ -155,29 +156,30 @@ final class EdhereGui extends AbstractGuiGame {
         return "other";
     }
 
-    private Object playableFor;
-    private List<Object> playableIds = new ArrayList<>();
+    private final java.util.Set<Integer> weak = new java.util.LinkedHashSet<>();
+    private final java.util.Set<Integer> autoTap = new java.util.LinkedHashSet<>();
 
-    /**
-     * Com a prioridade, as cartas que se podem jogar agora (com mana e alvos),
-     * para a mesa as destacar. Calcula-se uma vez por input (os prompts chegam
-     * em várias chamadas) e com o jogo parado à espera da pessoa.
-     */
-    private List<Object> playable() {
-        if (!(getGameController() instanceof PlayerControllerHuman)) return new ArrayList<>();
-        PlayerControllerHuman h = (PlayerControllerHuman) getGameController();
-        Object input = h.getInputQueue().getInput();
-        if (!(input instanceof InputPassPriority)) return new ArrayList<>();
-        if (input != playableFor) {
-            playableFor = input;
-            playableIds = new ArrayList<>();
-            try {
-                for (CardView c : AvailableActions.collectActionable(h.getPlayer(), 300)) playableIds.add(c.getId());
-            } catch (RuntimeException e) {
-                ForgeEngine.log("playable: " + e);
+    /** As cartas que o Forge sugere (com UI_SHOW_ACTIONABLE_HIGHLIGHTS); as repetidas são o plano do Auto. */
+    @Override
+    public void setWeaklySelectable(Iterable<CardView> cards) {
+        super.setWeaklySelectable(cards);
+        synchronized (this) {
+            weak.clear();
+            autoTap.clear();
+            for (CardView c : cards) {
+                if (!weak.add(c.getId())) autoTap.add(c.getId());
             }
         }
-        return playableIds;
+        emitPrompt();
+    }
+
+    @Override
+    public void clearWeaklySelectable() {
+        super.clearWeaklySelectable();
+        synchronized (this) {
+            weak.clear();
+            autoTap.clear();
+        }
     }
 
     private static Map<String, Object> button(String label, boolean enabled) {

@@ -55,6 +55,10 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   Timer? _bannerTimer;
   int _lastTurn = 0;
 
+  /// A vida de cada jogador no início de cada turno (para o gráfico do fim).
+  final _lifeHistory = <int, List<int>>{};
+  bool _overShown = false;
+
   late BotSpeed _speed = BotSpeed.byId(ref.read(prefsProvider).getString(BotSpeed.prefKey));
 
   // Movimento: onde está cada carta, as que estão a voar (escondidas no
@@ -148,6 +152,12 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
         if (c.card != null && _requested.add(c.card!.oracleId)) c.card!,
     ];
     if (fresh.isNotEmpty) ref.read(imagesProvider).ensure(fresh);
+    // vida por turno, para o gráfico do fim
+    if (s.players.isNotEmpty && (s.turn != _lastTurn || s.over)) {
+      for (final p in s.players) {
+        _lifeHistory.putIfAbsent(p.id, () => []).add(p.life);
+      }
+    }
     // faixa no início de cada turno, a dizer de quem é
     if (s.players.isNotEmpty && s.turn > 0 && s.turn != _lastTurn && !s.over) {
       _lastTurn = s.turn;
@@ -172,6 +182,13 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       }
       if (s.over) _prompt = null;
     });
+    if (s.over && !_overShown) {
+      _overShown = true;
+      // deixa ver o último golpe antes do ecrã do fim
+      Timer(const Duration(milliseconds: 1200), () {
+        if (mounted) setState(() {});
+      });
+    }
     if (specs.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final box = _areaKey.currentContext?.findRenderObject();
@@ -402,7 +419,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                         child: IgnorePointer(
                           child: CustomPaint(
                             painter:
-                                CombatArrowsPainter(geo: _geo, origin: _areaKey, arrows: _arrows(s), pulse: _pulse),
+                                CombatArrowsPainter(geo: _geo, origin: _areaKey, arrows: s.over ? const [] : _arrows(s), pulse: _pulse),
                           ),
                         ),
                       ),
@@ -437,6 +454,19 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                               : BotSpotlight(key: ValueKey(_spot), spot: _spot!, state: s, lookup: _lookup),
                         ),
                       ),
+                      if (s.over && _overShown)
+                        Positioned.fill(
+                          child: GameOverPanel(
+                            state: s,
+                            meId: _live ? s.players.first.id : null,
+                            history: _lifeHistory,
+                            onRematch: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+                              builder: (_) => BotTableScreen(seats: widget.seats, commander: widget.commander),
+                            )),
+                            onLog: () => _showLog(s),
+                            onLeave: () => Navigator.of(context).pop(),
+                          ),
+                        ),
                       if (_peek?.card != null)
                         Positioned.fill(
                           child: CardPeek(
@@ -509,15 +539,20 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       ),
       child: SafeArea(
         child: Column(children: [
-          _PlayerBar(state: s, player: them, act: act),
+          _PlayerBar(
+              state: s, player: them, act: act, thinking: _live && !s.over && (_waiting || _prompt?.input == 'wait')),
           Expanded(child: _Battlefield(state: s, player: them.id, flipped: true, act: act)),
           PhaseBar(phase: s.phase, mine: _live && s.active == me.id, compact: narrow),
           if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act, lookup: _lookup),
           if (_live && !s.over) _PromptBar(prompt: _prompt, waiting: _waiting, onButton: _act, state: s, meId: me.id),
           Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
           _PlayerBar(state: s, player: me, act: act),
-          _Hand(cards: s.zone(me.id, Zone.hand).toList(), act: act, big: _live),
-          if (s.over) _OverBanner(state: s),
+          _Hand(
+            cards: s.zone(me.id, Zone.hand).toList(),
+            act: act,
+            big: _live,
+            mulligan: _live && !_waiting && _prompt?.input == 'mulligan',
+          ),
         ]),
       ),
     );
@@ -562,6 +597,9 @@ class _Interaction {
   bool selectable(int cardId) =>
       (prompt?.selectableCards.contains(cardId) ?? false) || (prompt?.playable.contains(cardId) ?? false);
   bool chosen(int id) => prompt?.chosen.contains(id) ?? false;
+
+  /// A pagar: as fontes que o botão Auto vai virar (o Arena destaca-as assim).
+  bool autoTap(int id) => prompt?.autoTap.contains(id) ?? false;
   bool playerSelectable(int id) => prompt?.selectablePlayers.contains(id) ?? false;
 
   /// Uma carta da mesa com os toques: tocar joga (ou abre a ficha, a ver), tocar sem largar abre a ficha.
@@ -575,18 +613,23 @@ class _Interaction {
         child: Stack(clipBehavior: Clip.none, children: [
           Container(
             // em combate: vermelho a atacar, azul a bloquear (como no Arena)
-            decoration: c.attacking || c.blocking
+            decoration: autoTap(c.instance.id)
                 ? BoxDecoration(
                     borderRadius: BorderRadius.circular(width * 0.06),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    boxShadow: const [BoxShadow(color: Color(0xFFFFC107), blurRadius: 12, spreadRadius: 3)],
                   )
-                : null,
+                : c.attacking || c.blocking
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(width * 0.06),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      )
+                    : null,
             child: TableCardView(
               instance: c.instance,
               card: c.card,
@@ -655,7 +698,8 @@ class _PromptBar extends StatelessWidget {
   final int meId;
 
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
-    final forge = p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').trim();
+    // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
+    final forge = p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim();
     String cancel() => switch (p.cancelKind) {
           'undo' => tr('Desfazer'),
           'endTurn' => tr('Terminar o turno'),
@@ -747,7 +791,10 @@ class _PromptBar extends StatelessWidget {
 /// Nome, vida e contadores de um jogador, mais o comandante e as zonas públicas.
 /// Tocar no nome ou na vida escolhe o jogador (como alvo, por exemplo).
 class _PlayerBar extends StatelessWidget {
-  const _PlayerBar({required this.state, required this.player, required this.act});
+  const _PlayerBar({required this.state, required this.player, required this.act, this.thinking = false});
+
+  /// O bot está a decidir: reticências a pulsar ao lado do nome.
+  final bool thinking;
 
   final ForgeTableState state;
   final ForgePlayer player;
@@ -801,11 +848,16 @@ class _PlayerBar extends StatelessWidget {
             onTap: act.onPlayer == null ? null : () => act.onPlayer!(player.id),
             child: Row(children: [
               Expanded(
-                child: Text(
-                  player.lost ? '${player.name} · ${tr('perdeu')}' : player.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall,
-                ),
+                child: Row(children: [
+                  Flexible(
+                    child: Text(
+                      player.lost ? '${player.name} · ${tr('perdeu')}' : player.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  if (thinking) const Padding(padding: EdgeInsets.only(left: 6), child: ThinkingDots()),
+                ]),
               ),
               AnimatedLife(life: player.life, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             ]),
@@ -1008,7 +1060,7 @@ class _StackCard extends StatelessWidget {
 }
 
 class _Hand extends StatelessWidget {
-  const _Hand({required this.cards, required this.act, this.big = false});
+  const _Hand({required this.cards, required this.act, this.big = false, this.mulligan = false});
 
   final List<ForgeCardView> cards;
   final _Interaction act;
@@ -1016,40 +1068,51 @@ class _Hand extends StatelessWidget {
   /// A jogar, a mão é maior (é daqui que saem as jogadas).
   final bool big;
 
+  /// A decidir o mulligan: a mão em grande, para se ver bem.
+  final bool mulligan;
+
   @override
   Widget build(BuildContext context) {
-    final w = big && MediaQuery.sizeOf(context).width >= 560 ? 84.0 : 62.0;
+    final size = MediaQuery.sizeOf(context);
+    final narrow = size.width < 560;
+    final w = mulligan
+        ? min(size.width / (narrow ? 3.6 : 7.5), size.height * 0.2 * cardAspect).clamp(70.0, 150.0)
+        : big && !narrow
+            ? 84.0
+            : 66.0;
+    final h = w / cardAspect;
     return SizedBox(
-      height: w / cardAspect + 8,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 4),
-        itemBuilder: (_, i) => act.card(cards[i], w, details: false),
-      ),
-    );
-  }
-}
-
-class _OverBanner extends StatelessWidget {
-  const _OverBanner({required this.state});
-
-  final ForgeTableState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final winner = state.player(state.winner ?? -1);
-    return Container(
-      width: double.infinity,
-      color: theme.colorScheme.primary,
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        winner == null ? tr('Empate') : tr('{v} ganhou', {'v': winner.name}),
-        textAlign: TextAlign.center,
-        style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimary),
-      ),
+      height: h + (narrow ? 22 : 10),
+      child: LayoutBuilder(builder: (context, box) {
+        final n = cards.length;
+        if (n == 0) return const SizedBox.shrink();
+        // Cabem lado a lado? Senão as cartas sobrepõem-se num leque (como no
+        // Arena), sem scroll: vê-se a mão toda, e a carta tocada fica por cima.
+        final avail = box.maxWidth - 16;
+        final step = n == 1 ? 0.0 : min(w + 4, (avail - w) / (n - 1));
+        final fan = narrow && step < w + 4;
+        final total = step * (n - 1) + w;
+        final left0 = (box.maxWidth - total) / 2;
+        return Stack(clipBehavior: Clip.none, children: [
+          for (var i = 0; i < n; i++)
+            Builder(builder: (context) {
+              // no leque, as das pontas descem e rodam um pouco
+              final t = n == 1 ? 0.0 : (i / (n - 1)) * 2 - 1;
+              final angle = fan ? t * 0.12 : 0.0;
+              final drop = fan ? t * t * 12 : 0.0;
+              return Positioned(
+                left: left0 + i * step,
+                top: 4 + drop,
+                width: w,
+                child: Transform.rotate(
+                  angle: angle,
+                  alignment: Alignment.bottomCenter,
+                  child: act.card(cards[i], w, details: false),
+                ),
+              );
+            }),
+        ]);
+      }),
     );
   }
 }

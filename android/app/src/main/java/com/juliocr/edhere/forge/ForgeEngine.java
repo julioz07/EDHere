@@ -80,6 +80,40 @@ public final class ForgeEngine {
     }
 
     /** Prepara os dados (só da primeira vez) e arranca o Forge. Responde com o estado. */
+    /** Para onde vai o progresso do arranque (os eventos da mesa). */
+    static volatile Sink progress;
+
+    public static void setProgressSink(Sink sink) { progress = sink; }
+
+    private static void loading(int value, int max) {
+        Sink s = progress;
+        if (s == null) return;
+        Map<String, Object> m = new HashMap<>();
+        m.put("type", "loading");
+        m.put("value", value);
+        m.put("max", max);
+        s.emit(m);
+    }
+
+    /** A barra de progresso do Forge (ler as cartas é o que demora), reenviada ao Flutter. */
+    private static final class Progress implements forge.gui.interfaces.IProgressBar {
+        private int max = 100;
+        private long last;
+        @Override public void setDescription(String s0) { }
+        @Override public void setValue(int v) {
+            long now = System.currentTimeMillis();
+            if (now - last < 150 && v < max) return;
+            last = now;
+            loading(v, max);
+        }
+        @Override public void reset() { }
+        @Override public void setShowETA(boolean b0) { }
+        @Override public void setShowCount(boolean b0) { }
+        @Override public void setPercentMode(boolean b) { }
+        @Override public int getMaximum() { return max; }
+        @Override public void setMaximum(int m) { max = Math.max(1, m); }
+    }
+
     public static synchronized void init(Context ctx, String language, Reply reply) {
         if ("ready".equals(state) || "loading".equals(state)) {
             worker.execute(() -> reply.ok(status())); // em "loading", responde depois de acabar
@@ -173,7 +207,7 @@ public final class ForgeEngine {
         // não arranca (mesmo com o forge.profile.properties a indicá-las).
         System.setProperty("user.home", dir.getAbsolutePath());
         GuiBase.setInterface(new HeadlessGui(dir.getAbsolutePath()));
-        FModel.initialize(null, prefs -> {
+        FModel.initialize(new Progress(), prefs -> {
             // Só lê o script de cada carta quando é preciso: com as 34 mil
             // carregadas, a memória chega aos 130 MB (o limite é ~192 MB).
             prefs.setPref(FPref.LOAD_CARD_SCRIPTS_LAZILY, true);
@@ -182,6 +216,9 @@ public final class ForgeEngine {
             prefs.setPref(FPref.YIELD_AUTO_PASS_NO_ACTIONS, true);
             // sem gravações de partidas (e o código delas precisa do netty, que não vem na app)
             prefs.setPref(FPref.UI_RECORD_REPLAYS, false);
+            // o Forge diz o que se pode jogar e que fontes de mana o Auto vai virar
+            prefs.setPref(FPref.UI_SHOW_ACTIONABLE_HIGHLIGHTS, true);
+            prefs.setPref(FPref.UI_SHOW_AUTOTAP_PREVIEW, true);
             return null;
         });
     }

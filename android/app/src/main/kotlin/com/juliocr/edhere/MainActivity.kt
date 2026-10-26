@@ -172,6 +172,7 @@ class MainActivity : FlutterActivity() {
             }
         })
         val sink = ForgeEngine.Sink { event -> main.post { forgeEvents?.success(event) } }
+        ForgeEngine.setProgressSink(sink)
         MethodChannel(messenger, "edhere/forge").setMethodCallHandler { call, result ->
             val reply = object : ForgeEngine.Reply {
                 override fun ok(value: Any?) {

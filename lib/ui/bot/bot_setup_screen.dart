@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:card_db/card_db.dart' hide Card;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,11 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
   BotLevel _level = BotLevel.normal;
   bool _busy = false;
 
+  /// Progresso do arranque do motor (0 a 1), enquanto não está pronto.
+  double? _loading;
+  bool _ready = false;
+  StreamSubscription<Map<String, dynamic>>? _progress;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +42,20 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     }
     // O motor demora uns segundos a arrancar: começa já, enquanto se escolhem
     // os decks. Se falhar, "Jogar" tenta outra vez e mostra o erro.
-    ForgeEngine.init().catchError((Object _) {});
+    _progress = ForgeEngine.events.listen((e) {
+      if (e['type'] != 'loading' || !mounted || _ready) return;
+      final max = (e['max'] as int?) ?? 100;
+      setState(() => _loading = ((e['value'] as int?) ?? 0) / (max <= 0 ? 100 : max));
+    });
+    ForgeEngine.init().then((_) {
+      if (mounted) setState(() => _ready = true);
+    }).catchError((Object _) {});
+  }
+
+  @override
+  void dispose() {
+    _progress?.cancel();
+    super.dispose();
   }
 
   /// [watch]: o meu deck também fica com um bot (para ver o motor a jogar).
@@ -157,6 +177,18 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
           ),
         ),
         BottomActions(children: [
+          // o motor do bot a arrancar (da primeira vez, ou com a app acabada de abrir, demora mais)
+          if (!_ready)
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              Text(
+                _loading == null
+                    ? tr('A preparar o motor do bot…')
+                    : tr('A preparar o motor do bot… {n}%', {'n': ((_loading ?? 0) * 100).round()}),
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              LinearProgressIndicator(value: _loading, minHeight: 6, borderRadius: BorderRadius.circular(3)),
+            ]),
           OutlinedButton.icon(
             onPressed: _busy || _myDeck == null || _botDeck == null ? null : () => _start(watch: true),
             icon: const Icon(Icons.visibility_outlined),
