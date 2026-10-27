@@ -48,3 +48,6 @@ tool/boosters/.cache/
 /android/app/libs/forge/
 /android/app/src/main/assets/forge/
 /tool/forge/.cache/
+
+# Caminhos privados da skill de lançamento (NAS, keystore)
+.claude/skills/release/local.md
