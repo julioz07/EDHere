@@ -94,7 +94,33 @@ List<ParsedLine> parseDeckText(String text, {bool hasCommandZone = false}) {
     if (m == null) continue;
     final name = m.group(2)!.trim();
     if (name.isEmpty) continue;
-    final category = m.group(5)?.split(',').first.trim();
+    // Categorias do Archidekt: "[Commander{top}]", "[Ramp,Commander{top}]",
+    // "[Maybeboard{noDeck}{noPrice}]". Uma categoria que é uma zona (Commander,
+    // Sideboard, Maybeboard...) põe a carta nessa zona; {noDeck} quer dizer que
+    // não conta para o deck (fica no maybeboard). As outras são categorias.
+    final cats = [
+      for (final c in (m.group(5) ?? '').split(','))
+        if (c.trim().isNotEmpty) c.trim(),
+    ];
+    String plain(String c) => c.replaceAll(RegExp(r'\{[^}]*\}'), '').trim();
+    // só os nomes exatos das zonas: uma categoria "Side Effects" não é o sideboard
+    Board? zoneOf(String c) => const {
+          'commander': Board.command,
+          'commanders': Board.command,
+          'oathbreaker': Board.command,
+          'signature spell': Board.command,
+          'sideboard': Board.side,
+          'companion': Board.side,
+          'maybeboard': Board.maybe,
+          'considering': Board.maybe,
+        }[plain(c).toLowerCase()];
+    final zone = cats.map(zoneOf).whereType<Board>().firstOrNull;
+    if (zone != null) {
+      lineBoard = zone;
+    } else if (cats.any((c) => c.contains('{noDeck}'))) {
+      lineBoard = Board.maybe;
+    }
+    final category = cats.where((c) => zoneOf(c) == null).map(plain).where((c) => c.isNotEmpty).firstOrNull;
     blocks.last.add(ParsedLine(
       int.tryParse(m.group(1) ?? '') ?? 1,
       name,

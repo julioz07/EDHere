@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../app/theme.dart';
 import '../data/providers.dart';
 import '../data/settings.dart';
 import 'data/data_tab.dart';
@@ -158,7 +159,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: _last
                     ? null
                     : TextButton(
-                        style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                        style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                         onPressed: () => _go(_slides.length - 1),
                         child: Text(tr('Saltar')),
                       ),
@@ -197,14 +198,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         // Em que língua vêm as cartas (nome, texto e imagem).
                         if (!hasData) const CardLanguageTile(contentPadding: EdgeInsets.zero),
                         FilledButton.icon(
-                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(EdhSize.button)),
                           onPressed: () => _finish(download: true),
                           icon: Icon(hasData ? Icons.check_rounded : Icons.download_rounded),
                           label: Text(hasData ? tr('Começar') : tr('Descarregar as cartas e começar')),
                         ),
                         if (!hasData)
                           TextButton(
-                            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(EdhSize.button)),
                             onPressed: () => _finish(download: false),
                             child: Text(tr('Mais tarde (Definições → Dados)')),
                           ),
@@ -212,13 +213,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     : Row(children: [
                         if (_page > 0)
                           TextButton(
-                            style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
+                            style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                             onPressed: () => _go(_page - 1),
                             child: Text(tr('Anterior')),
                           ),
                         const Spacer(),
                         FilledButton.icon(
-                          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                          style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                           onPressed: () => _go(_page + 1),
                           icon: const Icon(Icons.arrow_forward_rounded),
                           label: Text(tr('Seguinte')),

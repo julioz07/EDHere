@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app/theme.dart';
 import '../../data/providers.dart';
 import '../../tutorial/tutorial.dart';
 import '../../tutorial/tutorial_runner.dart';
@@ -187,7 +188,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         builder: (ctx) {
           final theme = Theme.of(ctx);
           return AlertDialog(
-            icon: const Icon(Icons.emoji_events, size: 48, color: Colors.amber),
+            icon: const Icon(Icons.emoji_events, size: 48, color: GameColors.gold),
             title: Text(tr('Tutorial concluído!')),
             content: SingleChildScrollView(
               child: Column(
@@ -273,14 +274,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             const Spacer(),
             if (_page > 0)
               TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                 onPressed: () =>
                     _pages.previousPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut),
                 child: Text(tr('Anterior')),
               ),
             const SizedBox(width: 8),
             FilledButton.icon(
-              style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
               onPressed: () {
                 if (!last) {
                   _pages.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
@@ -329,7 +330,7 @@ class _LessonPage extends ConsumerWidget {
                   width: 128,
                   child: Column(children: [
                     Stack(children: [
-                      CardImage(prints.resolve(c), radius: 8),
+                      CardImage(prints.resolve(c)),
                       if (tc.ok != null)
                         Positioned(
                           right: 4,

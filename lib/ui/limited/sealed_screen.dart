@@ -12,6 +12,7 @@ import '../widgets/set_symbol.dart';
 import 'limited_builder.dart';
 import 'limited_common.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 
 /// Escolher um set (com pesquisa), do mais recente para o mais antigo.
 Future<db.BoosterSetInfo?> showSetPicker(BuildContext context, List<db.BoosterSetInfo> sets) {
@@ -366,17 +367,17 @@ class _PackOpeningScreenState extends ConsumerState<PackOpeningScreen> {
               ),
               if (!all) ...[
                 TextButton(
-                    style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                    style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                     onPressed: () => setState(() => _opened = _packs.length),
                     child: Text(tr('Abrir todos'))),
                 const SizedBox(width: 8),
                 FilledButton(
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                     onPressed: () => setState(() => _opened++),
                     child: Text(tr('Abrir o próximo'))),
               ] else
                 FilledButton.icon(
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.button)),
                   onPressed: _build,
                   icon: const Icon(Icons.construction),
                   label: Text(tr('Montar o deck')),

@@ -51,3 +51,6 @@ tool/boosters/.cache/
 
 # Caminhos privados da skill de lançamento (NAS, keystore)
 .claude/skills/release/local.md
+
+# build dos pacotes (testes)
+packages/*/build/

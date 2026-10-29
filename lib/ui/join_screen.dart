@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../app/theme.dart';
 import '../net/discovery.dart';
 import '../net/join_code.dart';
 import '../net/network_util.dart';
@@ -106,7 +107,7 @@ class _JoinScreenState extends State<JoinScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(80, 40)),
+            style: FilledButton.styleFrom(minimumSize: const Size(80, EdhSize.buttonCompact)),
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
             child: Text(tr('Entrar')),
           ),
@@ -165,7 +166,7 @@ class _JoinScreenState extends State<JoinScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size(80, 40)),
+            style: FilledButton.styleFrom(minimumSize: const Size(80, EdhSize.buttonCompact)),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(tr('Ligar')),
           ),

@@ -394,6 +394,7 @@ public final class ForgeEngine {
                 else observer.setHumans(java.util.Collections.singletonList(p));
             }
             observer.attach(g);
+            ForgeBots.thinker = observer;
         }
 
         private void run() {
@@ -466,6 +467,7 @@ public final class ForgeEngine {
 
         void stop() {
             observer.stop();
+            if (ForgeBots.thinker == observer) ForgeBots.thinker = null;
             if (gui != null) {
                 gui.close();
                 IGameController c = gui.controller();

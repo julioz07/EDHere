@@ -1,0 +1,7 @@
+[
+  ["=Escolhe um jogador:", "Choose a player:", "Elige un jugador:", "Scegli un giocatore:"],
+  ["=Tu", "You", "Tú", "Tu"],
+  ["=Não atacar", "No attacks", "No atacar", "Non attaccare"],
+  ["=Não bloquear", "No blocks", "No bloquear", "Non bloccare"],
+  ["=Escolher {v} como alvo", "Choose {v} as the target", "Elegir a {v} como objetivo", "Scegli {v} come bersaglio"]
+]

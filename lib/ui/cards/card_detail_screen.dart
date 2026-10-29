@@ -155,7 +155,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340),
-              child: CardImage(card, face: card.hasFaceImages ? _face : 0, preferNormal: true, radius: 14),
+              child: CardImage(card, face: card.hasFaceImages ? _face : 0, preferNormal: true),
             ),
           ),
           if (card.hasFaceImages)
@@ -178,7 +178,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           const SizedBox(height: 10),
           Center(
             child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
               onPressed: _chooseVersion,
               icon: const Icon(Icons.collections_outlined),
               label: Text(_versionCount == null

@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../game/game_controller.dart';
 import '../cards/card_detail_screen.dart';
 import '../widgets/card_view.dart';
+import '../widgets/life_delta.dart';
 import '../widgets/mana.dart';
 import 'table_card.dart';
 import 'table_turns.dart';
@@ -155,10 +156,10 @@ Widget _loyaltyTile(BuildContext context, LoyaltyAbility a, int loyalty, VoidCal
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: a.delta > 0 || (a.x && a.cost.startsWith('+'))
-            ? const Color(0xFF2E7D32)
+            ? GameColors.counterPlus
             : a.delta < 0 || a.x
-                ? const Color(0xFFC62828)
-                : const Color(0xFF6C4BB6),
+                ? GameColors.counterMinus
+                : GameColors.counterLoyalty,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(a.cost,
@@ -312,7 +313,7 @@ Future<void> moveMaybeToCommand(BuildContext context, GameController ctrl, CardI
   final command = await showTableDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      icon: const Icon(Icons.star_rounded, color: Colors.amber),
+      icon: const Icon(Icons.star_rounded, color: GameColors.gold),
       title: Text(_goesTo(name, to)),
       content: Text(tr('Na regra do Commander, o dono pode pô-lo na zona de comando em vez disso.')),
       actions: [
@@ -800,7 +801,7 @@ Future<void> showBottomPicker(BuildContext context, GameController ctrl, int n) 
                             opacity: chosen.contains(pc.pid) ? 0.4 : 1,
                             child: ctrl.card(pc.oracleId, printId: pc.printId) == null
                                 ? const CardBack()
-                                : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 4),
+                                : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!),
                           ),
                         ),
                     ],
@@ -858,7 +859,7 @@ Future<void> showScrySheet(BuildContext context, GameController ctrl, int n, {re
                           width: 40,
                           child: ctrl.card(pc.oracleId, printId: pc.printId) == null
                               ? const CardBack()
-                              : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!, radius: 3),
+                              : CardImage(ctrl.card(pc.oracleId, printId: pc.printId)!),
                         ),
                         title: Text(ctrl.cardName(pc.oracleId)),
                         trailing: kind == 'look'
@@ -1061,14 +1062,20 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
                         onPressed: () => ctrl.life(seat, d),
+                        // manter premido o −1 tira 10
+                        onLongPress: d == -1 ? () => ctrl.life(seat, -10) : null,
                         child: Text('$d'),
                       ),
                     ),
                   SizedBox(
                     width: 96,
-                    child: Text('${p.life}',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text('${p.life}',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                      // a altura fica guardada: o número não salta quando aparece a soma
+                      SizedBox(height: 18, child: LifeDelta(life: p.life, fontSize: 14)),
+                    ]),
                   ),
                   for (final d in [1, 5])
                     Padding(
@@ -1076,10 +1083,15 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
                         onPressed: () => ctrl.life(seat, d),
+                        onLongPress: d == 1 ? () => ctrl.life(seat, 10) : null,
                         child: Text('+$d'),
                       ),
                     ),
                 ]),
+                Center(
+                  child: Text(tr('Mantém premido o −1 ou o +1 para mudar 10.'),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                ),
                 if (enemyCommanders.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -1092,7 +1104,7 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                       p.commanderDamage[c.id] ?? 0,
                       (d) => ctrl.commanderDamage(seat, c.id, d),
                       leading: Icon(Icons.star_rounded,
-                          color: (p.commanderDamage[c.id] ?? 0) >= 21 ? EdhColors.bad : Colors.amber),
+                          color: (p.commanderDamage[c.id] ?? 0) >= 21 ? EdhColors.bad : GameColors.gold),
                     ),
                 ],
                 const Divider(),

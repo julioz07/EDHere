@@ -135,8 +135,7 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.inventory_2_outlined, size: 14, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 3),
-        Text('$owned',
-            style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
+        Text('$owned', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary)),
       ]),
     );
     if (extra == null) return badge;
@@ -204,25 +203,30 @@ class _CardSearchViewState extends ConsumerState<CardSearchView> {
             child: Row(children: [
               Text(_total == 1 ? tr('1 carta') : tr('{total} cartas', {'total': _total}),
                   style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const Spacer(),
-              // Ordenar sem saber a sintaxe "order:".
-              for (final (id, label) in [
-                ('name', tr('Nome')),
-                ('edhrec', tr('Popular')),
-                ('mv', tr('Custo'))
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(label, style: const TextStyle(fontSize: 12)),
-                    selected: _order == id,
-                    onSelected: (_) {
-                      setState(() => _order = id);
-                      _run();
-                    },
-                  ),
+              const SizedBox(width: 8),
+              // Ordenar sem saber a sintaxe "order:". Com scroll: a 360 dp com
+              // letra grande os três não cabem ao lado da contagem.
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: true,
+                  child: Row(children: [
+                    for (final (id, label) in [('name', tr('Nome')), ('edhrec', tr('Popular')), ('mv', tr('Custo'))])
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: ChoiceChip(
+                          visualDensity: VisualDensity.compact,
+                          label: Text(label, style: const TextStyle(fontSize: 12)),
+                          selected: _order == id,
+                          onSelected: (_) {
+                            setState(() => _order = id);
+                            _run();
+                          },
+                        ),
+                      ),
+                  ]),
                 ),
+              ),
             ]),
           ),
         Expanded(
@@ -305,8 +309,7 @@ void showSearchHelp(BuildContext context) {
               child: Row(children: [
                 SizedBox(
                   width: 170,
-                  child: Text(code,
-                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
+                  child: Text(code, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600)),
                 ),
                 Expanded(child: Text(desc)),
               ]),

@@ -14,6 +14,7 @@ import '../widgets/responsive.dart';
 import '../widgets/set_symbol.dart';
 import 'limited_common.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 
 /// Nomes dos produtos JumpStart (o código vem do MTGJSON).
 const _jumpstartNames = {
@@ -167,7 +168,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+                      style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                       onPressed: () {
                         setState(_chosen.clear);
                         _deal();
@@ -222,7 +223,7 @@ class _JumpstartScreenState extends ConsumerState<JumpstartScreen> {
                 const SizedBox(height: 12),
                 Center(
                   child: TextButton.icon(
-                    style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                    style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                     onPressed: _deal,
                     icon: const Icon(Icons.refresh),
                     label: Text(tr('Outros três')),
@@ -328,16 +329,12 @@ class _PacketCard extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(children: [
-            Text(packet.theme,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                textAlign: TextAlign.center),
+            // uma linha que encolhe: em três colunas no telemóvel partia a meio ("Predato/ry")
+            FitText(packet.theme, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               SetSymbol(packet.set, rarity: 'R', size: 16),
               const SizedBox(width: 6),
-              Flexible(
-                child: Text(_jumpstartNames[packet.set] ?? packet.set,
-                    style: theme.textTheme.bodySmall, overflow: TextOverflow.ellipsis),
-              ),
+              Flexible(child: FitText(_jumpstartNames[packet.set] ?? packet.set, style: theme.textTheme.bodySmall)),
             ]),
             if (colors.isNotEmpty) ...[
               const SizedBox(height: 4),
@@ -347,11 +344,11 @@ class _PacketCard extends ConsumerWidget {
               ]),
             ],
             const SizedBox(height: 8),
-            if (shown != null) CardImage(shown, radius: 8) else const CardBack(),
+            if (shown != null) CardImage(shown) else const CardBack(),
             const SizedBox(height: 8),
             FilledButton.tonal(
               style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 40), padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  minimumSize: const Size(0, EdhSize.buttonCompact), padding: const EdgeInsets.symmetric(horizontal: 8)),
               onPressed: onTap,
               child: FittedBox(child: Text(tr('Escolher'))),
             ),

@@ -8,15 +8,21 @@ import 'mana.dart';
 
 const double cardAspect = 488 / 680;
 
+/// O canto de uma carta, em fração da largura (numa carta real, cerca de 5%):
+/// todas as cartas da app, grandes ou pequenas, frente ou verso, usam este.
+const double cardCorner = 0.05;
+
 /// Imagem de uma carta, ou a "carta de texto" quando não há imagem offline.
 /// As imagens nunca são cortadas nem alteradas (regras do Scryfall).
 class CardImage extends ConsumerWidget {
-  const CardImage(this.card, {super.key, this.face = 0, this.preferNormal = false, this.radius = 8});
+  const CardImage(this.card, {super.key, this.face = 0, this.preferNormal = false, this.radius});
 
   final db.Card card;
   final int face;
   final bool preferNormal;
-  final double radius;
+
+  /// Só para casos especiais; por defeito, [cardCorner] da largura.
+  final double? radius;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,16 +33,18 @@ class CardImage extends ConsumerWidget {
         (base == null ? null : images.best(card.hasFaceImages ? '${base}_$face' : base, preferNormal: preferNormal));
     return AspectRatio(
       aspectRatio: cardAspect,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: file == null
-            ? TextCard(card, face: face)
-            : Image.file(
-                file,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => TextCard(card, face: face),
-              ),
+      child: LayoutBuilder(
+        builder: (context, box) => ClipRRect(
+          borderRadius: BorderRadius.circular(radius ?? box.maxWidth * cardCorner),
+          child: file == null
+              ? TextCard(card, face: face)
+              : Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) => TextCard(card, face: face),
+                ),
+        ),
       ),
     );
   }
@@ -193,7 +201,7 @@ class CardTile extends StatelessWidget {
   final int? leadingQty;
   final String? subtitle;
 
-  /// Largura da miniatura (as listas de deck usam maior).
+  /// Largura da miniatura (as listas de deck usam maior); 0 = sem miniatura.
   final double thumbWidth;
 
   @override
@@ -219,8 +227,10 @@ class CardTile extends StatelessWidget {
                 child:
                     Text('$leadingQty', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
               ),
-            SizedBox(width: thumbWidth, child: CardImage(card, radius: thumbWidth * 0.06)),
-            const SizedBox(width: 12),
+            if (thumbWidth > 0) ...[
+              SizedBox(width: thumbWidth, child: CardImage(card)),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

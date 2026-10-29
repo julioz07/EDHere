@@ -1,0 +1,8 @@
+[
+  ["=Bot {n}", "Bot {n}", "Bot {n}", "Bot {n}"],
+  ["=Commander a {n}: tu contra {b} bots, com as regras completas. Cada bot pensa na sua vez, por isso a partida é mais longa, como numa mesa a sério.", "{n}-player Commander: you against {b} bots, with the full rules. Each bot thinks on its turn, so the game takes longer, just like a real table.", "Commander a {n}: tú contra {b} bots, con las reglas completas. Cada bot piensa en su turno, así que la partida es más larga, como en una mesa de verdad.", "Commander a {n}: tu contro {b} bot, con le regole complete. Ogni bot pensa nel suo turno, quindi la partita è più lunga, come a un tavolo vero."],
+  ["=Adversários", "Opponents", "Rivales", "Avversari"],
+  ["=Este aparelho tem pouca memória para {n} bots: a partida pode ficar lenta. Com 1 ou 2 corre melhor.", "This device is low on memory for {n} bots: the game may be slow. It runs better with 1 or 2.", "Este dispositivo tiene poca memoria para {n} bots: la partida puede ir lenta. Con 1 o 2 va mejor.", "Questo dispositivo ha poca memoria per {n} bot: la partita potrebbe essere lenta. Con 1 o 2 va meglio."],
+  ["=O deck do bot {n}", "Bot {n}'s deck", "El mazo del bot {n}", "Il mazzo del bot {n}"],
+  ["=Mesa de {v}", "{v}'s battlefield", "Mesa de {v}", "Tavolo di {v}"]
+]

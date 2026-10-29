@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import '../about_screen.dart';
 import '../widgets/responsive.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 
 String formatBytes(int b) {
   if (b < 1024 * 1024) return tr('{v} KB', {'v': (b / 1024).toStringAsFixed(0)});
@@ -293,13 +294,13 @@ class _StorageState extends ConsumerState<_Storage> {
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
             OutlinedButton(
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
               onPressed: _measure,
               child: Text(tr('Medir')),
             ),
             for (final size in ['small', 'normal'])
               OutlinedButton(
-                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                 onPressed: images.job != null
                     ? null
                     : () async {

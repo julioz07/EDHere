@@ -63,8 +63,8 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (1.8.1)
-Correções no jogo contra o bot: custos de mana com símbolos, criaturas a atacar já não ocupam o dobro do espaço e as escolhas entre efeitos aparecem como botões.
+### Notas da versão (1.9.1)
+Joga contra até 4 bots numa mesa de Commander, com uma cor por jogador e o bot a mostrar o que está a pensar. Visual novo no menu Jogar, na lista de decks e na mesa. Estatísticas do deck com rampa, compra, remoção e tutores, e a probabilidade de os ter na mão inicial; o bracket reconhece combos famosos. Na mesa, manter premido o +/− muda a vida em 10. Os bots podem jogar com um deck aleatório. Muitas correções em telemóveis pequenos e textos do bot mais claros.
 
 ---
 
@@ -127,8 +127,8 @@ You only need the internet to download the cards once (about 25 MB) and their im
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (1.8.1)
-Fixes in games against the bot: mana costs shown as symbols, attacking creatures no longer take twice the space, and choices between effects appear as buttons.
+### Release notes (1.9.1)
+Play against up to 4 bots at a Commander table, with one color per player and the bot showing what it is thinking. New look for the Play menu, the deck list and the table. Deck stats show ramp, draw, removal and tutors, with the odds of having them in your opening hand; the bracket spots famous combos. At the table, holding +/− changes life by 10. Bots can play a random deck. Many fixes for small phones and clearer bot texts.
 
 ---
 
@@ -191,8 +191,8 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (1.8.1)
-Correcciones en las partidas contra el bot: costes de maná con símbolos, las criaturas atacantes ya no ocupan el doble de espacio y las opciones entre efectos aparecen como botones.
+### Notas de la versión (1.9.1)
+Juega contra hasta 4 bots en una mesa de Commander, con un color por jugador y el bot mostrando lo que está pensando. Nuevo aspecto del menú Jugar, la lista de mazos y la mesa. Las estadísticas del mazo muestran rampa, robo, eliminación y tutores, con la probabilidad de tenerlos en la mano inicial; el bracket reconoce combos famosos. En la mesa, mantener pulsado +/− cambia la vida en 10. Los bots pueden jugar con un mazo aleatorio. Correcciones en móviles pequeños y textos del bot más claros.
 
 ---
 
@@ -255,5 +255,5 @@ Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro imm
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (1.8.1)
-Correzioni nelle partite contro il bot: costi di mana con simboli, le creature attaccanti non occupano più il doppio dello spazio e le scelte tra effetti appaiono come pulsanti.
+### Note sulla versione (1.9.1)
+Gioca contro fino a 4 bot a un tavolo Commander, con un colore per giocatore e il bot che mostra cosa sta pensando. Nuovo aspetto per il menu Gioca, la lista dei mazzi e il tavolo. Le statistiche del mazzo mostrano rampa, pescaggio, rimozione e tutor, con la probabilità di averli nella mano iniziale; il bracket riconosce le combo famose. Al tavolo, tenere premuto +/− cambia la vita di 10. I bot possono giocare con un mazzo casuale. Correzioni per telefoni piccoli e testi del bot più chiari.

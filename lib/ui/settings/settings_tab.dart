@@ -68,11 +68,11 @@ class SettingsTab extends ConsumerWidget {
               ButtonSegment(
                   value: ThemeMode.system,
                   icon: const Icon(Icons.brightness_auto),
-                  label: Text(tr('Sistema'))),
+                  label: FitText(tr('Sistema'))),
               ButtonSegment(
-                  value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: Text(tr('Escuro'))),
+                  value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: FitText(tr('Escuro'))),
               ButtonSegment(
-                  value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: Text(tr('Claro'))),
+                  value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: FitText(tr('Claro'))),
             ],
             selected: {s.themeMode},
             onSelectionChanged: (v) => s.themeMode = v.first,

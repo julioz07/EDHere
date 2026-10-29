@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import '../../data/settings.dart';
 import '../../game/game_controller.dart';
 import '../widgets/card_view.dart';
+import '../widgets/life_delta.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'table_card.dart';
@@ -108,6 +109,50 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       _wasOver = false;
     }
     _maybeAskMulligan();
+    _checkLethal();
+  }
+
+  /// Os meus lugares que chegaram a um valor que mata e ainda não estão derrotados.
+  final Set<int> _lethalAsked = {};
+
+  /// Como nos contadores de vida: aos 0 de vida, 10 de veneno ou 21 de dano de um
+  /// comandante, pergunta (sem bloquear) se o jogador foi derrotado. Só nos meus
+  /// lugares, para não aparecer em todos os telemóveis; volta a perguntar se o
+  /// valor descer e subir outra vez.
+  void _checkLethal() {
+    final s = ctrl.state;
+    if (!s.started || s.over || ctrl.scripted) return;
+    for (final seat in ctrl.mySeats) {
+      final p = s.players[seat];
+      if (p == null) continue;
+      final poison = p.counters[PlayerCounter.poison] ?? 0;
+      final cmd = p.commanderDamage.values.fold(0, (a, b) => a > b ? a : b);
+      final reason = p.defeated
+          ? null
+          : p.life <= 0
+              ? tr('{v} está com {n} de vida.', {'v': p.name, 'n': p.life})
+              : poison >= 10
+                  ? tr('{v} tem {n} marcadores de veneno.', {'v': p.name, 'n': poison})
+                  : cmd >= 21
+                      ? tr('{v} levou {n} de dano de um só comandante.', {'v': p.name, 'n': cmd})
+                      : null;
+      if (reason == null) {
+        _lethalAsked.remove(seat);
+        continue;
+      }
+      if (!_lethalAsked.add(seat)) continue;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(reason),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: tr('Derrotado'),
+            onPressed: () => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': true})),
+          ),
+        ));
+      });
+    }
   }
 
   /// Dados, moeda e sorteio aparecem em grande para toda a gente ver.
@@ -201,7 +246,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                         children: [
                           for (final pc in hand)
                             if (ctrl.card(pc.oracleId, printId: pc.printId) case final c?)
-                              CardImage(c, radius: 4)
+                              CardImage(c)
                             else
                               const CardBack(),
                         ],
@@ -286,7 +331,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : Colors.amber, size: 40),
+        icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : GameColors.gold, size: 40),
         title: Text(winner == null
             ? tr('Jogo terminado')
             : iWon
@@ -481,7 +526,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
                         child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
-                            color: s.dayNight == 'night' ? Colors.indigo.shade200 : Colors.amber),
+                            color: s.dayNight == 'night' ? Colors.indigo.shade200 : GameColors.gold),
                       ),
                     ActionChip(
                       label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
@@ -655,6 +700,12 @@ class _PlayersStrip extends StatelessWidget {
               final maxCmd = p.commanderDamage.values.fold(0, (m, v) => v > m ? v : m);
               final poison = p.counters[PlayerCounter.poison] ?? 0;
               final targeted = s.targets.any((t) => t.seat == seat);
+              // a mesma linguagem da mesa do bot: uma cor por lugar, numa faixa em
+              // cima; o ativo com o contorno nessa cor, o que está em vista tingido
+              final color = GameColors.player(seats.indexOf(seat));
+              final bg = viewing
+                  ? Color.alphaBlend(color.withOpacity(0.22), theme.colorScheme.surface)
+                  : theme.colorScheme.surface;
               return Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: GestureDetector(
@@ -666,15 +717,22 @@ class _PlayersStrip extends StatelessWidget {
                   onLongPress: () => showPlayerSheet(context, ctrl, seat),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.fromLTRB(10, 7, 10, 3),
                     decoration: BoxDecoration(
-                      color: viewing ? theme.colorScheme.primaryContainer : theme.colorScheme.surface,
+                      // a faixa de cor em cima faz parte do fundo (um gradiente de paragem
+                      // seca): numa lista horizontal não há largura para uma faixa à parte
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: const [0, 0.07, 0.07, 1],
+                        colors: [color, color, bg, bg],
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: targeted
                             ? targetGlow
                             : isActive
-                                ? theme.colorScheme.primary
+                                ? color
                                 : theme.colorScheme.outline,
                         width: isActive || targeted ? 2.5 : 1,
                       ),
@@ -695,7 +753,7 @@ class _PlayersStrip extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(mainAxisSize: MainAxisSize.min, children: [
-                              if (s.monarch == seat) const Icon(Icons.workspace_premium, size: 14, color: Colors.amber),
+                              if (s.monarch == seat) const Icon(Icons.workspace_premium, size: 14, color: GameColors.gold),
                               if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
                               if (ctrl.offline.contains(seat))
                                 Padding(
@@ -721,13 +779,14 @@ class _PlayersStrip extends StatelessWidget {
                         Text('${p.life}',
                             style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800, color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
+                        LifeDelta(life: p.life, fontSize: 12),
                         if (poison > 0 || maxCmd > 0) ...[
                           const SizedBox(width: 6),
                           Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                             if (poison > 0) Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
                             if (maxCmd > 0)
                               Text('★$maxCmd',
-                                  style: TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : Colors.amber)),
+                                  style: TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : GameColors.gold)),
                           ]),
                         ],
                       ]),
@@ -1180,9 +1239,9 @@ class _TableHandState extends ConsumerState<TableHand> {
                                     BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
                                   ],
                                 ),
-                                child: CardImage(card, radius: 5),
+                                child: CardImage(card),
                               )
-                            : CardImage(card, radius: 5),
+                            : CardImage(card),
                   ]),
                 ),
               );
@@ -1196,7 +1255,7 @@ class _TableHandState extends ConsumerState<TableHand> {
                   color: Colors.transparent,
                   child: SizedBox(
                     width: cardW * 1.15,
-                    child: card == null ? const CardBack() : CardImage(card, radius: 6),
+                    child: card == null ? const CardBack() : CardImage(card),
                   ),
                 ),
                 childWhenDragging: Opacity(opacity: 0.3, child: item),
@@ -1246,7 +1305,7 @@ class _BottomBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+            style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
             onPressed: myTurn || !ctrl.isNetwork ? ctrl.passTurn : null,
             icon: const Icon(Icons.skip_next),
             label: Text(tr('Passar turno')),

@@ -14,11 +14,13 @@ O Forge fica preso a um commit (FORGE_COMMIT) para os builds serem iguais.
 Uso (no PC, com JDK 17+ e Maven):
     python tool/forge/build_forge.py
     python tool/forge/build_forge.py --src C:/caminho/forge --mvn C:/maven/bin/mvn
+    python tool/forge/build_forge.py --languages   (só as correções das línguas)
 
 Sem --src, o código do Forge é clonado para tool/forge/.cache/forge (fora do git).
 """
 
 import argparse
+import hashlib
 import io
 import os
 import shutil
@@ -95,13 +97,18 @@ def build_res(src):
     res = os.path.join(src, 'forge-gui', 'res')
     os.makedirs(os.path.dirname(RES_OUT), exist_ok=True)
 
+    fixed = card_overrides()
     cards = io.BytesIO()
     with zipfile.ZipFile(cards, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         folder = os.path.join(res, 'cardsfolder')
         for dirpath, _, files in os.walk(folder):
             for f in sorted(files):
                 path = os.path.join(dirpath, f)
-                z.write(path, os.path.relpath(path, folder).replace(os.sep, '/'))
+                name = os.path.relpath(path, folder).replace(os.sep, '/')
+                if name in fixed:
+                    z.writestr(name, fixed[name])
+                else:
+                    z.write(path, name)
 
     with zipfile.ZipFile(RES_OUT, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         # já vem comprimido: guardado tal como está
@@ -112,9 +119,110 @@ def build_res(src):
                     path = os.path.join(dirpath, f)
                     z.write(path, 'res/' + os.path.relpath(path, res).replace(os.sep, '/'))
         for lang in LANGUAGES:
-            z.write(os.path.join(res, 'languages', f'{lang}.properties'), f'res/languages/{lang}.properties')
-        z.writestr('VERSION', FORGE_COMMIT + '\n')
+            with open(os.path.join(res, 'languages', f'{lang}.properties'), encoding='utf-8') as f:
+                z.writestr(f'res/languages/{lang}.properties', patch_language(lang, f.read()))
+        z.writestr('VERSION', res_version() + '\n')
     print(f'dados: {RES_OUT} ({os.path.getsize(RES_OUT) / 1e6:.1f} MB)')
+
+
+# As línguas do Forge com as nossas correções (tool/forge/overrides/<língua>.properties).
+# O pt-BR é a língua do bot para quem usa a app em português de Portugal: o
+# Forge trata por "você", aqui trata-se por tu nas perguntas mais comuns.
+OVERRIDES = os.path.join(ROOT, 'overrides')
+PT_RULES = [('Você quer ', 'Queres '), ('você quer ', 'queres '), ('Você deseja ', 'Queres '),
+            ('você deseja ', 'queres '), ('Você pode ', 'Podes '), ('você pode ', 'podes '),
+            ('Você tem ', 'Tens '), ('você tem ', 'tens '),
+            # pedidos: imperativo por tu e possessivos de Portugal (as contrações primeiro)
+            ('=Escolha ', '=Escolhe '), ('=Selecione ', '=Seleciona '),
+            (' de sua mão', ' da tua mão'), (' em sua mão', ' na tua mão'), (' na sua mão', ' na tua mão'),
+            (' sua mão', ' a tua mão'),
+            (' de seu grimório', ' do teu grimório'), (' em seu grimório', ' no teu grimório'),
+            (' no seu grimório', ' no teu grimório'), (' seu grimório', ' o teu grimório'),
+            (' de seu cemitério', ' do teu cemitério'), (' em seu cemitério', ' no teu cemitério'),
+            (' no seu cemitério', ' no teu cemitério'), (' seu cemitério', ' o teu cemitério')]
+
+
+def overrides(lang):
+    path = os.path.join(OVERRIDES, f'{lang}.properties')
+    fixes = {}
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            for line in f.read().splitlines():
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    fixes[key] = value
+    return fixes
+
+
+def patch_language(lang, text):
+    fixes = overrides(lang)
+    out = []
+    for line in text.splitlines():
+        key = line.split('=', 1)[0] if '=' in line and not line.startswith('#') else None
+        if key in fixes:
+            line = f'{key}={fixes.pop(key)}'
+        elif lang == 'pt-BR' and key:
+            for a, b in PT_RULES:
+                line = line.replace(a, b)
+        out.append(line)
+    out += [f'{k}={v}' for k, v in fixes.items()]
+    return '\n'.join(out) + '\n'
+
+
+# Guiões de cartas com dicas para a IA (tool/forge/overrides/cards/<letra>/<carta>.txt),
+# no lugar dos do Forge. Vêm do Grimório (github.com/hubertdungen/grimorio, GPL-3.0):
+# só os que diferem do nosso Forge numa dica para a IA, com as regras iguais.
+CARD_OVERRIDES = os.path.join(OVERRIDES, 'cards')
+
+
+def card_overrides():
+    """{caminho no cardsfolder: conteúdo} das cartas corrigidas."""
+    fixed = {}
+    for dirpath, _, files in os.walk(CARD_OVERRIDES):
+        for f in sorted(files):
+            if f.endswith('.txt'):
+                path = os.path.join(dirpath, f)
+                with open(path, 'rb') as fh:
+                    fixed[os.path.relpath(path, CARD_OVERRIDES).replace(os.sep, '/')] = fh.read()
+    return fixed
+
+
+def res_version():
+    """O commit do Forge mais uma marca das correções: a app só volta a extrair
+    os dados quando isto muda, por isso uma correção nova tem de o mudar."""
+    h = hashlib.sha1(repr(PT_RULES).encode())
+    for lang in LANGUAGES:
+        h.update(repr(sorted(overrides(lang).items())).encode())
+    h.update(repr(sorted(card_overrides().items())).encode())
+    return f'{FORGE_COMMIT}+{h.hexdigest()[:8]}'
+
+
+def patch_cards(data):
+    """O cardsfolder.zip com as cartas corrigidas no lugar das originais."""
+    fixed = card_overrides()
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(data)) as zin, zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zout:
+        for info in zin.infolist():
+            zout.writestr(info, fixed.get(info.filename, zin.read(info)))
+    return out.getvalue()
+
+
+def patch_res_zip():
+    """Aplica as correções das línguas ao zip que já existe, sem o código do Forge."""
+    tmp = RES_OUT + '.tmp'
+    with zipfile.ZipFile(RES_OUT) as zin, zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zout:
+        for info in zin.infolist():
+            data = zin.read(info)
+            if info.filename == 'VERSION':
+                data = (res_version() + '\n').encode()
+            elif info.filename.startswith('res/languages/'):
+                lang = os.path.basename(info.filename)[:-len('.properties')]
+                data = patch_language(lang, data.decode('utf-8')).encode('utf-8')
+            elif info.filename == 'res/cardsfolder/cardsfolder.zip':
+                data = patch_cards(data)
+            zout.writestr(info, data)
+    os.replace(tmp, RES_OUT)
+    print(f'línguas e cartas corrigidas em {RES_OUT} (VERSION {res_version()})')
 
 
 def main():
@@ -122,8 +230,13 @@ def main():
     ap.add_argument('--src', help='pasta com o código do Forge (já no commit certo)')
     ap.add_argument('--mvn', default=os.environ.get('MVN', 'mvn'), help='executável do Maven')
     ap.add_argument('--res-only', action='store_true', help='só gera o zip dos dados')
+    ap.add_argument('--languages', action='store_true',
+                    help='só aplica tool/forge/overrides ao zip dos dados que já existe')
     args = ap.parse_args()
 
+    if args.languages:
+        patch_res_zip()
+        return
     src = ensure_source(args.src)
     check_commit(src)
     if not args.res_only:

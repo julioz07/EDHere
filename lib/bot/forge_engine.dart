@@ -125,6 +125,15 @@ abstract final class ForgeEngine {
     }
   }
 
+  /// A memória total do aparelho em MB (null se não se souber): com muitos bots, avisa-se.
+  static Future<int?> memoryMb() async {
+    try {
+      return await _ch.invokeMethod<int>('memoryMb');
+    } on Exception {
+      return null;
+    }
+  }
+
   /// Prepara os dados (da primeira vez) e arranca o motor; pode demorar alguns segundos.
   static Future<void> init() async {
     final res = await _ch.invokeMapMethod<String, dynamic>('init', {'language': _forgeLanguage()});

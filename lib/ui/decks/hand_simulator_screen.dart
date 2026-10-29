@@ -77,7 +77,7 @@ class _HandSimulatorScreenState extends State<HandSimulatorScreen> {
           crossAxisSpacing: 6,
           children: [
             for (final o in _hand)
-              if (widget.cards[o] case final c?) CardImage(c, radius: 5),
+              if (widget.cards[o] case final c?) CardImage(c),
           ],
         ),
         const SizedBox(height: 12),

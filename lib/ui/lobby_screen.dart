@@ -420,7 +420,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
                           ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
                           : FilledButton(
-                              style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                              style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                               onPressed: () => g.downloadMissing(p.seat),
                               child: Text(tr('Descarregar')),
                             ),

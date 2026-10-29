@@ -37,4 +37,10 @@ void main() {
     expect(b.landDenial, ['Armageddon']);
     expect(b.minimum, 4);
   });
+
+  test('um combo de duas cartas tira o deck do bracket 1–2', () {
+    expect(const BracketEstimate([]).minimum, 2);
+    expect(const BracketEstimate([], combos: ["Thassa's Oracle + Demonic Consultation"]).minimum, 3);
+    expect(const BracketEstimate(['a', 'b', 'c', 'd'], combos: ['x + y']).minimum, 4);
+  });
 }

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mesa_core/mesa_core.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../app/theme.dart';
 import '../../bot/forge_engine.dart';
 import '../../bot/forge_table.dart';
 import '../../bot/sfx.dart';
@@ -18,6 +19,7 @@ import '../cards/card_detail_screen.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
+import '../widgets/responsive.dart';
 import 'bot_dialogs.dart';
 import 'bot_effects.dart';
 import 'bot_motion.dart';
@@ -55,6 +57,29 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   Timer? _spotTimer;
   Timer? _waitTimer;
   ({String text, bool mine})? _banner;
+
+  /// O que o bot está a pensar fazer (a carta, os alvos, quem ataca): fica à vista
+  /// um pouco antes de ele o fazer.
+  BotThought? _think;
+  Timer? _thinkTimer;
+
+  /// Com vários adversários: o que está em foco (separadores) e o lado para onde
+  /// a mesa desliza. O foco segue o jogo nos momentos que contam (turno, o bot a
+  /// pensar, um ataque); tocar num separador escolhe até ao momento seguinte.
+  int? _focus;
+  int _slide = 1;
+  Timer? _focusTimer;
+
+  void _setFocus(int? id) {
+    final s = _state;
+    if (id == null || s == null || id == s.players.first.id || id == _focus) return;
+    final from = s.players.indexWhere((p) => p.id == _focus);
+    final to = s.players.indexWhere((p) => p.id == id);
+    setState(() {
+      _slide = to >= from ? 1 : -1;
+      _focus = id;
+    });
+  }
   Timer? _bannerTimer;
   int _lastTurn = 0;
 
@@ -119,6 +144,8 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     _spotTimer?.cancel();
     _bannerTimer?.cancel();
     _waitTimer?.cancel();
+    _thinkTimer?.cancel();
+    _focusTimer?.cancel();
     _sub?.cancel();
     _shake.dispose();
     _pulse.dispose();
@@ -130,6 +157,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   void _onEvent(Map<String, dynamic> e) {
     // só em debug: o que o Forge pede, para seguir uma partida pelo logcat
     assert(() {
+      if (e['type'] == 'think') debugPrint('forge think: ${e['kind']} by ${e['by']} cards ${e['cards']} players ${e['players']}');
       if (e['type'] == 'prompt' || e['type'] == 'ask') {
         debugPrint(
             'forge ${e['type']} t${e['turn'] ?? ''}: ${'${e['msg'] ?? e['title'] ?? ''}'.replaceAll('\n', ' | ')}');
@@ -152,6 +180,30 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
           if (mounted) setState(() => _spot = null);
         });
         setState(() => _spot = spot);
+        return;
+      case 'think':
+        final think = BotThought.fromMap(e);
+        _thinkTimer?.cancel();
+        _thinkTimer = Timer(Duration(milliseconds: (e['ms'] as int? ?? 800) + 300), () {
+          if (mounted) setState(() => _think = null);
+        });
+        setState(() => _think = think);
+        final st = _state;
+        if (st != null && st.players.length > 2 && think.by != st.players.first.id) {
+          _focusTimer?.cancel();
+          _setFocus(think.by);
+          final me = st.players.first.id;
+          final other = [
+            ...think.players,
+            for (final c in think.cards)
+              if (st.card(c)?.instance.controller case final o?) o,
+          ].where((id) => id != me && id != think.by).firstOrNull;
+          if (other != null) {
+            _focusTimer = Timer(Duration(milliseconds: e['ms'] as int? ?? 800), () {
+              if (mounted) _setFocus(other);
+            });
+          }
+        }
         return;
       case 'info':
         final msg = [e['title'], e['msg']].whereType<String>().where((s) => s.trim().isNotEmpty).join('\n');
@@ -185,6 +237,12 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       _bannerTimer = Timer(const Duration(milliseconds: 1400), () {
         if (mounted) setState(() => _banner = null);
       });
+      if (s.players.length > 2 && s.active != s.players.first.id) {
+        _focusTimer?.cancel();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _setFocus(s.active);
+        });
+      }
     }
     final old = _state;
     final specs = old == null || s.players.isEmpty ? const <FlightSpec>[] : _changes(old, s);
@@ -385,10 +443,15 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(tr('Desistir da partida?')),
-          content: Text(tr('O bot ganha esta partida.')),
+          content: Text(tr('O bot ganha esta partida. As partidas contra o bot não ficam guardadas.')),
+          // o botão principal é o que não perde nada; desistir fica como texto, a vermelho
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Continuar a jogar'))),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Desistir'))),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: GameColors.attack),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(tr('Desistir')),
+            ),
+            FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Continuar a jogar'))),
           ],
         ),
       );
@@ -400,7 +463,12 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     final s = _state;
-    final title = s == null ? (_live ? tr('Contra o bot') : tr('Bot contra bot')) : tr('Turno {v}', {'v': s.turn});
+    // antes do primeiro turno (moeda e mulligans) não há "Turno 0"
+    final title = s == null
+        ? (_live ? tr('Contra o bot') : tr('Bot contra bot'))
+        : s.turn < 1
+            ? tr('Preparar a mão')
+            : tr('Turno {v}', {'v': s.turn});
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -481,7 +549,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                                         radius: 1.1,
                                         colors: [
                                           Colors.transparent,
-                                          const Color(0xFFE53935).withOpacity(0.45 * (1 - _shake.value)),
+                                          GameColors.attack.withOpacity(0.45 * (1 - _shake.value)),
                                         ],
                                       ),
                                     ),
@@ -649,7 +717,10 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     final settings = ref.watch(settingsProvider);
     final bg = settings.backgroundImage;
     final me = s.players[0];
-    final them = s.players[1];
+    final opponents = s.players.skip(1).toList();
+    final multi = opponents.length > 1;
+    // com vários: o que está em foco (de início, o primeiro que ainda joga)
+    final them = s.player(_focus ?? -1) ?? opponents.firstWhere((p) => !p.lost, orElse: () => opponents.first);
     final act = _Interaction(
       prompt: _live && !_waiting ? _prompt : null,
       onCard: _tapCard,
@@ -659,8 +730,16 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       geo: _geo,
       hidden: _hidden,
       meId: me.id,
-      // arrastar: o atacante para a barra do bot, o bloqueador para o atacante
-      onAttack: _live ? (id) => _act('card', id) : null,
+      think: _think,
+      thinkColor: _think == null ? null : seatColor(s, _think!.by),
+      // arrastar: o atacante para a barra (ou o separador) de um adversário, o
+      // bloqueador para o atacante. Com vários, primeiro diz-se ao Forge quem é atacado
+      onAttack: _live
+          ? (id, defender) {
+              if (multi) ForgeEngine.act('player', defender);
+              _act('card', id);
+            }
+          : null,
       onBlock: _live
           ? (attacker, blocker) {
               ForgeEngine.act('card', attacker);
@@ -682,25 +761,79 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       ),
       child: SafeArea(
         child: Column(children: [
+          if (multi)
+            _OpponentTabs(
+              state: s,
+              focus: them.id,
+              act: act,
+              thinking: _live && !s.over && _prompt?.input == 'wait' ? s.priority : null,
+              onPick: (id) {
+                _focusTimer?.cancel();
+                _setFocus(id);
+                // a atacar: tocar num adversário escolhe-o como defensor; a escolher
+                // um alvo, tocar no separador escolhe esse jogador
+                if (act.attacking && _live) {
+                  ForgeEngine.act('player', id);
+                } else if (act.playerSelectable(id)) {
+                  act.onPlayer?.call(id);
+                }
+              },
+            ),
           _PlayerBar(
-              state: s, player: them, act: act, thinking: _live && !s.over && (_waiting || _prompt?.input == 'wait')),
-          Expanded(child: _Battlefield(state: s, player: them.id, flipped: true, act: act)),
+              state: s,
+              player: them,
+              act: act,
+              anchored: !multi,
+              thinking: _live && !s.over && (_waiting || _prompt?.input == 'wait') && (!multi || s.priority == them.id)),
+          Expanded(
+            child: !multi
+                ? _Battlefield(state: s, player: them.id, flipped: true, act: act)
+                : ClipRect(
+                    // a mesa do adversário desliza para o lado do lugar dele, sem piscar
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: _flightTime.inMilliseconds * 3 ~/ 4),
+                      switchInCurve: Curves.easeInOut,
+                      switchOutCurve: Curves.easeInOut,
+                      transitionBuilder: (child, anim) {
+                        final incoming = child.key == ValueKey(them.id);
+                        final dx = (incoming ? 1.0 : -1.0) * _slide;
+                        return SlideTransition(
+                          position: Tween(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
+                          child: child,
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(them.id),
+                        child: _Battlefield(state: s, player: them.id, flipped: true, act: act),
+                      ),
+                    ),
+                  ),
+          ),
           PhaseBar(
             phase: s.phase,
             mine: _live && s.active == me.id,
             compact: narrow,
             stops: !_live ? const {} : (s.active == me.id ? _stops.mine : _stops.theirs),
             onTap: _live ? _editStops : null,
+            color: s.active == null ? null : seatColor(s, s.active!),
           ),
           if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act, lookup: _lookup),
-          if (_live && !s.over) _PromptBar(prompt: _prompt, waiting: _waiting, onButton: _act, state: s, meId: me.id),
+          if (_live && !s.over)
+            _PromptBar(
+                prompt: _prompt,
+                waiting: _waiting,
+                onButton: _act,
+                state: s,
+                meId: me.id,
+                lookup: _lookup,
+                onPlayer: (id) => _act('player', id)),
           Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
           _PlayerBar(state: s, player: me, act: act),
           _Hand(
             cards: s.zone(me.id, Zone.hand).toList(),
             act: act,
             big: _live,
-            mulligan: _live && !_waiting && _prompt?.input == 'mulligan',
+            mulligan: _live && !_waiting && (_prompt?.input == 'mulligan' || _prompt?.input == 'bottom'),
           ),
         ]),
       ),
@@ -713,7 +846,9 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       showDragHandle: true,
       builder: (ctx) => ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(logLine(l)))],
+        children: [
+          for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: OracleText(logLine(l)))
+        ],
       ),
     );
   }
@@ -732,10 +867,18 @@ class _Interaction {
     required this.meId,
     this.onAttack,
     this.onBlock,
+    this.think,
+    this.thinkColor,
   });
 
   final int meId;
-  final void Function(int attacker)? onAttack;
+
+  /// O que o bot está a pensar, e a cor dele.
+  final BotThought? think;
+  final Color? thinkColor;
+  bool gazed(int id) => think?.cards.contains(id) ?? false;
+  bool gazedPlayer(int id) => think?.players.contains(id) ?? false;
+  final void Function(int attacker, int defender)? onAttack;
   final void Function(int attacker, int blocker)? onBlock;
 
   bool get attacking => prompt?.input == 'attack';
@@ -780,7 +923,7 @@ class _Interaction {
             angle: -0.05,
             child: SizedBox(
               width: width * 1.15,
-              child: c.card == null ? const CardBack() : CardImage(c.card!, radius: width * 0.06),
+              child: c.card == null ? const CardBack() : CardImage(c.card!),
             ),
           ),
         ),
@@ -798,8 +941,8 @@ class _Interaction {
           decoration: candidates.isEmpty
               ? null
               : BoxDecoration(
-                  borderRadius: BorderRadius.circular(width * 0.06),
-                  boxShadow: const [BoxShadow(color: Color(0xFF1E88E5), blurRadius: 18, spreadRadius: 4)],
+                  borderRadius: BorderRadius.circular(width * cardCorner),
+                  boxShadow: const [BoxShadow(color: GameColors.block, blurRadius: 18, spreadRadius: 4)],
                 ),
           child: target,
         ),
@@ -825,18 +968,22 @@ class _Interaction {
             child: Stack(clipBehavior: Clip.none, children: [
               Container(
                 // em combate: vermelho a atacar, azul a bloquear (como no Arena)
-                decoration: autoTap(c.instance.id)
+                decoration: gazed(c.instance.id) && !c.attacking && !c.blocking
                     ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(width * 0.06),
-                        boxShadow: const [BoxShadow(color: Color(0xFFFFC107), blurRadius: 12, spreadRadius: 3)],
+                        borderRadius: BorderRadius.circular(width * cardCorner),
+                        boxShadow: [BoxShadow(color: thinkColor!, blurRadius: 16, spreadRadius: 3)],
+                      )
+                    : autoTap(c.instance.id)
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(width * cardCorner),
+                        boxShadow: const [BoxShadow(color: GameColors.playable, blurRadius: 12, spreadRadius: 3)],
                       )
                     : c.attacking || c.blocking
                         ? BoxDecoration(
-                            borderRadius: BorderRadius.circular(width * 0.06),
+                            borderRadius: BorderRadius.circular(width * cardCorner),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    (c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5)).withOpacity(0.9),
+                                color: (c.attacking ? GameColors.attack : GameColors.block).withOpacity(0.9),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -859,20 +1006,239 @@ class _Interaction {
                   left: -6,
                   child: _Badge(
                     icon: c.attacking ? Icons.sports_martial_arts : Icons.shield,
-                    color: c.attacking ? const Color(0xFFE53935) : const Color(0xFF1E88E5),
+                    color: c.attacking ? GameColors.attack : GameColors.block,
                   ),
                 ),
               if (c.damage > 0)
                 Positioned(
                   bottom: -4,
                   right: -4,
-                  child: _Badge(text: '-${c.damage}', color: const Color(0xFFB71C1C)),
+                  child: _Badge(text: '-${c.damage}', color: GameColors.damage),
                 ),
+              // o bot está a olhar para esta carta (é um alvo, ou quem ele vai atacar)
+              if (gazed(c.instance.id) && c.instance.controller != think!.by)
+                Positioned(top: -8, right: -8, child: _Badge(icon: Icons.visibility, color: thinkColor!)),
             ]),
           ),
         ),
       ),
     );
+  }
+}
+
+/// Com vários adversários: um separador por cada um, na cor do lugar dele, com a
+/// vida e o que está a acontecer (a pensar, a atacar, visado). Tocar põe-no em
+/// foco; o que está em foco fica mais alto e claro, ligado à barra por baixo.
+class _OpponentTabs extends StatelessWidget {
+  const _OpponentTabs(
+      {required this.state, required this.focus, required this.act, required this.onPick, this.thinking});
+
+  final ForgeTableState state;
+  final int focus;
+  final _Interaction act;
+  final void Function(int id) onPick;
+
+  /// Quem está a pensar (tem a prioridade e é um bot).
+  final int? thinking;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final opponents = state.players.skip(1).toList();
+    final narrow = MediaQuery.sizeOf(context).width < 560;
+    // quem está a ser atacado e por quem (as criaturas a atacar e o jogador atacado)
+    final attacked = {
+      for (final c in state.cards)
+        if (c.attacking && c.attackPlayer != null) c.attackPlayer!: c.instance.controller,
+    };
+    final attacking = {for (final c in state.cards) if (c.attacking) c.instance.controller};
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        for (final p in opponents)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: _tab(context, theme, scheme, p, narrow, attacked, attacking),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _tab(BuildContext context, ThemeData theme, ColorScheme scheme, ForgePlayer p, bool narrow,
+      Map<int, int> attacked, Set<int> attacking) {
+    final sel = p.id == focus;
+    final color = seatColor(state, p.id);
+    final seat = state.players.indexWhere((x) => x.id == p.id);
+    final pickable = act.playerSelectable(p.id);
+    final fg = sel ? scheme.onSurface : const Color(0xFFE6EAF5);
+    final Widget status;
+    // a mira é sempre vermelha (pedido do utilizador): em quem posso escolher como
+    // alvo, em todos os que posso atacar quando ataco, e em quem é atacado ou visado
+    final target = pickable || (act.attacking && !p.lost) || attacked.containsKey(p.id) || act.gazedPlayer(p.id);
+    if (target) {
+      status = const Icon(Icons.gps_fixed, size: 18, color: GameColors.attack);
+    } else if (thinking == p.id) {
+      status = const ThinkingDots();
+    } else if (attacking.contains(p.id)) {
+      status = const Icon(Icons.sports_martial_arts, size: 16, color: GameColors.attack);
+    } else {
+      status = Text('${p.handCount}', style: theme.textTheme.labelSmall?.copyWith(color: fg));
+    }
+    // fora de foco: escuros e de texto claro, por cima da mesa (como na maqueta)
+    final tab = AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      height: sel ? (narrow ? 58 : 64) : (narrow ? 50 : 56),
+      decoration: BoxDecoration(
+        color: sel ? scheme.surface : const Color(0xFF1C2645).withOpacity(0.92),
+        borderRadius: BorderRadius.vertical(
+            top: const Radius.circular(EdhSize.radiusS + 2), bottom: Radius.circular(sel ? 0 : EdhSize.radiusS + 2)),
+        boxShadow: pickable ? [BoxShadow(color: GameColors.target.withOpacity(0.6), blurRadius: 10)] : null,
+      ),
+      // pode ser escolhido como alvo: contorno na cor dos alvos, por cima (um
+      // contorno na decoração tira altura ao conteúdo e o separador transbordava)
+      foregroundDecoration: pickable
+          ? BoxDecoration(
+              border: Border.all(color: GameColors.target, width: 3),
+              borderRadius: BorderRadius.vertical(
+                  top: const Radius.circular(EdhSize.radiusS + 2),
+                  bottom: Radius.circular(sel ? 0 : EdhSize.radiusS + 2)),
+            )
+          : null,
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: [
+        Container(height: 4, color: color),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Opacity(
+              opacity: p.lost ? 0.45 : 1,
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Row(children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    child: Text('$seat',
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: const Color(0xFF10172E), fontWeight: FontWeight.w800, height: 1)),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: FitText(p.name,
+                        alignment: Alignment.centerLeft,
+                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600, color: fg)),
+                  ),
+                ]),
+                const SizedBox(height: 2),
+                Row(children: [
+                  Text('${p.life}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                          color: fg,
+                          decoration: p.lost ? TextDecoration.lineThrough : null)),
+                  const Spacer(),
+                  status,
+                ]),
+              ]),
+            ),
+          ),
+        ),
+      ]),
+    );
+    final tappable = Semantics(
+      button: true,
+      selected: sel,
+      label: tr('Mesa de {v}', {'v': p.name}),
+      child: GestureDetector(onTap: () => onPick(p.id), child: tab),
+    );
+    // todos os separadores são o destino das setas e dos voos para esse jogador:
+    // ao trocar de bot, a seta não salta do separador para a barra
+    final keyed = KeyedSubtree(key: act.geo.key('player:${p.id}'), child: tappable);
+    if (!act.attacking || act.onAttack == null) return keyed;
+    // a atacar: largar a criatura no separador ataca esse adversário
+    return DragTarget<int>(
+      onAcceptWithDetails: (d) => act.onAttack!(d.data, p.id),
+      builder: (context, candidates, _) => Container(
+        foregroundDecoration: candidates.isEmpty
+            ? null
+            : BoxDecoration(
+                border: Border.all(color: GameColors.attack, width: 3),
+                borderRadius: BorderRadius.circular(EdhSize.radiusS)),
+        child: keyed,
+      ),
+    );
+  }
+}
+
+/// O que o bot está a pensar fazer, vindo do motor ("think").
+class BotThought {
+  BotThought({required this.by, required this.kind, required this.cards, required this.players});
+
+  factory BotThought.fromMap(Map m) => BotThought(
+        by: m['by'] as int,
+        kind: m['kind'] as String? ?? '',
+        cards: {for (final c in (m['cards'] as List? ?? const [])) c as int},
+        players: {for (final p in (m['players'] as List? ?? const [])) p as int},
+      );
+
+  final int by;
+
+  /// cast, attack ou block.
+  final String kind;
+  final Set<int> cards;
+  final Set<int> players;
+}
+
+/// A mão de um adversário como versos em leque; o que está [lifted] sobe e
+/// brilha na cor dele (é a carta que ele vai jogar).
+class _HandBacks extends StatelessWidget {
+  const _HandBacks({required this.count, required this.color, this.small = false, this.lifted});
+
+  static const maxShown = 7;
+
+  final int count;
+  final Color color;
+  final bool small;
+  final int? lifted;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = min(count, maxShown);
+    final w = small ? 16.0 : 26.0;
+    final h = w / cardAspect;
+    final step = w * 0.45;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      SizedBox(
+        width: n == 0 ? 0 : w + step * (n - 1),
+        height: h + 10,
+        child: Stack(clipBehavior: Clip.none, children: [
+          for (var i = 0; i < n; i++)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              left: step * i,
+              top: i == lifted ? 0 : 10,
+              child: Container(
+                width: w,
+                height: h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF26345F),
+                  borderRadius: BorderRadius.circular(w * cardCorner * 2),
+                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.8),
+                  boxShadow: i == lifted ? [BoxShadow(color: color, blurRadius: 10, spreadRadius: 2)] : null,
+                ),
+              ),
+            ),
+        ]),
+      ),
+      const SizedBox(width: 4),
+      Text('$count', style: Theme.of(context).textTheme.labelMedium),
+    ]);
   }
 }
 
@@ -900,13 +1266,38 @@ class _Badge extends StatelessWidget {
   }
 }
 
+/// A cor de um jogador: a do lugar dele na mesa (tu és o primeiro).
+Color seatColor(ForgeTableState s, int playerId) {
+  final i = s.players.indexWhere((p) => p.id == playerId);
+  return GameColors.player(i < 0 ? 0 : i);
+}
+
 /// Uma linha do registo do Forge sem os ids internos ("Lightning Bolt (2)"). As
 /// mudanças de vida vêm sempre em inglês ("Life: Bot 40 > 38"): essas são nossas.
 String logLine(String t) {
   t = t.replaceAll(RegExp(r' \(\d+\)'), '');
+  // o Forge regista a carta que resolveu como "Goblin Lackey - Criatura 1 / 1"
+  final resolved = RegExp(r'^(.+?) - [^-\n]+ \d+ / \d+$').firstMatch(t.trim());
+  if (resolved != null) return tr('{v} resolveu', {'v': resolved[1]!});
+  t = forgeText(t);
   final life = RegExp(r'^Life: (.+) (\d+) > (\d+)$').firstMatch(t.trim());
   if (life == null) return t;
   return tr('{p}: vida {a} → {b}', {'p': life[1]!, 'a': life[2]!, 'b': life[3]!});
+}
+
+/// Arranjos às frases que o Forge monta sozinho, fora dos ficheiros de língua:
+/// o possessivo inglês no português ("a carta de você's mão", "de Bot 1's
+/// cemitério") e a descrição da carta a pagar ("Goblin Lackey - Criatura 1 / 1").
+String forgeText(String t) {
+  const article = {'mão': 'da', 'biblioteca': 'da', 'cemitério': 'do', 'grimório': 'do', 'exílio': 'do'};
+  const mine = {'mão': 'da tua', 'biblioteca': 'do teu', 'cemitério': 'do teu', 'grimório': 'do teu', 'exílio': 'do teu'};
+  t = t.replaceAllMapped(RegExp(r"\bde você's (\S+)"), (m) {
+    final zone = m[1]!;
+    return '${mine[zone] ?? 'da tua'} ${zone == 'biblioteca' ? 'grimório' : zone}';
+  });
+  t = t.replaceAllMapped(RegExp(r"\bde (.+?)'s (\S+)"), (m) => '${article[m[2]!] ?? 'de'} ${m[2]} de ${m[1]}');
+  // a primeira linha do pagamento: só o nome da carta
+  return t.replaceAllMapped(RegExp(r'^(.+?) - [^-\n]+ \d+ / \d+$', multiLine: true), (m) => m[1]!);
 }
 
 /// O que o jogo espera de mim e os dois botões. Na prioridade, as mensagens
@@ -914,7 +1305,16 @@ String logLine(String t) {
 /// Forge ("Prioridade: Ana | Turno: 2 | Fase: ..."), e o OK diz o que faz.
 class _PromptBar extends StatelessWidget {
   const _PromptBar(
-      {required this.prompt, required this.waiting, required this.onButton, required this.state, required this.meId});
+      {required this.prompt,
+      required this.waiting,
+      required this.onButton,
+      required this.state,
+      required this.meId,
+      this.lookup,
+      this.onPlayer});
+
+  /// Para achar a carta que se está a pagar pelo nome.
+  final ForgeCardLookup? lookup;
 
   final ForgePrompt? prompt;
   final bool waiting;
@@ -922,9 +1322,66 @@ class _PromptBar extends StatelessWidget {
   final ForgeTableState state;
   final int meId;
 
+  /// Escolher um jogador (como alvo): os mesmos botões que tocar na barra dele.
+  final void Function(int id)? onPlayer;
+
+  /// Quando o Forge pede um jogador, um botão por cada um, na cor do lugar: com
+  /// vários adversários, tocar na barra ou no separador certo não é óbvio.
+  Widget? _playerChoices(BuildContext context, ForgePrompt p) {
+    if (onPlayer == null || p.selectablePlayers.isEmpty) return null;
+    final theme = Theme.of(context);
+    final chosen = p.chosen;
+    // uma só linha que desliza: com 4 ou 5 jogadores no telemóvel, quebrar em
+    // várias linhas esticava a barra e a mesa saía do ecrã
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          Text(tr('Escolhe um jogador:'), style: theme.textTheme.labelLarge),
+          for (final pl in state.players)
+            if (p.selectablePlayers.contains(pl.id))
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Semantics(
+                  button: true,
+                  label: tr('Escolher {v} como alvo', {'v': pl.name}),
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, EdhSize.buttonCompact),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      side: BorderSide(color: GameColors.target, width: chosen.contains(pl.id) ? 3 : 1.5),
+                      backgroundColor: chosen.contains(pl.id) ? GameColors.target.withOpacity(0.18) : null,
+                    ),
+                    onPressed: () => onPlayer!(pl.id),
+                    icon: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(color: seatColor(state, pl.id), shape: BoxShape.circle),
+                    ),
+                    label: Text('${pl.id == meId ? tr('Tu') : pl.name} · ${pl.life}'),
+                  ),
+                ),
+              ),
+        ]),
+      ),
+    );
+  }
+
+  /// A pagar: a carta que se está a lançar ao lado do custo, como no Arena (já
+  /// saiu da mão e ainda não está na pilha, e sem isto não se via em lado nenhum).
+  static Widget _withCard(db.Card? card, Widget message, bool narrow) => card == null
+      ? message
+      : Row(children: [
+          SizedBox(width: narrow ? 40 : 56, child: CardImage(card)),
+          const SizedBox(width: 10),
+          Expanded(child: message),
+        ]);
+
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
     // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
-    final forge = p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim();
+    final forge =
+        forgeText(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim());
     // quando dá para desfazer, o Desfazer tem botão próprio (ver build) e este
     // continua a ser o Terminar o turno: o botão não muda de função debaixo do dedo
     String cancel() => switch (p.cancelKind) {
@@ -958,16 +1415,35 @@ class _PromptBar extends StatelessWidget {
         );
       case 'mulligan':
         return (message: tr('Ficas com esta mão?'), ok: p.ok.label, cancel: p.cancel.label);
-      case 'attack':
+      case 'bottom':
+        final n = int.tryParse(RegExp(r'\d+').firstMatch(p.message)?.group(0) ?? '') ?? 1;
         return (
-          message: tr('Escolhe quem ataca: toca nas tuas criaturas ou arrasta-as para o adversário.'),
+          // o Forge conta as que faltam: a 0, já está escolhido e só falta confirmar
+          // (sem nenhuma escolhida e a 0: é o mulligan grátis do multijogador)
+          message: n == 0
+              ? p.chosen.isEmpty
+                  ? tr('Este mulligan é grátis: não pões nenhuma carta no fundo. Toca em OK.')
+                  : tr('Pronto. Toca em OK, ou na carta escolhida para mudar.')
+              : n == 1
+                  ? tr('Escolhe 1 carta da mão para pôr no fundo do grimório.')
+                  : tr('Escolhe {n} cartas da mão para pôr no fundo do grimório.', {'n': n}),
           ok: p.ok.label,
           cancel: p.cancel.label,
         );
+      // o OK do Forge não diz o que faz: como no Arena, "Não atacar" até haver
+      // atacantes e depois "Atacar (n)"; o mesmo nos bloqueios
+      case 'attack':
+        final n = state.cards.where((c) => c.attacking && c.instance.controller == meId).length;
+        return (
+          message: tr('Escolhe quem ataca: toca nas tuas criaturas ou arrasta-as para o adversário.'),
+          ok: n == 0 ? tr('Não atacar') : '${tr('Atacar')} ($n)',
+          cancel: p.cancel.label,
+        );
       case 'block':
+        final n = state.cards.where((c) => c.blockingOf.isNotEmpty && c.instance.controller == meId).length;
         return (
           message: tr('Escolhe quem bloqueia: arrasta uma criatura tua para cima de um atacante.'),
-          ok: p.ok.label,
+          ok: n == 0 ? tr('Não bloquear') : '${tr('Bloquear')} ($n)',
           cancel: p.cancel.label,
         );
       default:
@@ -981,16 +1457,36 @@ class _PromptBar extends StatelessWidget {
     final p = prompt;
     // "à espera do bot" (o Forge escreve "Waiting for ...", em inglês): é a vez dele
     final busy = waiting || p == null || p.input == 'wait';
+    // a prioridade é minha mas o Forge passa sozinho: não há nada que eu possa jogar
+    final passing = busy && !waiting && state.priority == meId;
     final narrow = MediaQuery.sizeOf(context).width < 560;
     final texts = busy ? null : _texts(p);
     final message = busy
         ? Row(children: [
             const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: 8),
-            Flexible(child: Text(tr('O bot está a pensar…'), style: theme.textTheme.bodyMedium)),
+            Flexible(
+                child: Text(
+                    waiting
+                        ? ''
+                        : passing
+                            ? tr('Nada para jogar agora · a passar…')
+                            : tr('O bot está a pensar…'),
+                    style: theme.textTheme.bodyMedium)),
           ])
-        : OracleText(texts!.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium);
+        : _withCard(
+            p.input == 'pay'
+                ? state.card(p.cardId ?? -1)?.card ??
+                    lookup?.byName(p.message.split('\n').first.replaceAll(RegExp(r' \(\d+\)| - .*'), '').trim())
+                : null,
+            OracleText(texts!.message, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
+            narrow);
     final priority = !busy && p.input == 'priority';
+    // no telemóvel, com o Desfazer, os três não cabem a 360 dp com letra grande:
+    // os botões dividem a linha e o texto encolhe em vez de sair do ecrã
+    Widget fit(Widget b) => narrow ? Flexible(child: b) : b;
+    Widget label(String t) => narrow ? FittedBox(fit: BoxFit.scaleDown, child: Text(t, maxLines: 1)) : Text(t);
+    final pad = narrow ? const EdgeInsets.symmetric(horizontal: 14) : null;
     final buttons = [
       if (priority && p.cancelKind == 'undo')
         IconButton(
@@ -1000,39 +1496,51 @@ class _PromptBar extends StatelessWidget {
         ),
       if (!busy && texts!.cancel.isNotEmpty) ...[
         const SizedBox(width: 6),
-        OutlinedButton(
+        fit(OutlinedButton(
           // o tema dá largura infinita aos botões; numa linha precisam de largura própria
-          style: OutlinedButton.styleFrom(minimumSize: const Size(72, 40)),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(72, EdhSize.buttonCompact), padding: pad),
           onPressed: priority && p.cancelKind != null
               ? () => onButton('endTurn')
               : p.cancel.enabled
                   ? () => onButton('cancel')
                   : null,
-          child: Text(texts.cancel),
-        ),
+          child: label(texts.cancel),
+        )),
       ],
       if (!busy && texts!.ok.isNotEmpty) ...[
         const SizedBox(width: 6),
-        FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size(72, 40)),
+        fit(FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(72, EdhSize.buttonCompact), padding: pad),
           onPressed: p.ok.enabled ? () => onButton('ok') : null,
-          child: Text(texts.ok),
-        ),
+          child: label(texts.ok),
+        )),
       ],
     ];
+    // a faixa à esquerda na cor de quem tem de decidir: eu, ou o bot enquanto pensa
+    final who = busy && !passing
+        ? state.priority ?? state.players.firstWhere((p) => p.id != meId, orElse: () => state.players.first).id
+        : meId;
+    final choices = busy ? null : _playerChoices(context, p);
     return Container(
       width: double.infinity,
-      color: theme.colorScheme.secondaryContainer,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.95),
+        border: Border(left: BorderSide(color: seatColor(state, who), width: 5)),
+      ),
       padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
       child: narrow
           ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
               message,
+              if (choices != null) choices,
               if (buttons.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
               ],
             ])
-          : Row(children: [Expanded(child: message), ...buttons]),
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+              Row(children: [Expanded(child: message), ...buttons]),
+              if (choices != null) choices,
+            ]),
     );
   }
 }
@@ -1040,7 +1548,11 @@ class _PromptBar extends StatelessWidget {
 /// Nome, vida e contadores de um jogador, mais o comandante e as zonas públicas.
 /// Tocar no nome ou na vida escolhe o jogador (como alvo, por exemplo).
 class _PlayerBar extends StatelessWidget {
-  const _PlayerBar({required this.state, required this.player, required this.act, this.thinking = false});
+  const _PlayerBar(
+      {required this.state, required this.player, required this.act, this.thinking = false, this.anchored = true});
+
+  /// Se é a barra o destino das setas e voos para este jogador (com separadores, não é).
+  final bool anchored;
 
   /// O bot está a decidir: reticências a pulsar ao lado do nome.
   final bool thinking;
@@ -1082,13 +1594,20 @@ class _PlayerBar extends StatelessWidget {
                   onPressed: onTap,
                 ),
               ));
+    // cada jogador tem a sua cor: uma faixa à esquerda e, no turno dele, o fundo nesse tom
+    final color = seatColor(state, player.id);
+    final surface = theme.colorScheme.surface;
     final bar = Container(
-      key: act.geo.key('player:${player.id}'),
+      // com separadores, o destino das setas é o separador (ver _OpponentTabs)
+      key: anchored ? act.geo.key('player:${player.id}') : null,
       decoration: BoxDecoration(
         // fundo próprio: por cima do fundo da mesa, o nome e a vida têm de se ler
-        color: active ? theme.colorScheme.primaryContainer : theme.colorScheme.surface.withOpacity(0.9),
-        border:
-            pickable || chosen ? Border.all(color: chosen ? targetGlow : theme.colorScheme.primary, width: 2) : null,
+        color: active ? Color.alphaBlend(color.withOpacity(0.22), surface) : surface.withOpacity(0.92),
+        border: pickable || chosen
+            ? Border.all(color: chosen ? targetGlow : GameColors.target, width: 3)
+            : act.gazedPlayer(player.id)
+                ? Border.all(color: act.thinkColor!, width: 3)
+                : Border(left: BorderSide(color: color, width: 5)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(children: [
@@ -1098,24 +1617,62 @@ class _PlayerBar extends StatelessWidget {
             child: Row(children: [
               Expanded(
                 child: Row(children: [
+                  // no telemóvel o nome encolhe em vez de ser cortado ("Bot (Nor…")
                   Flexible(
-                    child: Text(
+                    child: FitText(
                       player.lost ? '${player.name} · ${tr('perdeu')}' : player.name,
-                      overflow: TextOverflow.ellipsis,
+                      alignment: Alignment.centerLeft,
                       style: theme.textTheme.titleSmall,
                     ),
                   ),
                   if (thinking) const Padding(padding: EdgeInsets.only(left: 6), child: ThinkingDots()),
+                  if (pickable)
+                    const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: Icon(Icons.gps_fixed, size: 18, color: GameColors.attack)),
+                  if (act.gazedPlayer(player.id))
+                    Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Icon(Icons.visibility, size: 18, color: act.thinkColor)),
                 ]),
               ),
-              AnimatedLife(life: player.life, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              AnimatedLife(
+                  life: player.life,
+                  style: (narrow ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)
+                      ?.copyWith(fontWeight: FontWeight.w800)),
             ]),
           ),
         ),
         if (player.poison > 0) chip(Icons.coronavirus_outlined, '${player.poison}'),
+        // dano de comandante que este jogador já levou, por comandante, na cor de
+        // quem o controla; a vermelho perto dos 21, que matam
+        for (final e in player.commanderDamage.entries)
+          Tooltip(
+            message: tr('Dano de comandante: {n} de 21', {'n': e.value}),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.military_tech,
+                    size: 18,
+                    color: state.card(e.key) == null ? null : seatColor(state, state.card(e.key)!.instance.controller)),
+                Text('${e.value}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700, color: e.value >= 15 ? GameColors.attack : null)),
+              ]),
+            ),
+          ),
         for (final c in command)
-          Padding(padding: const EdgeInsets.only(left: 6), child: act.card(c, 28, details: false)),
-        chip(Icons.back_hand_outlined, '${player.handCount}', anchor: 'hand:${player.id}'),
+          Padding(padding: const EdgeInsets.only(left: 6), child: act.card(c, narrow ? 32 : 44, details: false)),
+        if (player.id == act.meId)
+          chip(Icons.back_hand_outlined, '${player.handCount}', anchor: 'hand:${player.id}')
+        else
+          KeyedSubtree(
+            key: act.geo.key('hand:${player.id}'),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: _HandBacks(count: player.handCount, color: color, small: narrow, lifted: _lifted()),
+            ),
+          ),
         chip(Icons.layers_outlined, '${player.libraryCount}', anchor: 'lib:${player.id}'),
         chip(Icons.delete_outline, '${graveyard.length}',
             anchor: 'grave:${player.id}',
@@ -1127,13 +1684,24 @@ class _PlayerBar extends StatelessWidget {
     );
     if (!act.attacking || act.onAttack == null || player.id == act.meId) return bar;
     return DragTarget<int>(
-      onAcceptWithDetails: (d) => act.onAttack!(d.data),
+      onAcceptWithDetails: (d) => act.onAttack!(d.data, player.id),
       builder: (context, candidates, _) => Container(
         foregroundDecoration:
-            candidates.isEmpty ? null : BoxDecoration(border: Border.all(color: const Color(0xFFE53935), width: 3)),
+            candidates.isEmpty ? null : BoxDecoration(border: Border.all(color: GameColors.attack, width: 3)),
         child: bar,
       ),
     );
+  }
+
+  /// O verso que sobe quando o bot pensa lançar uma carta da mão (qual é fica
+  /// escondido: escolhe-se um dos versos pelo id, sempre o mesmo para a mesma carta).
+  int? _lifted() {
+    final t = act.think;
+    if (t == null || t.kind != 'cast' || t.by != player.id || t.cards.isEmpty || player.handCount == 0) return null;
+    final host = t.cards.first;
+    final onTable = state.card(host);
+    if (onTable != null && onTable.instance.zone != Zone.hand) return null;
+    return host % min(player.handCount, _HandBacks.maxShown);
   }
 
   void _zoneSheet(BuildContext context, String title, List<ForgeCardView> cards) {
@@ -1192,23 +1760,56 @@ class _Battlefield extends StatelessWidget {
         ];
     final lands = withAttachments(all.where(isLand));
     final others = withAttachments(all.where((c) => !isLand(c)));
+    // terrenos iguais numa pilha "×N": em Commander são 8 a 10 e enchiam meia mesa.
+    // Iguais = a mesma carta, no mesmo estado e com a mesma marca de escolha, sem
+    // contadores nem nada preso; tocar na pilha usa o primeiro (pagar mana é igual)
+    final stacked = <ForgeCardView>[];
+    final counts = <int, int>{};
+    final byKey = <String, ForgeCardView>{};
+    for (final c in lands) {
+      final i = c.instance;
+      final plain = i.counters.isEmpty && i.attachedTo == null && !attached.containsKey(i.id);
+      final key = '${i.oracleId}|${i.tapped}|${act.selectable(i.id)}|${act.chosen(i.id)}';
+      final first = plain ? byKey[key] : null;
+      if (first != null) {
+        counts[first.instance.id] = (counts[first.instance.id] ?? 1) + 1;
+        continue;
+      }
+      if (plain) byKey[key] = c;
+      stacked.add(c);
+    }
     final rows = [
       _CardRow(cards: others, act: act, flex: 3),
-      _CardRow(cards: lands, act: act, flex: 2),
+      _CardRow(cards: stacked, act: act, flex: 2, counts: counts),
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Column(children: flipped ? rows.reversed.toList() : rows),
+      child: LayoutBuilder(builder: (context, box) {
+        // mesa larga e baixa (tablet deitado): os terrenos ao lado das outras
+        // cartas, e cada fila fica com a altura toda; em duas filas as cartas
+        // ficavam com 60 px e meia mesa vazia
+        final side = box.maxWidth > box.maxHeight * 3;
+        if (!side) return Column(children: flipped ? rows.reversed.toList() : rows);
+        final row = [
+          rows[0],
+          VerticalDivider(width: 12, thickness: 1, color: Colors.white.withOpacity(0.15)),
+          rows[1],
+        ];
+        return Row(children: flipped ? row.reversed.toList() : row);
+      }),
     );
   }
 }
 
 class _CardRow extends StatelessWidget {
-  const _CardRow({required this.cards, required this.act, required this.flex});
+  const _CardRow({required this.cards, required this.act, required this.flex, this.counts = const {}});
 
   final List<ForgeCardView> cards;
   final _Interaction act;
   final int flex;
+
+  /// Quantas cartas iguais cada uma representa (terrenos empilhados).
+  final Map<int, int> counts;
 
   @override
   Widget build(BuildContext context) {
@@ -1216,8 +1817,12 @@ class _CardRow extends StatelessWidget {
       flex: flex,
       child: LayoutBuilder(builder: (context, box) {
         // as cartas viradas ocupam a altura na horizontal: a largura sai da altura da fila
-        final w = (box.maxHeight * cardAspect * 0.92).clamp(24.0, 110.0);
-        return ListView.separated(
+        // no tablet há espaço para cartas que se leem; no telemóvel a altura manda
+        final w = (box.maxHeight * cardAspect * 0.92).clamp(24.0, 150.0);
+        // centradas, como numa mesa; com muitas, a fila desliza
+        return Center(
+            child: ListView.separated(
+          shrinkWrap: true,
           scrollDirection: Axis.horizontal,
           // quem ataca sai um pouco da fila
           clipBehavior: Clip.none,
@@ -1225,12 +1830,44 @@ class _CardRow extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(width: 4),
           itemBuilder: (_, i) {
             final c = cards[i];
+            final n = counts[c.instance.id] ?? 1;
+            final card = act.card(c, w);
             return SizedBox(
-              width: c.instance.tapped && !c.attacking ? w / cardAspect : w,
-              child: Center(child: act.card(c, w)),
+              width: (c.instance.tapped && !c.attacking ? w / cardAspect : w) + (n > 1 ? 6 : 0),
+              child: Center(
+                child: n == 1
+                    ? card
+                    : Stack(clipBehavior: Clip.none, children: [
+                        // o rebordo de outra carta por trás, um pouco desviado: lê-se como uma
+                        // pilha (não é outra carta: cada carta tem a sua chave para as animações)
+                        Positioned(
+                          left: 5,
+                          top: -4,
+                          right: -5,
+                          bottom: 4,
+                          // virada como a carta (que roda por cima do seu espaço de pé)
+                          child: Transform.rotate(
+                            angle: c.instance.tapped && !c.attacking ? pi / 2 : 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF26345F),
+                                borderRadius: BorderRadius.circular(w * cardCorner),
+                                border: Border.all(color: Colors.white.withOpacity(0.45)),
+                              ),
+                            ),
+                          ),
+                        ),
+                        card,
+                        Positioned(
+                          right: -6,
+                          bottom: -4,
+                          child: _Badge(text: '×$n', color: Colors.black.withOpacity(0.78)),
+                        ),
+                      ]),
+              ),
             );
           },
-        );
+        ));
       }),
     );
   }
@@ -1253,6 +1890,9 @@ class _CenterStrip extends StatelessWidget {
     final last = state.log.isEmpty ? '' : state.log.first;
     final onTable = {for (final c in state.cards) c.instance.id};
     final stack = state.stack;
+    // no telemóvel, a pilha mais baixa: com cartas grandes e 3 linhas, as duas
+    // mesas ficavam com cartas de 30 px sempre que havia algo na pilha
+    final narrow = MediaQuery.sizeOf(context).width < 560;
     return Container(
       width: double.infinity,
       color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.92),
@@ -1273,7 +1913,7 @@ class _CenterStrip extends StatelessWidget {
                           : act.geo.key('s${stack[i].id}'),
                       child: _StackCard(
                         card: stack[i].name == null ? null : lookup.byName(stack[i].name!),
-                        width: i == 0 ? 52 : 36,
+                        width: i == 0 ? (narrow ? 36 : 52) : (narrow ? 26 : 36),
                         chosen: stack[i].id != null && act.chosen(stack[i].id!),
                       ),
                     ),
@@ -1282,7 +1922,7 @@ class _CenterStrip extends StatelessWidget {
               Expanded(
                 child: OracleText(
                   _clean(stack.first.text),
-                  maxLines: 3,
+                  maxLines: narrow ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall,
                 ),
@@ -1304,7 +1944,7 @@ class _StackCard extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(width * 0.06),
+        borderRadius: BorderRadius.circular(width * cardCorner),
         boxShadow: [
           BoxShadow(
             color: (chosen ? targetGlow : Theme.of(context).colorScheme.primary).withOpacity(0.7),
@@ -1312,9 +1952,7 @@ class _StackCard extends StatelessWidget {
           ),
         ],
       ),
-      child: card == null
-          ? const AspectRatio(aspectRatio: cardAspect, child: CardBack())
-          : CardImage(card!, radius: width * 0.06),
+      child: card == null ? const AspectRatio(aspectRatio: cardAspect, child: CardBack()) : CardImage(card!),
     );
   }
 }

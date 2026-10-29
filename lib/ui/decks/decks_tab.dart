@@ -12,6 +12,7 @@ import '../widgets/responsive.dart';
 import 'deck_editor_screen.dart';
 import 'deck_import_screen.dart';
 import '../../l10n/l10n.dart';
+import '../widgets/empty_state.dart';
 
 class DecksTab extends ConsumerWidget {
   const DecksTab({super.key, required this.onOpenData});
@@ -83,40 +84,32 @@ class DecksTab extends ConsumerWidget {
       body: !data.hasData
           ? NoDataMessage(onOpenData: onOpenData)
           : decks.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.style_outlined, size: 56, color: theme.colorScheme.primary),
-                      const SizedBox(height: 12),
-                      Text(tr('Ainda não tens decks'), style: theme.textTheme.titleLarge),
-                      const SizedBox(height: 6),
-                      Text(
-                          tr('Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.'),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => const DeckImportScreen(),
-                        )),
-                        icon: const Icon(Icons.content_paste),
-                        label: Text(tr('Importar lista')),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _newDeck(context, ref),
-                        icon: const Icon(Icons.add),
-                        label: Text(tr('Novo deck')),
-                      ),
-                    ]),
-                  ),
+              ? EmptyState(
+                  icon: Icons.style_outlined,
+                  title: tr('Ainda não tens decks'),
+                  body: tr('Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.'),
+                  actions: [
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => const DeckImportScreen(),
+                      )),
+                      icon: const Icon(Icons.content_paste),
+                      label: Text(tr('Importar lista')),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _newDeck(context, ref),
+                      icon: const Icon(Icons.add),
+                      label: Text(tr('Novo deck')),
+                    ),
+                  ],
                 )
               : GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                   // Telemóvel: uma coluna. Tablet: várias.
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: isWide(context) ? 560 : 10000,
-                    mainAxisExtent: 124,
+                    // no tablet, três colunas: duas deixavam dois terços do ecrã vazios
+                    maxCrossAxisExtent: isWide(context) ? 420 : 10000,
+                    mainAxisExtent: 128,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
                   ),
@@ -133,11 +126,15 @@ class DecksTab extends ConsumerWidget {
                         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                           builder: (_) => DeckEditorScreen(deckId: d.id!),
                         )),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(children: [
-                            SizedBox(
-                              width: 48,
+                        child: Row(children: [
+                          // o comandante em destaque, num painel no tom das cores do deck
+                          // (a imagem não se corta: regras do Scryfall)
+                          Container(
+                            width: 100,
+                            color: identityTint(identity).withOpacity(0.22),
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              width: 72,
                               child: cmds.isEmpty
                                   ? AspectRatio(
                                       aspectRatio: cardAspect,
@@ -151,13 +148,18 @@ class DecksTab extends ConsumerWidget {
                                     )
                                   : CardImage(
                                       ref.read(printsProvider).resolve(cmds.first,
-                                          printId: d.inBoard(Board.command).first.printId),
-                                      radius: 4),
+                                          printId: d.inBoard(Board.command).first.printId)),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                              child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                 Text(d.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style:
                                         theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 2),
@@ -176,10 +178,9 @@ class DecksTab extends ConsumerWidget {
                                   ColorIdentity(identity),
                                 ],
                               ]),
-                            ),
-                            const Icon(Icons.chevron_right),
-                          ]),
-                        ),
+                          ),
+                          const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.chevron_right)),
+                        ]),
                       ),
                     );
                   },

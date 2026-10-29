@@ -94,7 +94,7 @@ class _TestMatchSetupScreenState extends ConsumerState<TestMatchSetupScreen> {
     final ready = _decks.take(_count).every((d) => d != null);
     final shared = _shared && _count == 2;
     return Scaffold(
-      appBar: AppBar(title: Text(tr('Partida de teste'))),
+      appBar: AppBar(title: Text(tr('Vários decks, um aparelho'))),
       // "Começar" fica fora da lista: sempre à vista, mesmo com o teclado.
       body: Column(children: [
         Expanded(

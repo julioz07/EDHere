@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/theme.dart';
 
 /// Linha "continuar isto" (jogo gravado, pool por montar...): ícone, título,
 /// subtítulo e os botões. Com espaço, os botões ficam à direita; num ecrã
@@ -28,7 +29,7 @@ class ResumeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final button = FilledButton(
-      style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+      style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
       onPressed: onAction,
       child: Text(actionLabel),
     );

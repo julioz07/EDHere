@@ -148,6 +148,8 @@ final class EdhereGui extends AbstractGuiGame {
         if (in == null || in instanceof forge.gamemodes.match.input.InputLockUI) return "wait";
         String n = in.getClass().getSimpleName();
         if (in instanceof InputPassPriority) return "priority";
+        // depois do mulligan: escolher as cartas que vão para o fundo (não é "ficas com esta mão?")
+        if (n.equals("InputLondonMulligan")) return "bottom";
         if (n.contains("Mulligan")) return "mulligan";
         if (n.equals("InputAttack")) return "attack";
         if (n.equals("InputBlock")) return "block";

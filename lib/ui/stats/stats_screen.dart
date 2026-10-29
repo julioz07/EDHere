@@ -2,10 +2,12 @@ import 'package:card_db/card_db.dart' hide Card;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme.dart';
 import '../../data/providers.dart';
 import '../data/data_tab.dart' show formatDate;
 import '../widgets/responsive.dart';
 import '../../l10n/l10n.dart';
+import '../widgets/empty_state.dart';
 
 /// Histórico de partidas e estatísticas locais.
 class StatsScreen extends ConsumerStatefulWidget {
@@ -59,16 +61,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         );
 
     return Scaffold(
-      appBar: AppBar(title: Text(tr('Histórico e estatísticas'))),
+      appBar: AppBar(title: FitText(tr('Histórico e estatísticas'), alignment: Alignment.centerLeft)),
       body: MaxWidth(
           child: games.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                        tr('Ainda não há jogos guardados. No fim de uma partida, usa o menu da mesa → "Terminar jogo".'),
-                        textAlign: TextAlign.center),
-                  ),
+              ? EmptyState(
+                  icon: Icons.bar_chart,
+                  title: tr('Ainda não há jogos guardados'),
+                  body: tr('No fim de uma partida, usa o menu da mesa → "Terminar jogo" e ela fica aqui.'),
                 )
               : ListView(padding: const EdgeInsets.all(16), children: [
                   // Mesma altura para todos, mesmo quando o texto parte em duas linhas.
@@ -121,7 +120,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(
                           g.myWon ? Icons.emoji_events : Icons.sports_esports_outlined,
-                          color: g.myWon ? Colors.amber : null,
+                          color: g.myWon ? GameColors.gold : null,
                         ),
                         title: Text(g.players.map((p) => p.name).join(' · ')),
                         subtitle: Text([

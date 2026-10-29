@@ -8,6 +8,7 @@ import 'card_detail_screen.dart';
 import 'card_search.dart';
 import 'collection_import_screen.dart';
 import '../../l10n/l10n.dart';
+import '../widgets/empty_state.dart';
 
 /// Cartas: pesquisa em toda a base e "As minhas cartas" (a coleção).
 class CardsTab extends ConsumerWidget {
@@ -38,17 +39,15 @@ class CardsTab extends ConsumerWidget {
             IconButton(
               tooltip: tr('Importar para as minhas cartas'),
               icon: const Icon(Icons.file_download_outlined),
-              onPressed: () => Navigator.of(context)
-                  .push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
             ),
           ],
           bottom: TabBar(tabs: [
             Tab(icon: const Icon(Icons.search), text: tr('Pesquisa')),
             Tab(
               icon: const Icon(Icons.inventory_2_outlined),
-              text: collection.isEmpty
-                  ? tr('As minhas cartas')
-                  : tr('As minhas cartas ({total})', {'total': total}),
+              text: collection.isEmpty ? tr('As minhas cartas') : tr('As minhas cartas ({total})', {'total': total}),
             ),
           ]),
         ),
@@ -72,28 +71,19 @@ class _EmptyCollection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.inventory_2_outlined, size: 56, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          Text(tr('Ainda não tens cartas aqui'), style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(
-            tr('Junta as cartas que tens para criares decks só com elas. É só indicativo: não é um inventário. Podes importar do ManaBox, Moxfield, Deckbox ou de uma lista de texto, ou usar "Tenho esta carta" na ficha de cada carta.'),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context)
-                .push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
-            icon: const Icon(Icons.file_download_outlined),
-            label: Text(tr('Importar lista')),
-          ),
-        ]),
-      ),
+    return EmptyState(
+      icon: Icons.inventory_2_outlined,
+      title: tr('Ainda não tens cartas aqui'),
+      body: tr(
+          'Junta as cartas que tens para criares decks só com elas. É só indicativo: não é um inventário. Podes importar do ManaBox, Moxfield, Deckbox ou de uma lista de texto, ou usar "Tenho esta carta" na ficha de cada carta.'),
+      actions: [
+        FilledButton.icon(
+          onPressed: () =>
+              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CollectionImportScreen())),
+          icon: const Icon(Icons.file_download_outlined),
+          label: Text(tr('Importar lista')),
+        ),
+      ],
     );
   }
 }
@@ -113,8 +103,8 @@ class NoDataMessage extends ConsumerWidget {
     // A verificação diária de novidades não conta: só a descarga a sério.
     final busy = data.phase == DataPhase.downloading || data.phase == DataPhase.importing;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -132,8 +122,7 @@ class NoDataMessage extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             if (busy) ...[
-              LinearProgressIndicator(
-                  value: data.progress, minHeight: 6, borderRadius: BorderRadius.circular(3)),
+              LinearProgressIndicator(value: data.progress, minHeight: 6, borderRadius: BorderRadius.circular(3)),
               const SizedBox(height: 8),
               Text(data.message, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
               TextButton(onPressed: data.cancel, child: Text(tr('Cancelar'))),
@@ -141,8 +130,8 @@ class NoDataMessage extends ConsumerWidget {
               if (data.phase == DataPhase.error)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(data.message,
-                      style: TextStyle(color: theme.colorScheme.error), textAlign: TextAlign.center),
+                  child:
+                      Text(data.message, style: TextStyle(color: theme.colorScheme.error), textAlign: TextAlign.center),
                 ),
               FilledButton.icon(
                 onPressed: () => data.update(includeRulings: true),

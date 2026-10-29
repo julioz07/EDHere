@@ -1,0 +1,13 @@
+[
+  ["=Este mulligan é grátis: não pões nenhuma carta no fundo. Toca em OK.", "This mulligan is free: you don't put any cards on the bottom. Tap OK.", "Este mulligan es gratis: no pones ninguna carta al fondo. Toca OK.", "Questo mulligan è gratuito: non metti nessuna carta in fondo. Tocca OK."],
+  ["=Pronto. Toca em OK, ou na carta escolhida para mudar.", "Done. Tap OK, or tap the chosen card to change it.", "Listo. Toca OK, o la carta elegida para cambiarla.", "Fatto. Tocca OK, o la carta scelta per cambiarla."],
+  ["=Em Commander, todos os decks precisam de um comandante.", "In Commander, every deck needs a commander.", "En Commander, todos los mazos necesitan un comandante.", "In Commander, ogni mazzo ha bisogno di un comandante."],
+  ["=Partida sem comandante", "Game without commanders", "Partida sin comandante", "Partita senza comandante"],
+  ["=Nem todos os decks são de Commander, por isso a partida é normal: 20 vidas e sem zona de comando. Para jogar Commander, escolhe só decks de Commander.", "Not every deck is a Commander deck, so this is a regular game: 20 life and no command zone. To play Commander, pick only Commander decks.", "No todos los mazos son de Commander, así que la partida es normal: 20 vidas y sin zona de mando. Para jugar Commander, elige solo mazos de Commander.", "Non tutti i mazzi sono Commander, quindi la partita è normale: 20 punti vita e niente zona di comando. Per giocare a Commander, scegli solo mazzi Commander."],
+  ["=Jogar assim", "Play anyway", "Jugar así", "Gioca così"],
+  ["=Mudar os decks", "Change decks", "Cambiar los mazos", "Cambia i mazzi"],
+  ["=Dano de comandante: {n} de 21", "Commander damage: {n} of 21", "Daño de comandante: {n} de 21", "Danno da comandante: {n} su 21"],
+  ["=Preparar a mão", "Opening hand", "Mano inicial", "Mano iniziale"],
+  ["=O bot ganha esta partida. As partidas contra o bot não ficam guardadas.", "The bot wins this game. Games against the bot aren't saved.", "El bot gana esta partida. Las partidas contra el bot no se guardan.", "Il bot vince questa partita. Le partite contro il bot non vengono salvate."],
+  ["={v} resolveu", "{v} resolved", "{v} se resolvió", "{v} si è risolto"]
+]

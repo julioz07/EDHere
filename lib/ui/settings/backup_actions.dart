@@ -208,12 +208,12 @@ Future<void> importBackupFile(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) return;
   final lines = [
     if (decks)
-      '${r.decksAdded} ${r.decksAdded == 1 ? 'deck novo' : 'decks novos'}'
-          '${r.decksSkipped > 0 ? ' (${r.decksSkipped} já ${r.decksSkipped == 1 ? 'existia' : 'existiam'})' : ''}',
+      '${r.decksAdded == 1 ? tr('1 deck novo') : tr('{n} decks novos', {'n': r.decksAdded})}'
+          '${r.decksSkipped == 0 ? '' : r.decksSkipped == 1 ? tr(' (1 já existia)') : tr(' ({n} já existiam)', {'n': r.decksSkipped})}',
     if (collection) tr('{cardsAdded} cartas atualizadas na coleção', {'cardsAdded': r.cardsAdded}),
     if (games) tr('{gamesAdded} partidas no histórico', {'gamesAdded': r.gamesAdded}),
     if (r.missing.isNotEmpty)
-      tr('\nNão encontradas na base de cartas (atualiza a base e importa de novo): {v}{v2}',
+      tr('\nAinda não estão na base de cartas (ficam no deck e aparecem quando atualizares a base): {v}{v2}',
           {'v': r.missing.take(10).join(', '), 'v2': r.missing.length > 10 ? '…' : ''}),
   ];
   _info(context, tr('Importado'), lines.join('\n'));

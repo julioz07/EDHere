@@ -88,7 +88,7 @@ class PoolCardView extends StatelessWidget {
             border: Border.all(color: border, width: border == Colors.transparent ? 0 : 2),
           ),
           child: Stack(children: [
-            CardImage(card.shown, radius: 7),
+            CardImage(card.shown),
             if (card.foil)
               Positioned.fill(
                 child: IgnorePointer(

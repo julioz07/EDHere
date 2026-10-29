@@ -4,6 +4,7 @@ library;
 
 export 'src/backup.dart';
 export 'src/card.dart';
+export 'src/card_roles.dart';
 export 'src/boosters.dart';
 export 'src/card_repository.dart';
 export 'src/colors.dart';

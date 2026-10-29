@@ -4,7 +4,7 @@
 # Uso: ptap.sh [x y] [espera] [saida.png]
 export MSYS_NO_PATHCONV=1
 ADB=${ADB:-~/AppData/Local/Android/Sdk/platform-tools/adb}
-OUT=${4:-$PWD/shot.png}
+OUT=${4:-${TEMP:-/tmp}/edhere-shot.png}  # nunca na pasta do projeto
 if [ -n "$2" ]; then
   $ADB shell input tap $(( ($1 - 648) * 1023 / 1000 )) $(( $2 * 1024 / 1000 ))
 fi

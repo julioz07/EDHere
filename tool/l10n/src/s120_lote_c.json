@@ -1,0 +1,23 @@
+[
+  ["=Deck aleatório", "Random deck", "Mazo aleatorio", "Mazzo casuale"],
+  ["=Rampa", "Ramp", "Rampa", "Rampa"],
+  ["=Compra de cartas", "Card draw", "Robo de cartas", "Pescaggio"],
+  ["=Remoção e respostas", "Removal and interaction", "Eliminación e interacción", "Rimozione e interazione"],
+  ["=Limpezas de mesa", "Board wipes", "Barridos de mesa", "Board wipe"],
+  ["=Tutores", "Tutors", "Tutores", "Tutor"],
+  ["=Funções", "Roles", "Funciones", "Ruoli"],
+  ["=Costuma ter {a}–{b}", "Usually {a}–{b}", "Suele tener {a}–{b}", "Di solito {a}–{b}"],
+  ["={v}% de ter pelo menos uma na mão inicial", "{v}% to have at least one in the opening hand", "{v}% de tener al menos una en la mano inicial", "{v}% di averne almeno una nella mano iniziale"],
+  ["=Nenhuma carta.", "No cards.", "Ninguna carta.", "Nessuna carta."],
+  ["=Contado pelo texto das cartas: é uma estimativa.", "Counted from the card text: it's an estimate.", "Contado por el texto de las cartas: es una estimación.", "Contato dal testo delle carte: è una stima."],
+  ["=Combo de duas cartas (fora dos brackets 1–2; no 3, só se chegar tarde): {v}", "Two-card combo (not in brackets 1–2; in 3, only if it comes late): {v}", "Combo de dos cartas (fuera de los brackets 1–2; en el 3, solo si llega tarde): {v}", "Combo di due carte (fuori dai bracket 1–2; nel 3, solo se arriva tardi): {v}"],
+  ["=tutor", "tutor", "tutor", "tutor"],
+  ["=tutores", "tutors", "tutores", "tutor"],
+  ["=. Muitos tutores tornam o deck mais consistente: diz à mesa.", ". Many tutors make the deck more consistent: tell the table.", ". Muchos tutores hacen el mazo más consistente: díselo a la mesa.", ". Molti tutor rendono il mazzo più costante: dillo al tavolo."],
+  ["=A app só conhece os combos de duas cartas mais famosos: se o deck tem outros, fala disso com a mesa.", "The app only knows the most famous two-card combos: if the deck has others, talk about it with the table.", "La app solo conoce los combos de dos cartas más famosos: si el mazo tiene otros, háblalo con la mesa.", "L'app conosce solo le combo di due carte più famose: se il mazzo ne ha altre, parlane al tavolo."],
+  ["=Vários decks, um aparelho", "Several decks, one device", "Varios mazos, un dispositivo", "Più mazzi, un dispositivo"],
+  ["=Testa decks uns contra os outros", "Test decks against each other", "Prueba mazos unos contra otros", "Prova i mazzi uno contro l'altro"],
+  ["=+1 (manter premido: +10)", "+1 (hold: +10)", "+1 (mantén pulsado: +10)", "+1 (tieni premuto: +10)"],
+  ["=−1 (manter premido: −10)", "−1 (hold: −10)", "−1 (mantén pulsado: −10)", "−1 (tieni premuto: −10)"],
+  ["=Mantém premido o −1 ou o +1 para mudar 10.", "Hold −1 or +1 to change by 10.", "Mantén pulsado −1 o +1 para cambiar 10.", "Tieni premuto −1 o +1 per cambiare di 10."]
+]

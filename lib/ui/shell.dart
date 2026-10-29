@@ -35,6 +35,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     AppShell.reopenTab = null;
     return t;
   }
+
   DateTime? _backPressed;
 
   /// Separador de partida: Decks quando já há cartas, senão Cartas.
@@ -117,8 +118,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               destinations: [
                 NavigationRailDestination(icon: const Icon(Icons.search), label: Text(tr('Cartas'))),
                 NavigationRailDestination(icon: const Icon(Icons.style_outlined), label: Text(tr('Decks'))),
-                NavigationRailDestination(
-                    icon: const Icon(Icons.table_restaurant_outlined), label: Text(tr('Jogar'))),
+                NavigationRailDestination(icon: const Icon(Icons.table_restaurant_outlined), label: Text(tr('Jogar'))),
                 NavigationRailDestination(icon: settingsIcon, label: Text(tr('Definições'))),
               ],
             ),
@@ -130,15 +130,20 @@ class _AppShellState extends ConsumerState<AppShell> {
     } else {
       page = Scaffold(
         body: body,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: _go,
-          destinations: [
-            NavigationDestination(icon: const Icon(Icons.search), label: tr('Cartas')),
-            NavigationDestination(icon: const Icon(Icons.style_outlined), label: tr('Decks')),
-            NavigationDestination(icon: const Icon(Icons.table_restaurant_outlined), label: tr('Jogar')),
-            NavigationDestination(icon: settingsIcon, label: tr('Definições')),
-          ],
+        // com letra grande, "Impostazioni" partia em duas linhas: os ícones já
+        // dizem o que é cada separador, por isso a escala fica limitada
+        bottomNavigationBar: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.15,
+          child: NavigationBar(
+            selectedIndex: _tab,
+            onDestinationSelected: _go,
+            destinations: [
+              NavigationDestination(icon: const Icon(Icons.search), label: tr('Cartas')),
+              NavigationDestination(icon: const Icon(Icons.style_outlined), label: tr('Decks')),
+              NavigationDestination(icon: const Icon(Icons.table_restaurant_outlined), label: tr('Jogar')),
+              NavigationDestination(icon: settingsIcon, label: tr('Definições')),
+            ],
+          ),
         ),
       );
     }

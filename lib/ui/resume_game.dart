@@ -125,7 +125,7 @@ class SoloResumeCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 20),
       child: ResumeTile(
         icon: Icons.bookmark_rounded,
-        title: save.title,
+        title: shortTitle(save.title),
         subtitle: tr('Jogo gravado · turno {turn} · {when}', {'turn': save.turn, 'when': when}),
         deleteTooltip: tr('Apagar'),
         onDelete: () async {
@@ -149,4 +149,11 @@ class SoloResumeCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// "Ana vs Jogador 2 vs Jogador 3 vs Jogador 4" fica "Ana + 3": numa linha
+/// cabe e diz o mesmo.
+String shortTitle(String title) {
+  final names = title.split(' vs ');
+  return names.length < 3 ? title : '${names.first} + ${names.length - 1}';
 }

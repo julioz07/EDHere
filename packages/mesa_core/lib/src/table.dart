@@ -325,8 +325,10 @@ class Table {
       case Ev.commanderDamage:
         final pl = s.players[i('seat')]!;
         final cmd = i('cmdId');
-        final d = i('delta');
-        pl.commanderDamage[cmd] = ((pl.commanderDamage[cmd] ?? 0) + d).clamp(0, 999);
+        // a vida só muda pelo dano que de facto mudou: "−" com o dano a 0 não dá vida
+        final before = pl.commanderDamage[cmd] ?? 0;
+        pl.commanderDamage[cmd] = (before + i('delta')).clamp(0, 999);
+        final d = pl.commanderDamage[cmd]! - before;
         pl.life -= d;
         final c = s.cards[cmd];
         return mesaTr('{v}: {v2}{d} dano de comandante de {v3} ({v4}; vida {life})', {'v': pl.name, 'v2': d > 0 ? '+' : '', 'd': d, 'v3': c == null ? '?' : _cardName(c), 'v4': pl.commanderDamage[cmd], 'life': pl.life});

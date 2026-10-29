@@ -77,7 +77,7 @@ class _OptionTile extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(children: [
-                if (card != null) ...[SizedBox(width: 40, child: CardImage(card!, radius: 3)), const SizedBox(width: 12)],
+                if (card != null) ...[SizedBox(width: 40, child: CardImage(card!)), const SizedBox(width: 12)],
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                     OracleText(card?.displayName ?? option.label,
@@ -119,7 +119,7 @@ class _ChooseDialogState extends State<_ChooseDialog> {
     final ask = widget.ask;
     final ok = _picked.length >= ask.min && _picked.length <= ask.max;
     return AlertDialog(
-      title: Text(_title(ask, tr('Escolhe'))),
+      title: OracleText(_title(ask, tr('Escolhe'))),
       content: SizedBox(
         width: 420,
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -182,14 +182,14 @@ class _ConfirmDialog extends StatelessWidget {
     final yes = ask.labels.isNotEmpty ? ask.labels[0] : tr('Sim');
     final no = ask.labels.length > 1 ? ask.labels[1] : tr('Não');
     return AlertDialog(
-      title: ask.title == null ? null : Text(ask.title!),
+      title: ask.title == null ? null : OracleText(ask.title!),
       content: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (source != null) ...[SizedBox(width: 70, child: CardImage(source!, radius: 4)), const SizedBox(width: 12)],
+        if (source != null) ...[SizedBox(width: 70, child: CardImage(source!)), const SizedBox(width: 12)],
         Expanded(child: OracleText(ask.message ?? '')),
       ]),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(no)),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(yes)),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: OracleText(no)),
+        FilledButton(onPressed: () => Navigator.pop(context, true), child: OracleText(yes)),
       ],
     );
   }
@@ -266,7 +266,7 @@ class _InputDialogState extends State<_InputDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_title(widget.ask, '')),
+      title: OracleText(_title(widget.ask, '')),
       content: TextField(
         controller: _text,
         autofocus: true,

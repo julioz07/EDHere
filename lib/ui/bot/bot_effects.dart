@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
 import '../../bot/forge_table.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/card_view.dart';
@@ -78,14 +79,14 @@ class BotSpotlight extends StatelessWidget {
         if (spot.targets != null) ...[
           const SizedBox(height: 6),
           Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.gps_fixed, color: Color(0xFFFF8A80), size: 16),
+            const Icon(Icons.gps_fixed, color: GameColors.target, size: 16),
             const SizedBox(width: 6),
             Flexible(
               // o Forge escreve "[Marwyn, the Nurturer (201)]": sem parênteses retos nem ids
               child: Text(spot.targets!.replaceAll(RegExp(r' \(\d+\)'), '').replaceAll(RegExp(r'[\[\]]'), ''),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFFF8A80))),
+                  style: theme.textTheme.bodySmall?.copyWith(color: GameColors.target)),
             ),
           ]),
         ],
@@ -144,7 +145,7 @@ class _SpotCard extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(width * 0.05),
+        borderRadius: BorderRadius.circular(width * cardCorner),
         boxShadow: [BoxShadow(color: glow.withOpacity(0.8), blurRadius: 24, spreadRadius: 2)],
       ),
       child: card == null
@@ -152,7 +153,7 @@ class _SpotCard extends StatelessWidget {
               aspectRatio: cardAspect,
               child: Card(child: Center(child: Text(name, textAlign: TextAlign.center))),
             )
-          : CardImage(card!, preferNormal: true, radius: width * 0.05),
+          : CardImage(card!, preferNormal: true),
     );
   }
 }
@@ -198,7 +199,16 @@ class TurnBanner extends StatelessWidget {
 /// fim, com a atual acesa na cor de quem joga e o passo do combate por extenso.
 class PhaseBar extends StatelessWidget {
   const PhaseBar(
-      {super.key, required this.phase, required this.mine, required this.compact, this.stops = const {}, this.onTap});
+      {super.key,
+      required this.phase,
+      required this.mine,
+      required this.compact,
+      this.stops = const {},
+      this.onTap,
+      this.color});
+
+  /// A cor de quem joga o turno (a fase atual acende nela); sem ela, a do tema.
+  final Color? color;
 
   /// Os segmentos onde o jogo pára à minha espera neste turno (um ponto em cima).
   final Set<int> stops;
@@ -230,7 +240,9 @@ class PhaseBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final on = mine ? scheme.primary : scheme.tertiary;
+    final on = color ?? (mine ? scheme.primary : scheme.tertiary);
+    // texto escuro nas cores claras (o laranja do bot), branco nas escuras
+    final onText = ThemeData.estimateBrightnessForColor(on) == Brightness.dark ? Colors.white : const Color(0xFF10172E);
     final current = _segment(phase);
     final segments = [
       (Icons.wb_twilight, tr('Início')),
@@ -241,7 +253,11 @@ class PhaseBar extends StatelessWidget {
     ];
     return GestureDetector(
       onTap: onTap,
-      child: Padding(
+      // no tablet, uma faixa centrada: cinco comprimidos a toda a largura pareciam um formulário
+      child: Center(
+          child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(children: [
           for (var i = 0; i < segments.length; i++)
@@ -263,11 +279,11 @@ class PhaseBar extends StatelessWidget {
                       height: 6,
                       margin: const EdgeInsets.only(right: 4),
                       decoration: BoxDecoration(
-                        color: i == current ? scheme.onPrimary : const Color(0xFFFF9800),
+                        color: i == current ? onText : GameColors.stop,
                         shape: BoxShape.circle,
                       ),
                     ),
-                  Icon(segments[i].$1, size: 14, color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
+                  Icon(segments[i].$1, size: 14, color: i == current ? onText : scheme.onSurfaceVariant),
                   if (!compact || i == current) ...[
                     const SizedBox(width: 4),
                     Flexible(
@@ -276,7 +292,7 @@ class PhaseBar extends StatelessWidget {
                         i == current && i == 2 && phase != 'COMBAT_BEGIN' ? _combatStep(phase) : segments[i].$2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelSmall
-                            ?.copyWith(color: i == current ? scheme.onPrimary : scheme.onSurfaceVariant),
+                            ?.copyWith(color: i == current ? onText : scheme.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -285,6 +301,7 @@ class PhaseBar extends StatelessWidget {
             ),
         ]),
       ),
+      )),
     );
   }
 
@@ -336,7 +353,7 @@ class _AnimatedLifeState extends State<AnimatedLife> with SingleTickerProviderSt
         final t = _anim.value;
         final active = _anim.isAnimating;
         final lost = _delta < 0;
-        final color = lost ? const Color(0xFFE53935) : const Color(0xFF43A047);
+        final color = lost ? GameColors.attack : GameColors.lifeGain;
         // tremer só ao perder, a amortecer
         final shake = active && lost ? sin(t * pi * 10) * 6 * (1 - t) : 0.0;
         final glow = active ? (1 - t) : 0.0;
@@ -445,11 +462,12 @@ class GameOverPanel extends StatelessWidget {
                 ? tr('O bot ganhou')
                 : tr('{v} ganhou', {'v': winner.name});
     final color = won
-        ? const Color(0xFF43A047)
+        ? GameColors.lifeGain
         : lost
-            ? const Color(0xFFE53935)
+            ? GameColors.attack
             : theme.colorScheme.primary;
-    final colors = [theme.colorScheme.primary, const Color(0xFFE53935), const Color(0xFF43A047), Colors.amber];
+    // uma linha por jogador, na cor do lugar dele na mesa
+    const colors = GameColors.players;
     return Container(
       color: Colors.black.withOpacity(0.6),
       alignment: Alignment.center,
@@ -507,14 +525,14 @@ class GameOverPanel extends StatelessWidget {
                 Row(children: [
                   Expanded(
                     child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                         onPressed: onLog,
                         child: Text(tr('Registo'))),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                         onPressed: onLeave,
                         child: Text(tr('Sair'))),
                   ),

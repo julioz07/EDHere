@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.8.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.9.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -113,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.9.1 | Jogar contra até 4 bots em Commander: separadores com uma cor por jogador, o tabuleiro de quem ataca ou responde em foco, e o bot mostra o que está a pensar (cartas e alvos a brilhar na cor dele). Visual novo: menu Jogar com modos em cartões, lista de decks com o comandante, três vistas no editor, cores por jogador nas mesas. Estatísticas do deck com rampa, compra, remoção, limpezas e tutores e a probabilidade na mão inicial; o bracket mostra tutores e combos famosos. Mesa partilhada: manter premido muda a vida em 10, com o total das mudanças. Bots com deck aleatório, picks de draft melhores, avisos de derrota (0 de vida, 10 de veneno, 21 de dano de comandante). Textos do Forge traduzidos e muitas correções em ecrãs pequenos |
 | 1.8.1 | Jogo contra o bot: custos de mana com símbolos no pagamento, na pilha e nos diálogos; quem ataca já não se deita (avança como no Arena); as escolhas entre efeitos são botões |
 | 1.8.0 | Jogo contra o bot com mais vida: cartas a voar entre zonas, setas de ataque e bloqueio, destaque da carta do bot, pilha com mini-cartas, tremor e flash no dano, sons e vibração, barra das fases, vida animada, indicador do bot a pensar, mão em leque, moeda e mulligan em grande, ecrã de fim com gráfico da vida e revanche. Atacar e bloquear a arrastar, paragens por fase e controlo total, velocidade do bot, Desfazer em botão próprio |
 | 1.7.0 | Jogar contra o bot: partida 1 contra 1 com as regras completas pelo motor do Forge (GPL-3.0), dentro da app e sem internet, com três dificuldades; ver o bot a jogar contra outro bot. O código do EDHere passa a ser aberto, sob a GPL-3.0 |
@@ -161,7 +162,8 @@ EDHere é **conteúdo de fãs não oficial**, permitido pela [Fan Content Policy
 - Composição dos boosters e pacotes JumpStart: [MTGJSON](https://mtgjson.com) (licença MIT).
 - Símbolos dos sets: fonte [Keyrune](https://github.com/andrewgioia/keyrune), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/keyrune_LICENSE.md`). Para sets novos: atualizar `assets/fonts/keyrune.ttf` e correr `python -I tool/gen_keyrune_glyphs.py keyrune.css`.
 - Símbolos de mana, contadores e habilidades: fonte [Mana](https://github.com/andrewgioia/mana), de Andrew Gioia (SIL OFL 1.1; licença em `assets/licenses/mana_OFL.txt`).
-- Motor de regras e bot: [Forge](https://github.com/Card-Forge/forge) (GPL-3.0), usado sem alterações; o commit usado está em `tool/forge/build_forge.py`.
+- Motor de regras e bot: [Forge](https://github.com/Card-Forge/forge) (GPL-3.0); o código vem sem alterações, no commit que está em `tool/forge/build_forge.py`. Os dados levam correções nossas, em `tool/forge/overrides`: traduções e dicas para a IA em alguns guiões de cartas.
+- Dicas para a IA do Forge em guiões de cartas (`tool/forge/overrides/cards`): do [Grimório](https://github.com/hubertdungen/grimorio), de @hubertdungen (GPL-3.0).
 
 A app é e será **100% gratuita**: sem anúncios, sem funcionalidades pagas, sem contas.
 

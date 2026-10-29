@@ -189,6 +189,12 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 // O Forge usa APIs do Java que só existem a partir do Android 8.0.
                 "supported" -> result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                // a memória total (MB): com 3 ou 4 bots, num aparelho modesto, a mesa avisa
+                "memoryMb" -> {
+                    val info = android.app.ActivityManager.MemoryInfo()
+                    (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(info)
+                    result.success((info.totalMem / (1024 * 1024)).toInt())
+                }
                 "status" -> result.success(ForgeEngine.status())
                 "init" -> ForgeEngine.init(this, call.argument<String>("language") ?: "en-US", reply)
                 "checkDecks" -> ForgeEngine.checkDecks(call.argument("seats")!!, reply)

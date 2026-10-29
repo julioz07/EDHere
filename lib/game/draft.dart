@@ -183,9 +183,11 @@ class DraftEngine {
   }
 }
 
-/// Bot simples: raridade primeiro; depois das primeiras escolhas, prefere
-/// as cores em que já está.
-List<int> botPick(List<DraftCard> pack, List<DraftCard> pool, int n, int Function(String oracleId) colorsOf) {
+/// Bot simples: raridade primeiro, mais o [valueOf] de cada carta (remoção e
+/// criaturas fazem os decks de Limited); depois das primeiras escolhas,
+/// prefere as cores em que já está.
+List<int> botPick(List<DraftCard> pack, List<DraftCard> pool, int n, int Function(String oracleId) colorsOf,
+    {double Function(String oracleId)? valueOf}) {
   final counts = List.filled(5, 0);
   for (final c in pool) {
     final m = colorsOf(c.print.oracleId);
@@ -197,7 +199,7 @@ List<int> botPick(List<DraftCard> pack, List<DraftCard> pool, int n, int Functio
   final mine = pool.length >= 4 ? (1 << ranked[0]) | (1 << ranked[1]) : 0x1f;
   double score(DraftCard c) {
     final m = colorsOf(c.print.oracleId);
-    var s = c.print.rarityRank * 2.0 + 1;
+    var s = c.print.rarityRank * 2.0 + 1 + (valueOf?.call(c.print.oracleId) ?? 0);
     if (m == 0) {
       s += 0.5; // incolor serve a qualquer deck
     } else if (m & ~mine == 0) {
@@ -222,6 +224,7 @@ class DraftHost {
     required this.config,
     required List<List<List<DraftCard>>> packs,
     required this.colorsOf,
+    this.valueOf,
   }) : engine = DraftEngine(packs: packs, picks: config.picks) {
     _sub = link.direct.listen(_onDirect);
   }
@@ -230,6 +233,7 @@ class DraftHost {
   final DraftConfig config;
   final DraftEngine engine;
   final int Function(String oracleId) colorsOf;
+  final double Function(String oracleId)? valueOf;
   late final StreamSubscription<Envelope> _sub;
   final Map<int, DateTime> _deadline = {};
   Timer? _clock;
@@ -290,7 +294,7 @@ class DraftHost {
     // Um instante, para não parecer que os bots escolhem antes de abrir.
     Timer(const Duration(milliseconds: 350), () {
       if (engine.current(pos) != pack) return;
-      _changed(engine.pick(pos, botPick(pack, engine.pools[pos], engine.picksNow(pos), colorsOf)));
+      _changed(engine.pick(pos, botPick(pack, engine.pools[pos], engine.picksNow(pos), colorsOf, valueOf: valueOf)));
     });
   }
 
@@ -310,7 +314,7 @@ class DraftHost {
       final pack = engine.current(pos);
       if (pack == null || now.isBefore(limit)) continue;
       _deadline.remove(pos);
-      _changed(engine.pick(pos, botPick(pack, engine.pools[pos], engine.picksNow(pos), colorsOf)));
+      _changed(engine.pick(pos, botPick(pack, engine.pools[pos], engine.picksNow(pos), colorsOf, valueOf: valueOf)));
       // O jogador não escolheu: tem de saber o que a app tirou por ele.
       _sendPool(pos);
     }

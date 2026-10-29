@@ -63,9 +63,14 @@ void main() {
     b.save(got.setQty('forest', Board.main, 29));
     importBackup(b, Backup.decode(text));
     expect(b.listDecks().map((d) => d.name), contains('Atraxa (importado)'));
+
+    // ...e importar o mesmo ficheiro mais uma vez não cria outro "(importado)".
+    final third = importBackup(b, Backup.decode(text));
+    expect(third.decksAdded, 0);
+    expect(b.listDecks().where((d) => d.name.startsWith('Atraxa')).length, 2);
   });
 
-  test('cartas que não existem procuram-se pelo nome ou ficam de fora', () {
+  test('cartas que não existem procuram-se pelo nome ou ficam no deck', () {
     final a = _open('c');
     a.save(const Deck(name: 'D', format: 'free').add('old-sol').add('gone', qty: 2));
     final text =
@@ -74,7 +79,8 @@ void main() {
     final b = _open('d');
     final r = importBackup(b, Backup.decode(text),
         resolve: (id, name) => name == 'Sol Ring' ? 'new-sol' : null);
-    expect(b.listDecks().single.entries.map((e) => e.oracleId), ['new-sol']);
+    // a desconhecida não se perde: aparece quando a base a tiver
+    expect(b.listDecks().single.entries.map((e) => e.oracleId), ['new-sol', 'gone']);
     expect(r.missing, {'Lost'});
   });
 

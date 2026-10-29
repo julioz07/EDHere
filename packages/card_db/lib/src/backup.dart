@@ -213,8 +213,9 @@ class BackupResult {
 }
 
 /// Junta um backup ao que já existe, sem apagar nada:
-/// - decks iguais (mesmo nome e mesmas cartas) não se repetem; com o mesmo
-///   nome e cartas diferentes entram como "(importado)";
+/// - decks iguais (mesmo nome, ou o mesmo com "(importado)", e mesmas cartas)
+///   não se repetem; com o mesmo nome e cartas diferentes entram como "(importado)";
+/// - nos decks, as cartas que esta base não conhece ficam (e contam em [missing]);
 /// - na coleção fica a quantidade maior;
 /// - partidas já existentes (mesma data e formato) não se repetem.
 /// [resolve] diz se uma carta existe nesta base, e procura pelo nome quando
@@ -246,8 +247,10 @@ BackupResult importBackup(
     for (final d in b.decks) {
       final entries = <DeckEntry>[];
       for (final e in d.entries) {
-        final id = fix(e.oracleId);
-        if (id == null) continue;
+        // a carta que esta base não conhece fica no deck com o Oracle ID do
+        // backup: a validação avisa e ela aparece quando a base for atualizada
+        // (deitá-la fora perdia-a, e importar de novo criava outro deck)
+        final id = fix(e.oracleId) ?? e.oracleId;
         final i = entries.indexWhere((x) => x.oracleId == id && x.board == e.board);
         if (i >= 0) {
           entries[i] = entries[i].copyWith(qty: entries[i].qty + e.qty);
@@ -257,7 +260,8 @@ BackupResult importBackup(
         }
       }
       final incoming = Deck(name: d.name, format: d.format, notes: d.notes, entries: entries);
-      final same = existing.where((x) => x.name == d.name).toList();
+      // o mesmo deck pode já ter entrado como "X (importado)" numa importação anterior
+      final same = existing.where((x) => x.name == d.name || x.name == '${d.name} (importado)').toList();
       final twin = same.where((x) => sig(x) == sig(incoming)).firstOrNull;
       if (twin != null) {
         r.decksSkipped++;

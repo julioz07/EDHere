@@ -83,6 +83,13 @@ void main() {
     expect(pick, [11]);
     // Sem pool ainda, vai a rara.
     expect(botPick([c(10, 'bR', 'R'), c(11, 'rC', 'C')], const [], 1, (o) => colors[o] ?? 0), [10]);
+    // Duas comuns nas suas cores: vai a que vale mais (a remoção).
+    final value = {'rC': 0.0, 'bolt': 2.5};
+    colors['bolt'] = red;
+    expect(
+        botPick([c(11, 'rC', 'C'), c(12, 'bolt', 'C')], pool, 1, (o) => colors[o] ?? 0,
+            valueOf: (o) => value[o] ?? 0),
+        [12]);
   });
 
   test('a configuração passa por JSON', () {

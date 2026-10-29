@@ -10,6 +10,7 @@ import '../../game/game_controller.dart';
 import 'table_screen.dart';
 import 'table_sheets.dart';
 import 'table_turns.dart';
+import '../widgets/life_delta.dart';
 import '../../l10n/l10n.dart';
 
 /// Mesa partilhada: dois jogadores frente a frente com um tablet (ou
@@ -116,7 +117,7 @@ class _TabletTableScreenState extends ConsumerState<TabletTableScreen> {
     final close = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : Colors.amber, size: 40),
+        icon: Icon(Icons.emoji_events_rounded, color: winner == null ? null : GameColors.gold, size: 40),
         title: Text(winner == null ? tr('Jogo terminado') : tr('{v} ganhou', {'v': winner.name})),
         content: Text(tr('Turno {turn} · guardado no histórico.', {'turn': s.turn})),
         actions: [
@@ -276,12 +277,14 @@ class _SeatArea extends StatelessWidget {
     final active = s.activeSeat == seat;
     final last = s.log.isEmpty ? null : s.log.last;
     final showResult = last != null && (last.type == Ev.rollDie || last.type == Ev.flipCoin) && last.actor == seat;
+    // a cor do lugar, como na faixa dos jogadores e na mesa do bot: forte na vez dele
+    final color = GameColors.player((s.players.keys.toList()..sort()).indexOf(seat));
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         border: Border.all(
-          color: active ? theme.colorScheme.primary : theme.colorScheme.outline,
-          width: active ? 3 : 1,
+          color: active ? color : color.withOpacity(0.45),
+          width: active ? 3 : 1.5,
         ),
         borderRadius: BorderRadius.circular(10),
       ),
@@ -295,10 +298,9 @@ class _SeatArea extends StatelessWidget {
                   child: Text(p.name, style: theme.textTheme.titleSmall, overflow: TextOverflow.ellipsis),
                 ),
                 const SizedBox(width: 4),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => ctrl.sendAs(seat, Intent(Ev.life, {'seat': seat, 'delta': -1})),
-                  icon: const Icon(Icons.remove),
+                LifeStepButton(
+                  up: false,
+                  onChange: (d) => ctrl.sendAs(seat, Intent(Ev.life, {'seat': seat, 'delta': d})),
                 ),
                 GestureDetector(
                   onTap: () {
@@ -309,11 +311,11 @@ class _SeatArea extends StatelessWidget {
                       style: theme.textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800, color: p.life <= 0 ? EdhColors.bad : null)),
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => ctrl.sendAs(seat, Intent(Ev.life, {'seat': seat, 'delta': 1})),
-                  icon: const Icon(Icons.add),
+                LifeStepButton(
+                  up: true,
+                  onChange: (d) => ctrl.sendAs(seat, Intent(Ev.life, {'seat': seat, 'delta': d})),
                 ),
+                LifeDelta(life: p.life),
                 if (showResult)
                   Padding(
                     padding: const EdgeInsets.only(left: 4),
@@ -336,7 +338,7 @@ class _SeatArea extends StatelessWidget {
                 ),
                 if (active)
                   FilledButton(
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 36)),
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                     onPressed: () => ctrl.sendAs(seat, const Intent(Ev.passTurn, {})),
                     child: Text(tr('Passar')),
                   ),

@@ -1,0 +1,10 @@
+[
+  ["=1 deck novo", "1 new deck", "1 mazo nuevo", "1 mazzo nuovo"],
+  ["={n} decks novos", "{n} new decks", "{n} mazos nuevos", "{n} mazzi nuovi"],
+  ["= (1 já existia)", " (1 already existed)", " (1 ya existía)", " (1 esisteva già)"],
+  ["= ({n} já existiam)", " ({n} already existed)", " ({n} ya existían)", " ({n} esistevano già)"],
+  ["=\nAinda não estão na base de cartas (ficam no deck e aparecem quando atualizares a base): {v}{v2}", "\nNot in the card database yet (they stay in the deck and show up when you update the database): {v}{v2}", "\nAún no están en la base de cartas (se quedan en el mazo y aparecerán cuando actualices la base): {v}{v2}", "\nNon ancora nel database delle carte (restano nel mazzo e compariranno quando aggiorni il database): {v}{v2}"],
+  ["={v} está com {n} de vida.", "{v} is at {n} life.", "{v} tiene {n} vidas.", "{v} ha {n} punti vita."],
+  ["={v} tem {n} marcadores de veneno.", "{v} has {n} poison counters.", "{v} tiene {n} contadores de veneno.", "{v} ha {n} segnalini veleno."],
+  ["={v} levou {n} de dano de um só comandante.", "{v} has taken {n} damage from a single commander.", "{v} ha recibido {n} de daño de un solo comandante.", "{v} ha subito {n} danni da un solo comandante."]
+]

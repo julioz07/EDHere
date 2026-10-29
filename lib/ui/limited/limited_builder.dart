@@ -12,6 +12,7 @@ import '../widgets/responsive.dart';
 import '../widgets/resume_tile.dart';
 import 'limited_common.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 
 const _basics = {'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest'};
 
@@ -468,7 +469,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
                   style: theme.textTheme.titleMedium),
             ),
             TextButton.icon(
-              style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+              style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
               onPressed: _chooseCommander,
               icon: const Icon(Icons.workspace_premium_outlined, size: 18),
               label: Text(commanders.isEmpty ? tr('Escolher') : tr('Trocar')),
@@ -518,7 +519,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
               child: Text(tr('Terrenos básicos ({basicCount})', {'basicCount': _basicCount}),
                   style: theme.textTheme.titleMedium)),
           TextButton.icon(
-            style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+            style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
             onPressed: _deck.isEmpty ? null : _suggestLands,
             icon: const Icon(Icons.auto_fix_high, size: 18),
             label: Text(tr('Completar até {target}', {'target': _target})),
@@ -615,7 +616,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           ]),
           actions: [
             FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
               onPressed: _deck.isEmpty || (widget.commander && _commanders.isEmpty) ? null : _save,
               icon: const Icon(Icons.save_outlined),
               label: Text(tr('Guardar')),

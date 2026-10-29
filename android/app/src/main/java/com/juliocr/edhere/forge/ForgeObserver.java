@@ -45,7 +45,7 @@ import forge.game.zone.ZoneType;
  * lança), por isso ler o jogo aqui é seguro. As pausas também ficam aqui: é
  * assim que se dá tempo para ver o que o bot fez.
  */
-final class ForgeObserver {
+final class ForgeObserver implements ForgeBots.Thinker {
     private static final ZoneType[] ZONES = {
             ZoneType.Battlefield, ZoneType.Hand, ZoneType.Graveyard, ZoneType.Exile, ZoneType.Command,
     };
@@ -75,6 +75,31 @@ final class ForgeObserver {
     }
 
     void setPace(int ms) { paceMs = ms; }
+
+    /**
+     * O bot vai fazer uma jogada: a mesa mostra o que ele está a ver (a carta, os
+     * alvos, quem ataca) e o jogo espera um pouco antes de a fazer, ao ritmo escolhido.
+     */
+    @Override
+    public void think(Player who, String kind, List<Integer> cards, List<Integer> players, double weight) {
+        if (stopped || who == null) return;
+        int ms = (int) (weight * paceMs);
+        Map<String, Object> m = new HashMap<>();
+        m.put("type", "think");
+        m.put("by", who.getId());
+        m.put("kind", kind);
+        m.put("cards", new ArrayList<Object>(cards));
+        m.put("players", new ArrayList<Object>(players));
+        m.put("ms", Math.max(ms, 500));
+        emit(m);
+        if (ms > 0) {
+            try {
+                Thread.sleep(ms);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
     void setHumans(Iterable<Player> players) {
         for (Player p : players) humans.add(p.getId());
@@ -168,9 +193,11 @@ final class ForgeObserver {
         } else if (ev instanceof GameEventTokenCreated) {
             pause = 0.4;
         } else if (ev instanceof GameEventTurnPhase) {
-            // no turno do bot as fases andam devagar o suficiente para se verem
+            // as fases andam devagar o suficiente para se verem e seguirem (o utilizador
+            // pediu pelo menos mais 2 s por fase, ao ritmo normal): no turno do bot e
+            // no meu quando o Forge passa sozinho (não há nada que se possa jogar)
             GameEventTurnPhase e = (GameEventTurnPhase) ev;
-            if (e.playerTurn() != null && !humans.isEmpty() && !humans.contains(e.playerTurn().getId())) pause = 0.25;
+            if (e.playerTurn() != null && !humans.isEmpty()) pause = humans.contains(e.playerTurn().getId()) ? 2.35 : 2.25;
         }
 
         long now = System.currentTimeMillis();

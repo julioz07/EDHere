@@ -61,7 +61,7 @@ class _TutorialHomeState extends ConsumerState<TutorialHome> {
     final missing = refs.where((r) => !images.has('small', r.key)).length;
     final job = images.job;
     return Scaffold(
-      appBar: AppBar(title: Text(tr('Aprender a jogar Commander')), actions: [
+      appBar: AppBar(title: FitText(tr('Aprender a jogar Commander'), alignment: Alignment.centerLeft), actions: [
         IconButton(
           tooltip: tr('Glossário'),
           icon: const Icon(Icons.menu_book_outlined),
@@ -79,9 +79,9 @@ class _TutorialHomeState extends ConsumerState<TutorialHome> {
           SegmentedButton<bool>(
             segments: [
               ButtonSegment(
-                  value: false, icon: const Icon(Icons.bolt), label: Text(tr('Já sei jogar Magic'))),
+                  value: false, icon: const Icon(Icons.bolt), label: FitText(tr('Já sei jogar Magic'))),
               ButtonSegment(
-                  value: true, icon: const Icon(Icons.school_outlined), label: Text(tr('Nunca joguei'))),
+                  value: true, icon: const Icon(Icons.school_outlined), label: FitText(tr('Nunca joguei'))),
             ],
             selected: {_full},
             onSelectionChanged: (v) => setState(() => _full = v.first),

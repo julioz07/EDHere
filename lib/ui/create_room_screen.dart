@@ -183,6 +183,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 decoration: InputDecoration(
                   labelText: tr('PIN (opcional)'),
                   helperText: tr('Impede que estranhos na mesma rede entrem'),
+                  helperMaxLines: 2,
                   counterText: '',
                 ),
               ),

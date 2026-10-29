@@ -50,3 +50,21 @@ class BottomActions extends StatelessWidget {
         ),
       );
 }
+
+/// Um rótulo de uma linha que encolhe a letra quando não cabe, em vez de partir
+/// ("Sistem/a") ou cortar ("Aprender a joga…"). Para títulos e botões
+/// segmentados, que num telemóvel pequeno com letra grande ficam sem espaço.
+class FitText extends StatelessWidget {
+  const FitText(this.text, {super.key, this.style, this.alignment = Alignment.center});
+
+  final String text;
+  final TextStyle? style;
+  final AlignmentGeometry alignment;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: alignment,
+        child: Text(text, maxLines: 1, style: style),
+      );
+}

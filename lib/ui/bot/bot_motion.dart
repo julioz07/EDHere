@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
 import '../../l10n/l10n.dart';
 import '../table/table_card.dart';
 import '../widgets/card_view.dart';
@@ -138,12 +139,12 @@ class FlightLayerState extends State<FlightLayer> with TickerProviderStateMixin 
                     scale: scale,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(w * 0.05),
+                        borderRadius: BorderRadius.circular(w * cardCorner),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 12 * sin(pi * t) + 2)],
                       ),
                       child: f.spec.card == null
                           ? const AspectRatio(aspectRatio: cardAspect, child: CardBack())
-                          : CardImage(f.spec.card!, radius: w * 0.05),
+                          : CardImage(f.spec.card!),
                     ),
                   ),
                 ),
@@ -173,8 +174,8 @@ class CombatArrowsPainter extends CustomPainter {
   final List<CombatArrow> arrows;
   final Animation<double> pulse;
 
-  static const attackColor = Color(0xFFE53935);
-  static const blockColor = Color(0xFF1E88E5);
+  static const attackColor = GameColors.attack;
+  static const blockColor = GameColors.block;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -250,10 +251,10 @@ class CardPeek extends StatelessWidget {
           curve: Curves.easeOut,
           builder: (_, v, child) => Transform.scale(scale: v, child: child),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(width: w, child: CardImage(card, preferNormal: true, radius: w * 0.05)),
+            SizedBox(width: w, child: CardImage(card, preferNormal: true)),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(minimumSize: const Size(120, 40)),
+              style: FilledButton.styleFrom(minimumSize: const Size(120, EdhSize.buttonCompact)),
               onPressed: onDetails,
               icon: const Icon(Icons.info_outline),
               label: Text(tr('Ficha completa')),

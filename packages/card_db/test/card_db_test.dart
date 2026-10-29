@@ -190,6 +190,21 @@ Sideboard
       expect(p.single.category, 'Ramp');
     });
 
+    test('zonas nas categorias do Archidekt', () {
+      final p = parseDeckText('1x Atraxa, Praetors\' Voice (cm2) 10 [Commander{top}]\n'
+          '1x Sol Ring (cmr) 472 [Ramp]\n'
+          '1x Cultivate (m21) 177 [Maybeboard{noDeck}{noPrice},Ramp]\n'
+          '1x Arcane Signet (eld) 331 [Considering{noDeck}]\n'
+          '1x Swords to Plowshares (sta) 10 [Side Effects]');
+      expect({for (final l in p) l.name: (l.board, l.category)}, {
+        "Atraxa, Praetors' Voice": (Board.command, null),
+        'Sol Ring': (Board.main, 'Ramp'),
+        'Cultivate': (Board.maybe, 'Ramp'),
+        'Arcane Signet': (Board.maybe, null),
+        'Swords to Plowshares': (Board.main, 'Side Effects'),
+      });
+    });
+
     test('"Commander", linha em branco e o resto sem cabeçalho: o resto é o deck', () {
       final p = parseDeckText('Commander\n1 Krenko, Mob Boss\n\n1 Sol Ring\n1 Lightning Bolt\n30 Mountain',
           hasCommandZone: true);

@@ -4,13 +4,14 @@ import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart' hide Table, Intent;
 import 'package:mesa_core/mesa_core.dart';
 
+import '../../app/theme.dart';
 import '../../data/settings.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import '../../l10n/l10n.dart';
 
 /// Cor do brilho dos alvos (como no exemplo de referência).
-const targetGlow = Color(0xFFFF5A7A);
+const targetGlow = GameColors.target;
 
 /// Verso de carta do EDHere (sem o verso oficial). Com [label], mostra uma
 /// etiqueta por cima (por exemplo "Virada" numa carta face para baixo).
@@ -25,7 +26,7 @@ class CardBack extends StatelessWidget {
       aspectRatio: cardAspect,
       child: LayoutBuilder(builder: (context, c) {
         return ClipRRect(
-          borderRadius: BorderRadius.circular(c.maxWidth * 0.05),
+          borderRadius: BorderRadius.circular(c.maxWidth * cardCorner),
           child: Stack(fit: StackFit.expand, children: [
             Image.asset(Brand.cardBack, fit: BoxFit.cover, filterQuality: FilterQuality.medium),
             if (label != null)
@@ -122,7 +123,7 @@ class TableCardView extends StatelessWidget {
     } else if (card == null) {
       face = _TokenFace(name: c.tokenName ?? tr('Token'), pt: c.tokenPt);
     } else {
-      face = CardImage(card!, face: c.faceIndex, radius: width * 0.05);
+      face = CardImage(card!, face: c.faceIndex);
     }
 
     final iconSize = (width * 0.16).clamp(10.0, 18.0);
@@ -165,7 +166,7 @@ class TableCardView extends StatelessWidget {
       child: Stack(clipBehavior: Clip.none, children: [
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(width * 0.06),
+            borderRadius: BorderRadius.circular(width * cardCorner),
             boxShadow: [glow],
           ),
           child: face,
@@ -174,7 +175,7 @@ class TableCardView extends StatelessWidget {
           Positioned(
             top: -4,
             left: -4,
-            child: Icon(Icons.star_rounded, size: width * 0.22, color: Colors.amber),
+            child: Icon(Icons.star_rounded, size: width * 0.22, color: GameColors.gold),
           ),
         if (showDetails && shownAbilities.isNotEmpty)
           Positioned(
@@ -279,10 +280,10 @@ class _CounterBadge extends StatelessWidget {
   }
 
   static Color _color(String kind) => switch (kind) {
-        CounterKind.plus => const Color(0xFF2E9E5B),
-        CounterKind.minus => const Color(0xFFC0392B),
-        CounterKind.loyalty => const Color(0xFF6C4BB6),
-        _ => const Color(0xFF455A64),
+        CounterKind.plus => GameColors.counterPlus,
+        CounterKind.minus => GameColors.counterMinus,
+        CounterKind.loyalty => GameColors.counterLoyalty,
+        _ => GameColors.counterOther,
       };
 }
 
@@ -313,7 +314,7 @@ class _TokenFace extends StatelessWidget {
           builder: (context, c) => Container(
             decoration: BoxDecoration(
               color: const Color(0xFFE9E4D8),
-              borderRadius: BorderRadius.circular(c.maxWidth * 0.06),
+              borderRadius: BorderRadius.circular(c.maxWidth * cardCorner),
               border: Border.all(color: Colors.black54, width: 2),
             ),
             padding: EdgeInsets.all(c.maxWidth * 0.06),

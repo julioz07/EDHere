@@ -16,6 +16,7 @@ import 'limited_builder.dart';
 import 'limited_common.dart';
 import 'sealed_screen.dart';
 import '../../l10n/l10n.dart';
+import '../../app/theme.dart';
 
 /// Sets feitos para commander draft (boosters de 20 cartas).
 const commanderDraftSets = {'CMR', 'CLB', 'CMM', 'MBC'};
@@ -353,7 +354,7 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
               ),
             ),
           TextButton.icon(
-            style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
+            style: TextButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
             onPressed: c.pool.isEmpty ? null : _showPool,
             icon: const Icon(Icons.style_outlined),
             label: Text('${c.pool.length}'),
