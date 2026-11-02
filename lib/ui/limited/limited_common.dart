@@ -28,6 +28,31 @@ class PoolCard {
 
 /// Junta a carta da base a cada carta dos boosters e guarda as impressões
 /// (para a arte continuar a aparecer no deck, mesmo offline).
+/// Os dados das cartas deste telemóvel têm as cartas do set? Um set muito
+/// recente vem nos boosters da app mas pode ainda não estar nos dados
+/// descarregados: os boosters sairiam vazios. Se faltarem, avisa e devolve false.
+Future<bool> checkSetCards(BuildContext context, WidgetRef ref, db.BoosterSetInfo set) async {
+  final repo = ref.read(cardRepoProvider);
+  if (repo == null) return false;
+  final boosters = await ref.read(boosterServiceProvider).set(set);
+  final ids = {for (final p in boosters.prints) p.oracleId};
+  if (ids.isEmpty) return true;
+  final found = repo.getMany(ids).length;
+  if (found >= ids.length * 0.9) return true;
+  if (context.mounted) {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('Faltam as cartas de {v}', {'v': set.name})),
+        content: Text(tr(
+            'A base de cartas deste telemóvel ainda não tem este set. Atualiza-a em Definições → Base de cartas e imagens offline e tenta outra vez.')),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
+  }
+  return false;
+}
+
 List<PoolCard> resolvePool(WidgetRef ref, Iterable<db.PackCard> cards) {
   final repo = ref.read(cardRepoProvider)!;
   final prints = ref.read(printsProvider);

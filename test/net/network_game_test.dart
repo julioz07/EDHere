@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:card_db/card_db.dart';
 import 'package:edhoff/data/app_paths.dart';
 import 'package:edhoff/data/image_service.dart';
+import 'package:edhoff/game/draft.dart';
 import 'package:edhoff/game/network_game.dart';
 import 'package:edhoff/net/host_server.dart';
 import 'package:edhoff/net/room_client.dart';
@@ -265,6 +266,37 @@ void main() {
     back.dispose();
     host.dispose();
     await again.close();
+    await server.close();
+  });
+
+  test('draft em rede: cada um recebe o seu pack com cartas', () async {
+    final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0);
+    await server.start();
+    final host = NetworkGame(
+      session: RoomSession.host(server: server, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+    );
+    final client = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: 'Rui');
+    await client.connect();
+    final guest = NetworkGame(session: RoomSession.client(client: client, roomName: 'Mesa'), repo: repo);
+    await _until(() => host.players.length == 2 && guest.players.length == 2, 'lobby');
+    var id = 0;
+    List<DraftCard> pack() => [
+          for (var i = 0; i < 14; i++) DraftCard(++id, BoosterPrint('p-Card$i', 'o-Card$i', 'C', '$i', setCode: 'fra')),
+        ];
+    host.startDraft(
+      const DraftConfig(title: 'FRA', setCode: 'FRA', packs: 1, seats: [(seat: 0, name: 'Ana'), (seat: 1, name: 'Rui')]),
+      [
+        [pack(), pack()],
+      ],
+    );
+    await _until(() => guest.draftClient?.pack != null && host.draftClient?.pack != null, 'packs');
+    expect(guest.draftClient!.pack!.length, 14);
+    expect(host.draftClient!.pack!.length, 14);
+
+    guest.dispose();
+    host.dispose();
+    await client.close();
     await server.close();
   });
 

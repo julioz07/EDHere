@@ -174,7 +174,8 @@ class _SealedSetupScreenState extends ConsumerState<SealedSetupScreen> {
                         ? null
                         : () async {
                             final s = await showSetPicker(context, _sets);
-                            if (s != null) setState(() => _set = s);
+                            if (s == null || !context.mounted) return;
+                            if (await checkSetCards(context, ref, s)) setState(() => _set = s);
                           },
                   ),
                 ),

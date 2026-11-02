@@ -216,7 +216,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   /// Começar com quem está pronto: quem não está fica de fora, por isso pergunta.
   Future<void> _start() async {
     final g = _game;
-    final out = g.players.values.where((p) => p.connected && !p.ready).map((p) => p.name).toList();
+    final out = [
+      for (final p in g.players.values)
+        if (p.connected && !p.ready) p.seat == g.mySeat ? tr('tu') : p.name
+    ];
     if (out.isNotEmpty) {
       final ok = await showDialog<bool>(
         context: context,
@@ -279,8 +282,10 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   }
 
   Future<void> _pickDeck() async {
-    final decks = ref.read(decksProvider).decks;
     final format = GameFormat.byId(_game.format);
+    // Os decks do formato da sala primeiro; os outros ficam no fim.
+    final all = ref.read(decksProvider).decks;
+    final decks = [...all.where((d) => d.format == format.id), ...all.where((d) => d.format != format.id)];
     final chosen = await showModalBottomSheet<Deck>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -311,6 +316,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final cards = repo.getMany(chosen.entries.map((e) => e.oracleId));
     final issues = validateDeck(chosen, format, cards, repo.legalityIn(format.legalityKey ?? '', cards.keys));
     final legal = issues.where((i) => i.level == IssueLevel.error).isEmpty;
+    // Com internet, as imagens do meu deck vêm já (antes, só ao abrir o deck).
+    final prints = ref.read(printsProvider);
+    ref
+        .read(imagesProvider)
+        .ensureRefs(cards.values.expand((c) => ImageRef.allOf(prints.resolve(c))), sizes: const ['small'])
+        .ignore();
     _game.selectDeck(
       chosen,
       legal: legal,

@@ -108,7 +108,8 @@ Future<void> showDraftSetup(BuildContext context, WidgetRef ref, NetworkGame gam
                                   if (commanderDraftSets.contains(s.code)) s
                               ]
                             : sets);
-                    if (s != null) set_(() => set = s);
+                    if (s == null || !ctx.mounted) return;
+                    if (await checkSetCards(ctx, ref, s)) set_(() => set = s);
                   },
                 ),
               )
@@ -241,6 +242,9 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
   void initState() {
     super.initState();
     c.addListener(_changed);
+    // O pack pode ter chegado antes de o ecrã abrir: mostra-o já (senão
+    // ficava "0 no pack" até à mudança seguinte, que nunca vinha).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _changed());
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && c.deadline != null) setState(() {});
     });
@@ -438,6 +442,16 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                               style: theme.textTheme.titleSmall),
                         ]),
                       ),
+                      // A base de cartas deste telemóvel é mais antiga que o set.
+                      if (_packCards.length < c.pack!.length)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Text(
+                            tr('Faltam {n} cartas deste pack na base de cartas do telemóvel. Atualiza-a em Definições → Base de cartas e imagens offline.',
+                                {'n': c.pack!.length - _packCards.length}),
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
                       PoolGrid(target: isWide(context) ? 170 : 110, children: [
                         for (var i = 0; i < _packCards.length && i < c.pack!.length; i++)
                           GestureDetector(

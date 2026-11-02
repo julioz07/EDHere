@@ -1,0 +1,6 @@
+[
+  ["=Faltam {n} cartas deste pack na base de cartas do telemóvel. Atualiza-a em Definições → Base de cartas e imagens offline.", "{n} cards from this pack are missing from this phone's card database. Update it in Settings → Offline card database and images.", "Faltan {n} cartas de este sobre en la base de cartas del móvil. Actualízala en Ajustes → Base de cartas e imágenes offline.", "Mancano {n} carte di questa busta nel database carte del telefono. Aggiornalo in Impostazioni → Database delle carte e immagini offline."],
+  ["=Faltam as cartas de {v}", "Cards from {v} are missing", "Faltan las cartas de {v}", "Mancano le carte di {v}"],
+  ["=A base de cartas deste telemóvel ainda não tem este set. Atualiza-a em Definições → Base de cartas e imagens offline e tenta outra vez.", "This phone's card database doesn't have this set yet. Update it in Settings → Offline card database and images and try again.", "La base de cartas de este móvil aún no tiene esta edición. Actualízala en Ajustes → Base de cartas e imágenes offline y vuelve a intentarlo.", "Il database carte di questo telefono non ha ancora questo set. Aggiornalo in Impostazioni → Database delle carte e immagini offline e riprova."],
+  ["=tu", "you", "tú", "tu"]
+]

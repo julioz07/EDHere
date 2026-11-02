@@ -869,7 +869,7 @@
    "lib/ui/lobby_screen.dart:99",
    "lib/ui/lobby_screen.dart:104",
    "lib/ui/lobby_screen.dart:154",
-   "lib/ui/lobby_screen.dart:390",
+   "lib/ui/lobby_screen.dart:401",
    "lib/ui/room_screen.dart:61",
    "lib/ui/room_screen.dart:96",
    "lib/ui/table/table_screen.dart:206",
@@ -977,10 +977,10 @@
    "lib/ui/join_screen.dart:181",
    "lib/ui/limited/limited_builder.dart:290",
    "lib/ui/limited/limited_builder.dart:696",
-   "lib/ui/lobby_screen.dart:247",
-   "lib/ui/lobby_screen.dart:363",
+   "lib/ui/lobby_screen.dart:250",
+   "lib/ui/lobby_screen.dart:374",
    "lib/ui/play/play_tab.dart:88",
-   "lib/ui/resume_game.dart:179",
+   "lib/ui/resume_game.dart:181",
    "lib/ui/settings/backup_actions.dart:55",
    "lib/ui/settings/backup_actions.dart:181",
    "lib/ui/table/table_screen.dart:499",
@@ -2199,7 +2199,7 @@
   "key": "Agora não",
   "where": [
    "lib/ui/create_room_screen.dart:45",
-   "lib/ui/resume_game.dart:144"
+   "lib/ui/resume_game.dart:146"
   ]
  },
  {
@@ -2207,7 +2207,7 @@
   "where": [
    "lib/ui/create_room_screen.dart:46",
    "lib/ui/play/play_tab.dart:91",
-   "lib/ui/resume_game.dart:186",
+   "lib/ui/resume_game.dart:188",
    "lib/ui/settings/backup_actions.dart:58",
    "lib/ui/table/table_screen.dart:182",
    "lib/ui/tutorial/tutorial_screen.dart:394"
@@ -2232,7 +2232,7 @@
    "lib/ui/create_room_screen.dart:163",
    "lib/ui/decks/deck_import_screen.dart:198",
    "lib/ui/decks/decks_tab.dart:245",
-   "lib/ui/lobby_screen.dart:342"
+   "lib/ui/lobby_screen.dart:353"
   ]
  },
  {
@@ -2361,8 +2361,8 @@
    "lib/ui/data/data_tab.dart:123",
    "lib/ui/data/data_tab.dart:239",
    "lib/ui/data/data_tab.dart:372",
-   "lib/ui/limited/limited_common.dart:237",
-   "lib/ui/lobby_screen.dart:597",
+   "lib/ui/limited/limited_common.dart:262",
+   "lib/ui/lobby_screen.dart:608",
    "lib/ui/tutorial/tutorial_home.dart:129"
   ]
  },
@@ -2498,8 +2498,8 @@
   "where": [
    "lib/ui/data/data_tab.dart:317",
    "lib/ui/decks/deck_editor_screen.dart:515",
-   "lib/ui/resume_game.dart:171",
-   "lib/ui/resume_game.dart:180"
+   "lib/ui/resume_game.dart:173",
+   "lib/ui/resume_game.dart:182"
   ]
  },
  {
@@ -3419,7 +3419,7 @@
   "key": "Não encontradas na importação:\n{v}",
   "where": [
    "lib/ui/decks/deck_import_screen.dart:140",
-   "lib/ui/decks/precons_screen.dart:43"
+   "lib/ui/decks/precons_screen.dart:44"
   ]
  },
  {
@@ -3521,7 +3521,7 @@
   "where": [
    "lib/ui/decks/decks_tab.dart:60",
    "lib/ui/decks/decks_tab.dart:107",
-   "lib/ui/decks/precons_screen.dart:108"
+   "lib/ui/decks/precons_screen.dart:117"
   ]
  },
  {
@@ -3577,7 +3577,7 @@
   "where": [
    "lib/ui/decks/decks_tab.dart:257",
    "lib/ui/limited/limited_builder.dart:622",
-   "lib/ui/lobby_screen.dart:369"
+   "lib/ui/lobby_screen.dart:380"
   ]
  },
  {
@@ -3649,55 +3649,55 @@
  {
   "key": "{n} decks importados. Faltam cartas em {v}: atualiza os dados das cartas em Definições.",
   "where": [
-   "lib/ui/decks/precons_screen.dart:53"
+   "lib/ui/decks/precons_screen.dart:62"
   ]
  },
  {
   "key": "1 deck importado.",
   "where": [
-   "lib/ui/decks/precons_screen.dart:56"
+   "lib/ui/decks/precons_screen.dart:65"
   ]
  },
  {
   "key": "{n} decks importados.",
   "where": [
-   "lib/ui/decks/precons_screen.dart:57"
+   "lib/ui/decks/precons_screen.dart:66"
   ]
  },
  {
   "key": "{v} · já tens este deck",
   "where": [
-   "lib/ui/decks/precons_screen.dart:94"
+   "lib/ui/decks/precons_screen.dart:103"
   ]
  },
  {
   "key": "Decks prontos a jogar, para começares já. Ficam nos teus decks e podes mudá-los à vontade.",
   "where": [
-   "lib/ui/decks/precons_screen.dart:114"
+   "lib/ui/decks/precons_screen.dart:123"
   ]
  },
  {
   "key": "Commander (100 cartas) · Foundations Commander",
   "where": [
-   "lib/ui/decks/precons_screen.dart:117"
+   "lib/ui/decks/precons_screen.dart:126"
   ]
  },
  {
   "key": "60 cartas · Modern",
   "where": [
-   "lib/ui/decks/precons_screen.dart:119"
+   "lib/ui/decks/precons_screen.dart:128"
   ]
  },
  {
   "key": "Importar 1 deck",
   "where": [
-   "lib/ui/decks/precons_screen.dart:130"
+   "lib/ui/decks/precons_screen.dart:139"
   ]
  },
  {
   "key": "Importar {n} decks",
   "where": [
-   "lib/ui/decks/precons_screen.dart:130"
+   "lib/ui/decks/precons_screen.dart:139"
   ]
  },
  {
@@ -3887,9 +3887,9 @@
   "key": "Cubo",
   "where": [
    "lib/ui/limited/draft_screen.dart:79",
-   "lib/ui/limited/draft_screen.dart:120",
+   "lib/ui/limited/draft_screen.dart:121",
    "lib/ui/limited/sealed_screen.dart:155",
-   "lib/ui/limited/sealed_screen.dart:195"
+   "lib/ui/limited/sealed_screen.dart:196"
   ]
  },
  {
@@ -3909,166 +3909,172 @@
  {
   "key": "Ainda não tens cubos (Decks → Importar lista, formato \"Cubo\").",
   "where": [
-   "lib/ui/limited/draft_screen.dart:116"
+   "lib/ui/limited/draft_screen.dart:117"
   ]
  },
  {
   "key": "Tirar 1",
   "where": [
-   "lib/ui/limited/draft_screen.dart:128"
+   "lib/ui/limited/draft_screen.dart:129"
   ]
  },
  {
   "key": "Tirar 2 (Pick-Two)",
   "where": [
-   "lib/ui/limited/draft_screen.dart:129"
+   "lib/ui/limited/draft_screen.dart:130"
   ]
  },
  {
   "key": "Boosters por jogador",
   "where": [
-   "lib/ui/limited/draft_screen.dart:134"
+   "lib/ui/limited/draft_screen.dart:135"
   ]
  },
  {
   "key": "Lugares à mesa",
   "where": [
-   "lib/ui/limited/draft_screen.dart:136"
+   "lib/ui/limited/draft_screen.dart:137"
   ]
  },
  {
   "key": "Jogadores: {n} · bots: {bots}",
   "where": [
-   "lib/ui/limited/draft_screen.dart:140"
+   "lib/ui/limited/draft_screen.dart:141"
   ]
  },
  {
   "key": "1 jogador, sem bots",
   "where": [
-   "lib/ui/limited/draft_screen.dart:142"
+   "lib/ui/limited/draft_screen.dart:143"
   ]
  },
  {
   "key": "{n} jogadores, sem bots",
   "where": [
-   "lib/ui/limited/draft_screen.dart:143"
+   "lib/ui/limited/draft_screen.dart:144"
   ]
  },
  {
   "key": "Tempo por escolha",
   "where": [
-   "lib/ui/limited/draft_screen.dart:146"
+   "lib/ui/limited/draft_screen.dart:147"
   ]
  },
  {
   "key": "livre",
   "where": [
-   "lib/ui/limited/draft_screen.dart:147"
+   "lib/ui/limited/draft_screen.dart:148"
   ]
  },
  {
   "key": "Quando o tempo acaba, a app escolhe por ti.",
   "where": [
-   "lib/ui/limited/draft_screen.dart:150"
+   "lib/ui/limited/draft_screen.dart:151"
   ]
  },
  {
   "key": "Começar draft",
   "where": [
-   "lib/ui/limited/draft_screen.dart:167"
+   "lib/ui/limited/draft_screen.dart:168"
   ]
  },
  {
   "key": "Cubo {v}",
   "where": [
-   "lib/ui/limited/draft_screen.dart:212",
+   "lib/ui/limited/draft_screen.dart:213",
    "lib/ui/limited/sealed_screen.dart:122"
   ]
  },
  {
   "key": "As tuas escolhas ({n})",
   "where": [
-   "lib/ui/limited/draft_screen.dart:301"
+   "lib/ui/limited/draft_screen.dart:305"
   ]
  },
  {
   "key": "Draft · {title}",
   "where": [
-   "lib/ui/limited/draft_screen.dart:314",
-   "lib/ui/limited/draft_screen.dart:333"
+   "lib/ui/limited/draft_screen.dart:318",
+   "lib/ui/limited/draft_screen.dart:337"
   ]
  },
  {
   "key": "Terminado · {n} cartas",
   "where": [
-   "lib/ui/limited/draft_screen.dart:336"
+   "lib/ui/limited/draft_screen.dart:340"
   ]
  },
  {
   "key": "Booster {v} de {packs} · escolha {pickNo} · passa para a {v2}",
   "where": [
-   "lib/ui/limited/draft_screen.dart:337"
+   "lib/ui/limited/draft_screen.dart:341"
   ]
  },
  {
   "key": "esquerda",
   "where": [
-   "lib/ui/limited/draft_screen.dart:341"
+   "lib/ui/limited/draft_screen.dart:345"
   ]
  },
  {
   "key": "direita",
   "where": [
-   "lib/ui/limited/draft_screen.dart:341"
+   "lib/ui/limited/draft_screen.dart:345"
   ]
  },
  {
   "key": " = packs à espera",
   "where": [
-   "lib/ui/limited/draft_screen.dart:395"
+   "lib/ui/limited/draft_screen.dart:399"
   ]
  },
  {
   "key": "Draft terminado: {n} cartas",
   "where": [
-   "lib/ui/limited/draft_screen.dart:407"
+   "lib/ui/limited/draft_screen.dart:411"
   ]
  },
  {
   "key": "Montar o deck",
   "where": [
-   "lib/ui/limited/draft_screen.dart:413",
-   "lib/ui/limited/sealed_screen.dart:383"
+   "lib/ui/limited/draft_screen.dart:417",
+   "lib/ui/limited/sealed_screen.dart:384"
   ]
  },
  {
   "key": "À espera do próximo pack…",
   "where": [
-   "lib/ui/limited/draft_screen.dart:422"
+   "lib/ui/limited/draft_screen.dart:426"
   ]
  },
  {
   "key": "Escolhe 1 carta ({n} no pack)",
   "where": [
-   "lib/ui/limited/draft_screen.dart:435"
+   "lib/ui/limited/draft_screen.dart:439"
   ]
  },
  {
   "key": "Escolhe {picks} cartas ({n} no pack)",
   "where": [
-   "lib/ui/limited/draft_screen.dart:436"
+   "lib/ui/limited/draft_screen.dart:440"
+  ]
+ },
+ {
+  "key": "Faltam {n} cartas deste pack na base de cartas do telemóvel. Atualiza-a em Definições → Base de cartas e imagens offline.",
+  "where": [
+   "lib/ui/limited/draft_screen.dart:450"
   ]
  },
  {
   "key": "Escolher esta",
   "where": [
-   "lib/ui/limited/draft_screen.dart:483"
+   "lib/ui/limited/draft_screen.dart:497"
   ]
  },
  {
   "key": "Escolher ({n}/{picks})",
   "where": [
-   "lib/ui/limited/draft_screen.dart:484"
+   "lib/ui/limited/draft_screen.dart:498"
   ]
  },
  {
@@ -4167,9 +4173,9 @@
   "key": "Ficar",
   "where": [
    "lib/ui/limited/limited_builder.dart:275",
-   "lib/ui/limited/sealed_screen.dart:303",
+   "lib/ui/limited/sealed_screen.dart:304",
    "lib/ui/lobby_screen.dart:151",
-   "lib/ui/lobby_screen.dart:389",
+   "lib/ui/lobby_screen.dart:400",
    "lib/ui/playtest/playtest_screen.dart:179",
    "lib/ui/room_screen.dart:59",
    "lib/ui/table/table_screen.dart:388",
@@ -4184,7 +4190,7 @@
    "lib/ui/limited/limited_builder.dart:291",
    "lib/ui/limited/limited_builder.dart:687",
    "lib/ui/limited/limited_builder.dart:697",
-   "lib/ui/limited/sealed_screen.dart:304"
+   "lib/ui/limited/sealed_screen.dart:305"
   ]
  },
  {
@@ -4339,39 +4345,51 @@
   ]
  },
  {
+  "key": "Faltam as cartas de {v}",
+  "where": [
+   "lib/ui/limited/limited_common.dart:46"
+  ]
+ },
+ {
+  "key": "A base de cartas deste telemóvel ainda não tem este set. Atualiza-a em Definições → Base de cartas e imagens offline e tenta outra vez.",
+  "where": [
+   "lib/ui/limited/limited_common.dart:48"
+  ]
+ },
+ {
   "key": "Imagens do set…",
   "where": [
-   "lib/ui/limited/limited_common.dart:222"
+   "lib/ui/limited/limited_common.dart:247"
   ]
  },
  {
   "key": "Imagens do set já estão offline",
   "where": [
-   "lib/ui/limited/limited_common.dart:224"
+   "lib/ui/limited/limited_common.dart:249"
   ]
  },
  {
   "key": "Imagens offline: {v} de {n}",
   "where": [
-   "lib/ui/limited/limited_common.dart:225"
+   "lib/ui/limited/limited_common.dart:250"
   ]
  },
  {
   "key": "Os boosters abrem com arte mesmo sem rede.",
   "where": [
-   "lib/ui/limited/limited_common.dart:230"
+   "lib/ui/limited/limited_common.dart:255"
   ]
  },
  {
   "key": "Descarrega agora (cerca de {v} MB) para abrir os boosters sem rede.",
   "where": [
-   "lib/ui/limited/limited_common.dart:231"
+   "lib/ui/limited/limited_common.dart:256"
   ]
  },
  {
   "key": "Imagens do set",
   "where": [
-   "lib/ui/limited/limited_common.dart:242"
+   "lib/ui/limited/limited_common.dart:267"
   ]
  },
  {
@@ -4426,117 +4444,117 @@
  {
   "key": "Ainda não tens cubos",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:187"
+   "lib/ui/limited/sealed_screen.dart:188"
   ]
  },
  {
   "key": "Em Decks → Importar lista, cola a lista do cubo (por exemplo, exportada do CubeCobra) e escolhe o formato \"Cubo\".",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:189"
+   "lib/ui/limited/sealed_screen.dart:190"
   ]
  },
  {
   "key": "{v} ({v2} cartas)",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:200"
+   "lib/ui/limited/sealed_screen.dart:201"
   ]
  },
  {
   "key": "Cartas por pack",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:206"
+   "lib/ui/limited/sealed_screen.dart:207"
   ]
  },
  {
   "key": "Boosters",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:214"
+   "lib/ui/limited/sealed_screen.dart:215"
   ]
  },
  {
   "key": "Os boosters seguem a composição real de cada set (dados do MTGJSON). As imagens descarregam-se quando há rede, ou passam de outro telemóvel na sala.",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:222"
+   "lib/ui/limited/sealed_screen.dart:223"
   ]
  },
  {
   "key": "Abrir {packs} boosters",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:234"
+   "lib/ui/limited/sealed_screen.dart:235"
   ]
  },
  {
   "key": "Sealed · {title}",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:292",
-   "lib/ui/limited/sealed_screen.dart:313"
+   "lib/ui/limited/sealed_screen.dart:293",
+   "lib/ui/limited/sealed_screen.dart:314"
   ]
  },
  {
   "key": "Sair dos boosters?",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:300"
+   "lib/ui/limited/sealed_screen.dart:301"
   ]
  },
  {
   "key": "Podes guardar a pool e montar o deck depois (Jogar → Decks por montar).",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:301"
+   "lib/ui/limited/sealed_screen.dart:302"
   ]
  },
  {
   "key": "Guardar a pool",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:305"
+   "lib/ui/limited/sealed_screen.dart:306"
   ]
  },
  {
   "key": "{missing} cartas destes boosters não estão na tua base de cartas",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:339"
+   "lib/ui/limited/sealed_screen.dart:340"
   ]
  },
  {
   "key": "O set é mais recente do que a base. Atualiza-a em Definições → Dados.",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:340"
+   "lib/ui/limited/sealed_screen.dart:341"
   ]
  },
  {
   "key": "Booster {v}",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:351"
+   "lib/ui/limited/sealed_screen.dart:352"
   ]
  },
  {
   "key": "{n} cartas na pool",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:364"
+   "lib/ui/limited/sealed_screen.dart:365"
   ]
  },
  {
   "key": "Booster {opened} de {n}",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:365"
+   "lib/ui/limited/sealed_screen.dart:366"
   ]
  },
  {
   "key": "Abrir todos",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:372"
+   "lib/ui/limited/sealed_screen.dart:373"
   ]
  },
  {
   "key": "Abrir o próximo",
   "where": [
-   "lib/ui/limited/sealed_screen.dart:377"
+   "lib/ui/limited/sealed_screen.dart:378"
   ]
  },
  {
   "key": "Fechar a sala?",
   "where": [
    "lib/ui/lobby_screen.dart:144",
-   "lib/ui/lobby_screen.dart:386",
+   "lib/ui/lobby_screen.dart:397",
    "lib/ui/room_screen.dart:54"
   ]
  },
@@ -4592,33 +4610,39 @@
   ]
  },
  {
+  "key": "tu",
+  "where": [
+   "lib/ui/lobby_screen.dart:221"
+  ]
+ },
+ {
   "key": "Começar sem todos?",
-  "where": [
-   "lib/ui/lobby_screen.dart:224"
-  ]
- },
- {
-  "key": "{v} ainda não está pronto e fica de fora deste jogo.",
-  "where": [
-   "lib/ui/lobby_screen.dart:226"
-  ]
- },
- {
-  "key": "{v} ainda não estão prontos e ficam de fora deste jogo.",
   "where": [
    "lib/ui/lobby_screen.dart:227"
   ]
  },
  {
-  "key": "Esperar",
+  "key": "{v} ainda não está pronto e fica de fora deste jogo.",
   "where": [
    "lib/ui/lobby_screen.dart:229"
   ]
  },
  {
+  "key": "{v} ainda não estão prontos e ficam de fora deste jogo.",
+  "where": [
+   "lib/ui/lobby_screen.dart:230"
+  ]
+ },
+ {
+  "key": "Esperar",
+  "where": [
+   "lib/ui/lobby_screen.dart:232"
+  ]
+ },
+ {
   "key": "Começar",
   "where": [
-   "lib/ui/lobby_screen.dart:230",
+   "lib/ui/lobby_screen.dart:233",
    "lib/ui/onboarding_screen.dart:204",
    "lib/ui/playtest/playtest_setup_screen.dart:200"
   ]
@@ -4626,148 +4650,148 @@
  {
   "key": "Tirar {v} da sala?",
   "where": [
-   "lib/ui/lobby_screen.dart:244"
+   "lib/ui/lobby_screen.dart:247"
   ]
  },
  {
   "key": "O lugar fica livre. Pode voltar a entrar como um jogador novo.",
   "where": [
-   "lib/ui/lobby_screen.dart:245"
+   "lib/ui/lobby_screen.dart:248"
   ]
  },
  {
   "key": "Tirar da sala",
   "where": [
-   "lib/ui/lobby_screen.dart:248",
-   "lib/ui/lobby_screen.dart:430"
+   "lib/ui/lobby_screen.dart:251",
+   "lib/ui/lobby_screen.dart:441"
   ]
  },
  {
   "key": "Escolher deck ({v})",
   "where": [
-   "lib/ui/lobby_screen.dart:290"
+   "lib/ui/lobby_screen.dart:295"
   ]
  },
  {
   "key": "Ainda não tens decks.",
   "where": [
-   "lib/ui/lobby_screen.dart:292"
+   "lib/ui/lobby_screen.dart:297"
   ]
  },
  {
   "key": "{v} · {playableCount} cartas",
   "where": [
-   "lib/ui/lobby_screen.dart:296",
+   "lib/ui/lobby_screen.dart:301",
    "lib/ui/playtest/playtest_setup_screen.dart:29"
   ]
  },
  {
   "key": "O deck tem 1 aviso para {v}. Podes jogar na mesma.",
   "where": [
-   "lib/ui/lobby_screen.dart:325"
+   "lib/ui/lobby_screen.dart:336"
   ]
  },
  {
   "key": "O deck tem {n} avisos para {v}. Podes jogar na mesma.",
   "where": [
-   "lib/ui/lobby_screen.dart:326"
+   "lib/ui/lobby_screen.dart:337"
   ]
  },
  {
   "key": "Regras da sala",
   "where": [
-   "lib/ui/lobby_screen.dart:338"
+   "lib/ui/lobby_screen.dart:349"
   ]
  },
  {
   "key": "Vida inicial",
   "where": [
-   "lib/ui/lobby_screen.dart:351"
+   "lib/ui/lobby_screen.dart:362"
   ]
  },
  {
   "key": "Sair da sala?",
   "where": [
-   "lib/ui/lobby_screen.dart:386",
+   "lib/ui/lobby_screen.dart:397",
    "lib/ui/room_screen.dart:54"
   ]
  },
  {
   "key": "Os outros jogadores saem também.",
   "where": [
-   "lib/ui/lobby_screen.dart:387"
+   "lib/ui/lobby_screen.dart:398"
   ]
  },
  {
   "key": "QR code",
   "where": [
-   "lib/ui/lobby_screen.dart:419"
+   "lib/ui/lobby_screen.dart:430"
   ]
  },
  {
   "key": "Tirar um jogador da sala…",
   "where": [
-   "lib/ui/lobby_screen.dart:451"
+   "lib/ui/lobby_screen.dart:462"
   ]
  },
  {
   "key": "Diagnóstico de rede",
   "where": [
-   "lib/ui/lobby_screen.dart:452"
+   "lib/ui/lobby_screen.dart:463"
   ]
  },
  {
   "key": "Escolher deck",
   "where": [
-   "lib/ui/lobby_screen.dart:467"
+   "lib/ui/lobby_screen.dart:478"
   ]
  },
  {
   "key": "Já não estou pronto",
   "where": [
-   "lib/ui/lobby_screen.dart:475"
+   "lib/ui/lobby_screen.dart:486"
   ]
  },
  {
   "key": "Estou pronto",
   "where": [
-   "lib/ui/lobby_screen.dart:475"
+   "lib/ui/lobby_screen.dart:486"
   ]
  },
  {
   "key": "Começar jogo",
   "where": [
-   "lib/ui/lobby_screen.dart:484"
+   "lib/ui/lobby_screen.dart:495"
   ]
  },
  {
   "key": "Começar (só com quem está pronto)",
   "where": [
-   "lib/ui/lobby_screen.dart:484"
+   "lib/ui/lobby_screen.dart:495"
   ]
  },
  {
   "key": "{v} · vida {startingLife}",
   "where": [
-   "lib/ui/lobby_screen.dart:501"
+   "lib/ui/lobby_screen.dart:512"
   ]
  },
  {
   "key": "1 jogador na sala",
   "where": [
-   "lib/ui/lobby_screen.dart:503"
+   "lib/ui/lobby_screen.dart:514"
   ]
  },
  {
   "key": "{n} jogadores na sala",
   "where": [
-   "lib/ui/lobby_screen.dart:504"
+   "lib/ui/lobby_screen.dart:515"
   ]
  },
  {
   "key": "Jogadores",
   "where": [
-   "lib/ui/lobby_screen.dart:510",
+   "lib/ui/lobby_screen.dart:521",
    "lib/ui/playtest/playtest_setup_screen.dart:109",
    "lib/ui/table/table_sheets.dart:424"
   ]
@@ -4775,7 +4799,7 @@
  {
   "key": "{v} (tu)",
   "where": [
-   "lib/ui/lobby_screen.dart:523",
+   "lib/ui/lobby_screen.dart:534",
    "lib/ui/room_screen.dart:236",
    "lib/ui/table/table_screen.dart:410"
   ]
@@ -4783,93 +4807,93 @@
  {
   "key": "Ainda sem deck",
   "where": [
-   "lib/ui/lobby_screen.dart:525"
+   "lib/ui/lobby_screen.dart:536"
   ]
  },
  {
   "key": "{deckName} · {deckSize} cartas{v}{v2}{v3}",
   "where": [
-   "lib/ui/lobby_screen.dart:526"
+   "lib/ui/lobby_screen.dart:537"
   ]
  },
  {
   "key": " · com avisos",
   "where": [
-   "lib/ui/lobby_screen.dart:533"
+   "lib/ui/lobby_screen.dart:544"
   ]
  },
  {
   "key": "Pronto",
   "where": [
-   "lib/ui/lobby_screen.dart:540",
-   "lib/ui/lobby_screen.dart:548"
+   "lib/ui/lobby_screen.dart:551",
+   "lib/ui/lobby_screen.dart:559"
   ]
  },
  {
   "key": "A escolher",
   "where": [
-   "lib/ui/lobby_screen.dart:540",
-   "lib/ui/lobby_screen.dart:548"
+   "lib/ui/lobby_screen.dart:551",
+   "lib/ui/lobby_screen.dart:559"
   ]
  },
  {
   "key": "Descarregar todas as imagens (~{v} MB)",
   "where": [
-   "lib/ui/lobby_screen.dart:564"
+   "lib/ui/lobby_screen.dart:575"
   ]
  },
  {
   "key": "{v} tem 1 imagem que não tens",
   "where": [
-   "lib/ui/lobby_screen.dart:577"
+   "lib/ui/lobby_screen.dart:588"
   ]
  },
  {
   "key": "{v} tem {n} imagens que não tens",
   "where": [
-   "lib/ui/lobby_screen.dart:578"
+   "lib/ui/lobby_screen.dart:589"
   ]
  },
  {
   "key": "A receber do dispositivo de {v}… {received}/{expected}",
   "where": [
-   "lib/ui/lobby_screen.dart:580"
+   "lib/ui/lobby_screen.dart:591"
   ]
  },
  {
   "key": "~{v} MB · da internet ou, sem rede, do telemóvel de {v2}",
   "where": [
-   "lib/ui/lobby_screen.dart:582"
+   "lib/ui/lobby_screen.dart:593"
   ]
  },
  {
   "key": "Ver o draft (terminado)",
   "where": [
-   "lib/ui/lobby_screen.dart:606"
+   "lib/ui/lobby_screen.dart:617"
   ]
  },
  {
   "key": "Voltar ao draft",
   "where": [
-   "lib/ui/lobby_screen.dart:606"
+   "lib/ui/lobby_screen.dart:617"
   ]
  },
  {
   "key": "Fazer um draft",
   "where": [
-   "lib/ui/lobby_screen.dart:614"
+   "lib/ui/lobby_screen.dart:625"
   ]
  },
  {
   "key": "Novo draft",
   "where": [
-   "lib/ui/lobby_screen.dart:614"
+   "lib/ui/lobby_screen.dart:625"
   ]
  },
  {
   "key": "Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem do telemóvel dele.",
   "where": [
-   "lib/ui/lobby_screen.dart:619"
+   "lib/ui/lobby_screen.dart:630"
   ]
  },
  {
@@ -5315,7 +5339,7 @@
   "key": "Esquecer",
   "where": [
    "lib/ui/resume_game.dart:96",
-   "lib/ui/resume_game.dart:142"
+   "lib/ui/resume_game.dart:144"
   ]
  },
  {
@@ -5334,43 +5358,43 @@
   "key": "Voltar ao jogo",
   "where": [
    "lib/ui/resume_game.dart:117",
-   "lib/ui/resume_game.dart:145"
+   "lib/ui/resume_game.dart:147"
   ]
  },
  {
   "key": "Voltar ao jogo?",
   "where": [
-   "lib/ui/resume_game.dart:133"
+   "lib/ui/resume_game.dart:135"
   ]
  },
  {
   "key": "A app fechou durante o jogo em \"{room}\". A tua mão e o grimório ficaram guardados.",
   "where": [
-   "lib/ui/resume_game.dart:134"
+   "lib/ui/resume_game.dart:136"
   ]
  },
  {
   "key": "{day}/{month} às {hour}:{v}",
   "where": [
-   "lib/ui/resume_game.dart:162"
+   "lib/ui/resume_game.dart:164"
   ]
  },
  {
   "key": "Jogo gravado · turno {turn} · {when}",
   "where": [
-   "lib/ui/resume_game.dart:170"
+   "lib/ui/resume_game.dart:172"
   ]
  },
  {
   "key": "Apagar o jogo gravado?",
   "where": [
-   "lib/ui/resume_game.dart:176"
+   "lib/ui/resume_game.dart:178"
   ]
  },
  {
   "key": "{title}, turno {turn}.",
   "where": [
-   "lib/ui/resume_game.dart:177"
+   "lib/ui/resume_game.dart:179"
   ]
  },
  {

@@ -32,6 +32,7 @@ class _PreconsScreenState extends ConsumerState<PreconsScreen> {
     setState(() => _busy = true);
     var done = 0;
     final missing = <String>[];
+    final cards = <Card>[];
     for (final p in precons.where((p) => _picked.contains(p.id))) {
       final format = GameFormat.byId(p.format);
       final r = resolveDeckText(parseDeckText(await p.load(), hasCommandZone: format.hasCommandZone), repo.findByName);
@@ -43,8 +44,16 @@ class _PreconsScreenState extends ConsumerState<PreconsScreen> {
           : tr('Não encontradas na importação:\n{v}', {'v': r.unresolved.map((l) => '${l.qty} ${l.name}').join('\n')});
       if (r.unresolved.isNotEmpty) missing.add(p.name);
       ref.read(decksProvider).save(Deck(name: p.name, format: p.format, entries: r.entries, notes: notes));
+      cards.addAll(repo.getMany(r.entries.map((e) => e.oracleId)).values);
       done++;
     }
+    // As imagens pequenas vêm já, em segundo plano: sem elas a mesa só mostra
+    // molduras (e na sala ninguém as tem para partilhar).
+    final prints = ref.read(printsProvider);
+    ref
+        .read(imagesProvider)
+        .ensureRefs(cards.expand((c) => ImageRef.allOf(prints.resolve(c))), sizes: const ['small'])
+        .ignore();
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();

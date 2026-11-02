@@ -115,7 +115,9 @@ class ResumeCard extends ConsumerWidget {
         title: tr('Jogo em curso: {room}', {'room': info.room}),
         subtitle: tr('Saíste a meio do jogo. A tua mão e o grimório ficaram guardados no teu lugar.'),
         actionLabel: tr('Voltar ao jogo'),
-        onAction: () => resumeGame(context, ref, info),
+        // Lê o guardado na hora: o cartão só é reconstruído no primeiro
+        // save, e o info daqui seria o do início do jogo (sem a mão).
+        onAction: () => resumeGame(context, ref, ref.read(resumeProvider).current ?? info),
         onLongPress: () => ref.read(resumeProvider).clear(),
       ),
     );
@@ -146,7 +148,7 @@ Future<void> offerResume(BuildContext context, WidgetRef ref) async {
       ],
     ),
   );
-  if (go == true && context.mounted) await resumeGame(context, ref, info);
+  if (go == true && context.mounted) await resumeGame(context, ref, ref.read(resumeProvider).current ?? info);
 }
 
 /// Cartão "Continuar jogo" de um goldfish ou 1 contra 1 gravado.
