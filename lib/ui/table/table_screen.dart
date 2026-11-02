@@ -40,7 +40,14 @@ const _freeMulligan = {'commander', 'brawl', 'paupercommander', 'oathbreaker'};
 /// Serve o playtest e o jogo em rede.
 class TableScreen extends ConsumerStatefulWidget {
   const TableScreen(
-      {super.key, required this.ctrl, this.title, this.onLeave, this.banner, this.onNewGame, this.confirmLeave});
+      {super.key,
+      required this.ctrl,
+      this.title,
+      this.onLeave,
+      this.banner,
+      this.onNewGame,
+      this.confirmLeave,
+      this.hostsRoom = false});
 
   final GameController ctrl;
   final String? title;
@@ -56,6 +63,9 @@ class TableScreen extends ConsumerStatefulWidget {
 
   /// Troca a pergunta "Sair da mesa?" (o playtest pergunta se grava).
   final Future<bool> Function(BuildContext context)? confirmLeave;
+
+  /// Este dispositivo é o anfitrião: se sair, a sala fecha para todos.
+  final bool hostsRoom;
 
   @override
   ConsumerState<TableScreen> createState() => _TableScreenState();
@@ -179,18 +189,22 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         ctrl.mySeats.isNotEmpty &&
         ctrl.mySeats.every((m) => s.players[m]?.defeated ?? false) &&
         !_dismissed.contains('out')) {
+      // O anfitrião não pode sair: a sala está no telemóvel dele.
       out.add(notice(
         Icons.visibility_outlined,
-        tr('Foste derrotado. Podes ficar a ver o jogo ou sair.'),
+        widget.hostsRoom
+            ? tr('Foste derrotado. És o anfitrião: o jogo dos outros continua no teu telemóvel, por isso fica na mesa.')
+            : tr('Foste derrotado. Podes ficar a ver o jogo ou sair.'),
         [
           TextButton(onPressed: () => setState(() => _dismissed.add('out')), child: Text(tr('Ver o jogo'))),
-          FilledButton(
-            onPressed: () async {
-              await widget.onLeave?.call();
-              if (mounted) Navigator.of(context).pop();
-            },
-            child: Text(tr('Sair')),
-          ),
+          if (!widget.hostsRoom)
+            FilledButton(
+              onPressed: () async {
+                await widget.onLeave?.call();
+                if (mounted) Navigator.of(context).pop();
+              },
+              child: Text(tr('Sair')),
+            ),
         ],
       ));
     }
@@ -599,7 +613,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     final hand = ctrl.zones(ctrl.actor).hand;
                     if (hand.isNotEmpty) {
                       ctrl.send(ctrl.table
-                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: tr('a mão')));
+                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
                     }
                   }),
                 ),

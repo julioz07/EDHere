@@ -11,6 +11,7 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'deck_editor_screen.dart';
 import 'deck_import_screen.dart';
+import 'precons_screen.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/empty_state.dart';
 
@@ -55,6 +56,15 @@ class DecksTab extends ConsumerWidget {
                       },
                     ),
                     ListTile(
+                      leading: const Icon(Icons.inventory_2_outlined),
+                      title: Text(tr('Decks base')),
+                      subtitle: Text(tr('Decks prontos a jogar, em Commander e Modern')),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PreconsScreen()));
+                      },
+                    ),
+                    ListTile(
                       leading: const Icon(Icons.content_paste),
                       title: Text(tr('Importar lista')),
                       subtitle: Text(tr('Moxfield, Archidekt, MTGO, Arena')),
@@ -87,9 +97,16 @@ class DecksTab extends ConsumerWidget {
               ? EmptyState(
                   icon: Icons.style_outlined,
                   title: tr('Ainda não tens decks'),
-                  body: tr('Cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.'),
+                  body: tr(
+                      'Começa com um dos decks base, prontos a jogar, cola a lista de um deck do Moxfield, Archidekt ou Arena, ou começa um do zero.'),
                   actions: [
                     FilledButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PreconsScreen())),
+                      icon: const Icon(Icons.inventory_2_outlined),
+                      label: Text(tr('Decks base')),
+                    ),
+                    OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
                         builder: (_) => const DeckImportScreen(),
                       )),

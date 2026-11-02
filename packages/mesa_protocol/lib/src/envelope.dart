@@ -1,6 +1,6 @@
 /// Versão do protocolo. Muda sempre que o formato das mensagens deixa de ser
 /// compatível com versões anteriores.
-const int protocolVersion = 2;
+const int protocolVersion = 3;
 
 /// Mensagem trocada entre anfitrião e clientes.
 ///

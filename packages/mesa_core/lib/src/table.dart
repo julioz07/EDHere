@@ -84,6 +84,35 @@ class Table {
   /// comandante) ficam numa só linha do registo, com a soma.
   ({String key, int delta, String Function(int total) text})? _merge;
 
+  /// O próximo lugar ainda em jogo, a seguir a [from] na ordem da mesa
+  /// ([from] pode já estar derrotado).
+  int? _nextAlive(int from) {
+    final seats = state.players.keys.toList()..sort();
+    if (seats.isEmpty) return null;
+    final start = seats.indexOf(from);
+    for (var k = 1; k <= seats.length; k++) {
+      final seat = seats[(start + k) % seats.length];
+      if (!state.players[seat]!.defeated) return seat;
+    }
+    return null;
+  }
+
+  String _startTurn(int next) {
+    final s = state;
+    s.activeSeat = next;
+    s.turn++;
+    s.phase = 'upkeep';
+    s.storm = 0;
+    s.targets.clear();
+    s.highlight = null;
+    for (final c in s.cards.values) {
+      if (c.zone == Zone.battlefield && c.controller == next) c.tapped = false;
+    }
+    final n = s.players.length;
+    final round = n == 0 ? s.turn : (s.turn - 1) ~/ n + 1;
+    return mesaTr('Ronda {round}: {v}', {'round': round, 'v': _n(next)});
+  }
+
   void _log(int seq, int actor, String type, ({String key, int delta, String Function(int total) text}) m) {
     final log = state.log;
     final last = log.isEmpty ? null : log.last;
@@ -172,24 +201,8 @@ class Table {
         return mesaTr('{v} baralhou um deck de {v2} cartas', {'v': _n(seat), 'v2': i('size')});
 
       case Ev.passTurn:
-        final seats = s.players.keys.toList()..sort();
-        final alive = seats.where((x) => !s.players[x]!.defeated).toList();
-        if (alive.isEmpty) return null;
-        var next = oi('next');
-        if (next == null) {
-          final idx = alive.indexOf(s.activeSeat);
-          next = alive[(idx + 1) % alive.length];
-        }
-        s.activeSeat = next;
-        s.turn++;
-        s.phase = 'upkeep';
-        s.storm = 0;
-        s.targets.clear();
-        s.highlight = null;
-        for (final c in s.cards.values) {
-          if (c.zone == Zone.battlefield && c.controller == next) c.tapped = false;
-        }
-        return mesaTr('Turno {turn}: {v}', {'turn': s.turn, 'v': _n(next)});
+        final next = oi('next') ?? _nextAlive(s.activeSeat);
+        return next == null ? null : _startTurn(next);
 
       case Ev.setPhase:
         s.phase = p['phase'] as String;
@@ -377,8 +390,12 @@ class Table {
         }
         final who = seats.map(_n).join(', ');
         return d < 0
-            ? mesaTr('{v}: {who} perdem {n} de vida', {'v': _n(actor), 'who': who, 'n': -d})
-            : mesaTr('{v}: {who} ganham {n} de vida', {'v': _n(actor), 'who': who, 'n': d});
+            ? (d == -1
+                ? mesaTr('{v}: {who} perdem 1 ponto de vida', {'v': _n(actor), 'who': who})
+                : mesaTr('{v}: {who} perdem {n} de vida', {'v': _n(actor), 'who': who, 'n': -d}))
+            : (d == 1
+                ? mesaTr('{v}: {who} ganham 1 ponto de vida', {'v': _n(actor), 'who': who})
+                : mesaTr('{v}: {who} ganham {n} de vida', {'v': _n(actor), 'who': who, 'n': d}));
 
       case Ev.commanderDamage:
         final pl = s.players[i('seat')]!;
@@ -435,7 +452,14 @@ class Table {
       case Ev.defeated:
         final pl = s.players[i('seat')]!;
         pl.defeated = p['value'] != false;
-        return pl.defeated ? mesaTr('{v} foi derrotado', {'v': pl.name}) : mesaTr('{v} voltou ao jogo', {'v': pl.name});
+        if (!pl.defeated) return mesaTr('{v} voltou ao jogo', {'v': pl.name});
+        final out = mesaTr('{v} foi derrotado', {'v': pl.name});
+        // Era a vez dele: o turno passa logo a quem se segue (senão ninguém
+        // mais podia passar a vez). Com um só vivo, o jogo está decidido.
+        if (pl.seat == s.activeSeat && s.players.values.where((x) => !x.defeated).length > 1) {
+          return '$out. ${_startTurn(_nextAlive(pl.seat)!)}';
+        }
+        return out;
 
       case Ev.draw:
         final seat = i('seat');
@@ -527,8 +551,8 @@ class Table {
       case Ev.reveal:
         final seat = i('seat');
         final oids = (p['os'] as List).cast<String>();
-        s.revealed = Reveal(seat, oids, p['what'] as String? ?? mesaTr('cartas'), to: oi('to'));
-        return mesaTr('{v} revelou {v2}{v3}: {v4}', {'v': _n(seat), 'v2': p['what'] ?? '', 'v3': oi('to') == null ? '' : mesaTr(' a {v}', {'v': _n(oi('to')!)}), 'v4': oids.map((o) => '[[$o]]').join(', ')});
+        s.revealed = Reveal(seat, oids, p['what'] as String? ?? 'cartas', to: oi('to'));
+        return mesaTr('{v} revelou {v2}{v3}: {v4}', {'v': _n(seat), 'v2': revealWhat(p['what'] as String?), 'v3': oi('to') == null ? '' : mesaTr(' a {v}', {'v': _n(oi('to')!)}), 'v4': oids.map((o) => '[[$o]]').join(', ')});
 
       case Ev.scryDone:
         final seat = i('seat');
@@ -783,6 +807,8 @@ class Table {
       (Zone.hand, Zone.battlefield) => mesaTr('{v} jogou {shown}', who),
       (Zone.hand, Zone.graveyard) =>
         p['cast'] == true ? mesaTr('{v} lançou {shown}', who) : mesaTr('{v} descartou {shown}', who),
+      // Procurar no grimório: diz de onde veio (senão parece que saiu do nada).
+      (Zone.library, _) => mesaTr('{v} tirou {shown} do grimório {v2}', {...who, 'v2': _whereTo(to, pos)}),
       _ => mesaTr('{v} moveu {shown} {v2}', {...who, 'v2': _whereTo(to, pos)}),
     };
   }
@@ -918,7 +944,8 @@ class Table {
         for (final p in pids)
           if (byPid[p] != null) byPid[p]!.oracleId
       ],
-      'what': what ?? (from == Zone.hand ? mesaTr('da mão') : mesaTr('do grimório')),
+      // Vai a chave (em português): cada dispositivo traduz na sua língua.
+      'what': what ?? (from == Zone.hand ? 'da mão' : 'do grimório'),
       if (to != null) 'to': to,
     });
   }
@@ -1039,3 +1066,17 @@ class _Snapshot {
   /// O texto deste evento (antes de se juntar a outro no registo).
   String? text;
 }
+
+/// O que se revelou ("a mão", "o topo do grimório"...), na língua deste
+/// dispositivo. O evento leva a chave em português; uma frase que não se
+/// conhece fica como veio.
+String revealWhat(String? key) => switch (key) {
+      null => '',
+      'cartas' => mesaTr('cartas'),
+      'a mão' => mesaTr('a mão'),
+      'uma carta da mão' => mesaTr('uma carta da mão'),
+      'o topo do grimório' => mesaTr('o topo do grimório'),
+      'da mão' => mesaTr('da mão'),
+      'do grimório' => mesaTr('do grimório'),
+      _ => key,
+    };

@@ -1,6 +1,6 @@
 [
   ["=O anfitrião tirou-te da sala.", "The host removed you from the room.", "El anfitrión te sacó de la sala.", "L'host ti ha tolto dalla stanza."],
-  ["={n} lugares", "{n} seats", "{n} plazas", "{n} posti"],
+  ["={n} lugares", "{n} seats", "{n} puestos", "{n} posti"],
   ["=PIN errado. Tenta outra vez.", "Wrong PIN. Try again.", "PIN incorrecto. Inténtalo de nuevo.", "PIN errato. Riprova."],
   ["=Sem ligação ao anfitrião ({v}). À espera que volte…", "No connection to the host ({v}). Waiting for them to come back…", "Sin conexión con el anfitrión ({v}). Esperando a que vuelva…", "Nessuna connessione con l'host ({v}). In attesa che torni…"],
   ["=Começar sem todos?", "Start without everyone?", "¿Empezar sin todos?", "Iniziare senza tutti?"],

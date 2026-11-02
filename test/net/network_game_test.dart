@@ -210,6 +210,64 @@ void main() {
     await again.close();
   });
 
+  test('quem sai da mesa a meio fica com o lugar e volta com a mesma mão', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ResumeStore(await SharedPreferences.getInstance());
+    final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0);
+    await server.start();
+    final host = NetworkGame(
+      session: RoomSession.host(server: server, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+    );
+    final client = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: 'Rui');
+    await client.connect();
+    final session = RoomSession.client(client: client, roomName: 'Mesa');
+    final deckB = _deck('B');
+    final guest = NetworkGame(session: session, repo: repo, resumeStore: store);
+    host.configure(format: 'commander', life: 40);
+    await _until(() => guest.players.length == 2, 'lobby');
+    host.selectDeck(_deck('A'), legal: true, commanderNames: ['Boss']);
+    guest.selectDeck(deckB, legal: true, commanderNames: ['Boss']);
+    await _until(() => host.players[1]?.deckName == 'B', 'decks');
+    host.setReady(true);
+    guest.setReady(true);
+    await _until(() => host.allReady, 'prontos');
+    host.start(randomFirst: false);
+    await _until(() => guest.game?.zones(1).hand.length == 7, 'mão do convidado');
+    final hand = guest.game!.zones(1).hand.map((c) => c.oracleId).toList();
+
+    // Sai da mesa a meio: só desliga, o lugar e o token continuam a valer.
+    final info = store.current!;
+    guest.dispose();
+    await session.close(keepSeat: true);
+    await _until(() => host.players[1]?.connected == false, 'desligado no anfitrião');
+    expect(host.players.containsKey(1), isTrue);
+    host.game!.life(1, -4);
+
+    // Volta pelo "Voltar ao jogo": mesmo lugar, mesma mão, nada a dobrar.
+    final again = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: 'Rui', token: info.token);
+    await again.connect();
+    final back = NetworkGame(
+      session: RoomSession.client(client: again, roomName: 'Mesa'),
+      repo: repo,
+      resume: info,
+      resumeStore: store,
+      resumeDeck: deckB,
+    );
+    expect(again.mySeat, 1);
+    await _until(() => back.game?.state.players[1]?.life == 36, 'apanha o que perdeu');
+    expect(back.game!.zones(1).hand.map((c) => c.oracleId).toList(), hand);
+    await _until(() => host.players[1]?.connected == true, 'ligado outra vez');
+    expect(host.game!.state.players[1]!.handCount, 7, reason: 'não recebe outra mão');
+    expect(host.game!.state.players[1]!.libraryCount, 92);
+    await _until(() => _public(back) == _public(host), 'sincronia');
+
+    back.dispose();
+    host.dispose();
+    await again.close();
+    await server.close();
+  });
+
   test('imagens que faltam vêm do outro dispositivo pela sala', () async {
     final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0);
     await server.start();

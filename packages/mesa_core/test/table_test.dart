@@ -353,4 +353,38 @@ void main() {
     pod.send(0, Intent(Ev.tap, {'ids': [c.id], 'value': true}));
     expect(pod.a.state.log.last.text, 'tapped');
   });
+
+  test('derrotado na sua vez: o turno passa ao seguinte ainda em jogo', () {
+    // Quatro lugares numa mesa só (como a vê qualquer dispositivo).
+    final t = Table(format: 'commander', localSeats: {0});
+    var seq = 0;
+    void send(int actor, Intent i) =>
+        t.apply(++seq, i.type, actor, jsonDecode(jsonEncode(i.payload)) as Map<String, dynamic>);
+    for (final (seat, name) in [(0, 'Ana'), (1, 'Rui'), (2, 'Eva'), (3, 'Zé')]) {
+      send(seat, Intent(Ev.joinTable, {'seat': seat, 'name': name, 'life': 40}));
+    }
+    send(0, const Intent(Ev.startGame, {'first': 1}));
+    // O Zé (3) já saiu antes; o Rui perde na vez dele: a vez é da Eva.
+    send(3, const Intent(Ev.defeated, {'seat': 3}));
+    expect(t.state.activeSeat, 1);
+    send(1, const Intent(Ev.defeated, {'seat': 1}));
+    expect(t.state.activeSeat, 2);
+    expect(t.state.log.last.text, contains('Rui foi derrotado'));
+    // A Eva passa: salta o Zé, que está fora, e vai para a Ana.
+    send(2, const Intent(Ev.passTurn, {}));
+    expect(t.state.activeSeat, 0);
+    // Derrotar alguém que não está a jogar não mexe na vez.
+    send(0, const Intent(Ev.defeated, {'seat': 2}));
+    expect(t.state.activeSeat, 0);
+  });
+
+  test('revelar: o evento leva a chave e cada um traduz', () {
+    pod.send(0, pod.a.draw(0, 2));
+    final hand = pod.a.zonesOf(0).hand.map((c) => c.pid).toList();
+    pod.send(0, pod.a.revealHidden(0, Zone.hand, hand, what: 'a mão'));
+    expect(pod.b.state.revealed!.what, 'a mão');
+    expect(revealWhat('a mão'), 'a mão');
+    expect(revealWhat('outra coisa'), 'outra coisa');
+    pod.expectInSync();
+  });
 }

@@ -6,6 +6,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../app/theme.dart';
 import '../data/bracket.dart';
 import '../data/providers.dart';
+import '../data/settings.dart';
 import '../game/draft.dart';
 import '../game/network_game.dart';
 import '../game/resume_store.dart';
@@ -65,6 +66,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     }
     _game.addListener(_maybeShowTable);
     _game.addListener(_maybeShowDraft);
+    _game.addListener(_maybeClosed);
     // A voltar a um jogo: a mesa já existe (o registo foi repetido) e abre logo.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTable());
   }
@@ -104,6 +106,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             _ => null,
           },
           onLeave: _leaveRoom,
+          confirmLeave: _confirmLeaveTable,
+          hostsRoom: _game.isHost,
           onNewGame: _game.isHost ? _game.newGame : null,
         ),
       ),
@@ -113,8 +117,59 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         _backToLobby = false;
         return;
       }
-      if (mounted && !_closing) Navigator.of(context).pop();
+      // Quem sai da mesa sai da sala: não fica num lobby sem ligação.
+      if (mounted) Navigator.of(context).pop();
     });
+  }
+
+  /// A meio de um jogo, um cliente que sai só desliga: o lugar e a mão ficam
+  /// guardados e volta em Jogar → Voltar ao jogo. Depois do fim (ou já
+  /// derrotado) sai de vez.
+  bool get _midGame {
+    final g = _game.game;
+    final me = g?.state.players[_game.mySeat];
+    final l = _game.link;
+    if (l is RoomClient && (l.kicked || l.hostClosed)) return false;
+    return g != null && !g.state.over && me != null && !me.defeated;
+  }
+
+  Future<bool> _confirmLeaveTable(BuildContext context) async {
+    // Sem ligação não há nada a perder.
+    if (_game.link.status == LinkStatus.closed) return true;
+    final host = _game.isHost && _game.game != null && !_game.game!.state.over;
+    if (!host && !_midGame && !ref.read(settingsProvider).confirmLeave) return true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(host ? tr('Fechar a sala?') : tr('Sair da mesa?')),
+        content: Text(host
+            ? tr('És o anfitrião: se saíres, o jogo acaba para todos.')
+            : _midGame
+                ? tr('O teu lugar e a tua mão ficam guardados. Voltas em Jogar → Voltar ao jogo.')
+                : tr('Sais da sala.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(host ? tr('Acabar o jogo') : tr('Sair'))),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  /// Tirado da sala, ou a sala fechou, com o lobby à vista: não há nada a
+  /// fazer aqui, por isso volta-se ao ecrã de jogar com o motivo.
+  void _maybeClosed() {
+    final l = _game.link;
+    if (_closing || _tableShown || !mounted || l.status != LinkStatus.closed) return;
+    if (l is! RoomClient || !(l.kicked || l.hostClosed)) return;
+    _closing = true;
+    _game.forgetResume();
+    final reason = _closedReason;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(SnackBar(content: Text(reason)));
   }
 
   static const _lobbyRoute = 'lobby';
@@ -155,7 +210,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final host = _game.players.values.where((p) => p.isHost).firstOrNull;
     return host == null
         ? tr('Ligação perdida. A voltar a ligar…')
-        : tr('Sem ligação ao anfitrião ({v}). À espera que volte…', {'v': host.name});
+        : tr('Sem ligação ao anfitrião ({v}). A tentar voltar a ligar…', {'v': host.name});
   }
 
   /// Começar com quem está pronto: quem não está fica de fora, por isso pergunta.
@@ -206,15 +261,17 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   Future<void> _leaveRoom() async {
     if (_closing) return;
+    final keepSeat = !_game.isHost && _midGame;
     _closing = true;
-    _game.forgetResume();
-    await widget.session.close();
+    if (!keepSeat) _game.forgetResume();
+    await widget.session.close(keepSeat: keepSeat);
   }
 
   @override
   void dispose() {
     _game.removeListener(_maybeShowTable);
     _game.removeListener(_maybeShowDraft);
+    _game.removeListener(_maybeClosed);
     _game.dispose();
     WakelockPlus.disable();
     if (!_closing) widget.session.close();
@@ -327,6 +384,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(widget.session.isHost ? tr('Fechar a sala?') : tr('Sair da sala?')),
+            content: widget.session.isHost ? Text(tr('Os outros jogadores saem também.')) : null,
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
               TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Sair'))),
@@ -474,10 +532,15 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                                 : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}',
                             'v3': p.deckLegal ? '' : tr(' · com avisos')
                           })),
+                    // Ecrã estreito: a palavra fica por baixo do ícone (só o ícone não se percebe).
                     trailing: narrow
-                        ? Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
-                            color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant,
-                            semanticLabel: p.ready ? tr('Pronto') : tr('A escolher'))
+                        ? Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
+                                size: 20, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
+                            Text(p.ready ? tr('Pronto') : tr('A escolher'),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                    color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
+                          ])
                         : Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
                                 size: 18, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),

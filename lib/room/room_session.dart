@@ -52,10 +52,12 @@ class RoomSession {
         hasPin: hasPin,
       );
 
-  Future<void> close() async {
+  /// [keepSeat]: o cliente só desliga, sem largar o lugar (a meio de um jogo,
+  /// para poder voltar com a mesma mão). Os outros veem-no desligado.
+  Future<void> close({bool keepSeat = false}) async {
     final l = link;
     if (l is RoomClient) {
-      await l.leave();
+      await (keepSeat ? l.close() : l.leave());
     } else {
       await l.close();
     }

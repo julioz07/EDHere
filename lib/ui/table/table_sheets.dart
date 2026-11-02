@@ -744,7 +744,7 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
           Icons.visibility,
           tr('Revelar a todos'),
           () => done(() => ctrl
-              .send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: tr('uma carta da mão'))))),
+              .send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))),
       if (card != null)
         _tile(Icons.zoom_in, tr('Ver carta'), () {
           Navigator.pop(ctx);
@@ -790,7 +790,7 @@ Future<void> showLibraryMenu(BuildContext context, GameController ctrl) {
         Navigator.pop(ctx);
         final top = ctrl.zones(seat).library.firstOrNull;
         if (top != null) {
-          ctrl.send(t.revealHidden(seat, Zone.library, [top.pid], what: tr('o topo do grimório')));
+          ctrl.send(t.revealHidden(seat, Zone.library, [top.pid], what: 'o topo do grimório'));
         }
       }),
       _tile(Icons.delete_sweep_outlined, tr('Mill N…'),
@@ -1215,8 +1215,12 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                       final ok = await showTableDialog<bool>(
                         context: ctx,
                         builder: (d) => AlertDialog(
-                          title: Text(tr('{v} foi derrotado?', {'v': p.name})),
-                          content: Text(tr('Sai do jogo e deixa de ter turnos. Dá para voltar atrás aqui.')),
+                          title: Text(ctrl.mySeats.contains(seat)
+                              ? tr('Foste derrotado?')
+                              : tr('{v} foi derrotado?', {'v': p.name})),
+                          content: Text(ctrl.mySeats.contains(seat)
+                              ? tr('Sais do jogo e deixas de ter turnos. Dá para voltar atrás aqui.')
+                              : tr('Sai do jogo e deixa de ter turnos. Dá para voltar atrás aqui.')),
                           actions: [
                             TextButton(onPressed: () => Navigator.pop(d, false), child: Text(tr('Cancelar'))),
                             FilledButton(onPressed: () => Navigator.pop(d, true), child: Text(tr('Derrotado'))),
@@ -1381,7 +1385,7 @@ Future<void> showRevealDialog(BuildContext context, GameController ctrl, Reveal 
   return showTableDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(tr('{v} revelou {what}', {'v': ctrl.state.players[r.seat]?.name, 'what': r.what})),
+      title: Text(tr('{v} revelou {what}', {'v': ctrl.state.players[r.seat]?.name, 'what': revealWhat(r.what)})),
       content: SizedBox(
         width: double.maxFinite,
         child: GridView.count(

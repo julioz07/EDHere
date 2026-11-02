@@ -63,8 +63,8 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (1.10.0)
-Jogos a 4 em rede mais sólidos: se a app do anfitrião fechar, ele volta ao jogo e os outros religam sozinhos. Cartões dos jogadores cabem no ecrã, ronda em vez de turno, avisos de derrota e de vencedor que ficam à vista. Cada oponente perde X numa só ação; o registo diz quem mexeu na vida. Lobby: descarregar tudo, vida 20/30/40, tirar jogador, PIN no QR. A app já não muda para português sozinha. Todos têm de atualizar para jogar juntos.
+### Notas da versão (1.11.0)
+Decks base para começar já: os 5 Foundations Commander e 2 decks Modern de 60 cartas, prontos a importar em Decks. Jogos em rede: quem sai da mesa a meio fica com o lugar e volta com a mesma mão; o anfitrião já não fecha o jogo dos outros por engano; se quem tem a vez é derrotado, a vez passa ao seguinte. Quem é tirado da sala volta ao ecrã de jogar. Revelar a mão já vem na língua de cada um. Todos têm de atualizar para jogar juntos.
 
 ---
 
@@ -127,8 +127,8 @@ You only need the internet to download the cards once (about 25 MB) and their im
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (1.10.0)
-Sturdier 4-player network games: if the host's app closes, they get back into the game and everyone reconnects on their own. Player cards fit the screen, rounds instead of turns, defeat and winner notices that stay visible. Each opponent loses X in one action; the log says who changed a life total. Lobby: download all, life 20/30/40, remove a player, PIN on the QR. The app no longer switches to Portuguese. Everyone must update to play together.
+### Release notes (1.11.0)
+Starter decks to play right away: the 5 Foundations Commander decks and 2 Modern 60-card decks, ready to import in Decks. Network games: leaving the table mid-game keeps your seat and your hand when you come back; the host no longer ends everyone's game by mistake; if the active player is defeated, the turn moves on. A removed player goes back to the Play screen. Revealed hands show in each player's language. Everyone must update to play together.
 
 ---
 
@@ -191,8 +191,8 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (1.10.0)
-Partidas de 4 en red más sólidas: si la app del anfitrión se cierra, vuelve a la partida y los demás se reconectan solos. Las fichas de jugador caben en pantalla, rondas en vez de turnos, avisos de derrota y de ganador que no desaparecen. Cada oponente pierde X en una sola acción; el registro dice quién cambió la vida. Sala: descargar todo, vida 20/30/40, sacar a un jugador, PIN en el QR. La app ya no cambia sola al portugués. Todos deben actualizar.
+### Notas de la versión (1.11.0)
+Mazos base para empezar ya: los 5 Foundations Commander y 2 mazos Modern de 60 cartas, listos para importar en Mazos. Partidas en red: quien sale de la mesa a mitad conserva su puesto y vuelve con la misma mano; el anfitrión ya no termina la partida de los demás por error; si el jugador activo es derrotado, el turno pasa al siguiente. Quien es sacado vuelve a Jugar. Todos deben actualizar para jugar juntos.
 
 ---
 
@@ -255,5 +255,5 @@ Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro imm
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (1.10.0)
-Partite a 4 in rete più solide: se l'app dell'host si chiude, rientra in partita e gli altri si ricollegano da soli. Le schede dei giocatori stanno nello schermo, round invece di turni, avvisi di sconfitta e vincitore che restano visibili. Ogni avversario perde X in una sola azione; il registro dice chi ha cambiato i punti vita. Stanza: scarica tutto, vita 20/30/40, togli un giocatore, PIN nel QR. L'app non passa più da sola al portoghese. Tutti devono aggiornare.
+### Note sulla versione (1.11.0)
+Mazzi base per iniziare subito: i 5 Foundations Commander e 2 mazzi Modern da 60 carte, pronti da importare in Mazzi. Partite in rete: chi esce dal tavolo a metà tiene il posto e torna con la stessa mano; l'host non chiude più la partita degli altri per errore; se il giocatore di turno è sconfitto, il turno passa al successivo. Chi viene tolto torna a Gioca. Tutti devono aggiornare per giocare insieme.

@@ -113,8 +113,8 @@ class ResumeCard extends ConsumerWidget {
       child: ResumeTile(
         icon: Icons.replay_circle_filled_rounded,
         title: tr('Jogo em curso: {room}', {'room': info.room}),
-        subtitle: tr('A app fechou a meio do jogo. A tua mão e o grimório ficaram guardados.'),
-        actionLabel: tr('Voltar'),
+        subtitle: tr('Saíste a meio do jogo. A tua mão e o grimório ficaram guardados no teu lugar.'),
+        actionLabel: tr('Voltar ao jogo'),
         onAction: () => resumeGame(context, ref, info),
         onLongPress: () => ref.read(resumeProvider).clear(),
       ),
@@ -142,7 +142,7 @@ Future<void> offerResume(BuildContext context, WidgetRef ref) async {
           child: Text(tr('Esquecer')),
         ),
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Agora não'))),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Voltar'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Voltar ao jogo'))),
       ],
     ),
   );
