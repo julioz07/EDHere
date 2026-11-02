@@ -2,6 +2,7 @@ import 'package:card_db/card_db.dart' show GameFormat;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/app_paths.dart';
 import '../net/discovery.dart';
 import '../net/host_server.dart';
 import '../net/hotspot.dart';
@@ -86,6 +87,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         hostName: widget.playerName,
         pin: pin.isEmpty ? null : pin,
         maxSeats: _seats,
+        journalPath: (await AppPaths.resolve()).hostJournal,
       );
       await server.start();
 
@@ -111,7 +113,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         hostAddresses: await localIPv4Addresses(preferHotspot: hotspot != null),
         advertiser: advertiser,
         hotspot: hotspot,
-        hasPin: pin.isNotEmpty,
+        pin: pin.isEmpty ? null : pin,
       );
       if (!mounted) {
         await session.close();
@@ -172,6 +174,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 max: 6,
                 divisions: 4,
                 label: '$_seats',
+                semanticFormatterCallback: (v) => tr('{n} lugares', {'n': v.round()}),
                 onChanged: _busy ? null : (v) => setState(() => _seats = v.round()),
               ),
               const SizedBox(height: 8),

@@ -229,3 +229,15 @@ String? counterIconFor(String kind) {
   };
   return manaGlyphs.containsKey(name) ? name : null;
 }
+
+/// Ícone para os marcadores sem símbolo na fonte Mana.
+IconData? counterFallbackIcon(String kind) => switch (kind.toLowerCase()) {
+      'oil' => Icons.water_drop,
+      'defense' => Icons.shield,
+      _ => null,
+    };
+
+/// Nome de um marcador para mostrar ("lore" → "Lore"). Os jogadores usam os
+/// nomes em inglês, como estão nas cartas.
+String counterLabel(String kind) =>
+    kind.isEmpty || !RegExp('[a-z]').hasMatch(kind[0]) ? kind : kind[0].toUpperCase() + kind.substring(1);

@@ -253,7 +253,7 @@ class PrivateZones {
 }
 
 class LogEntry {
-  const LogEntry(this.seq, this.actor, this.type, this.text);
+  const LogEntry(this.seq, this.actor, this.type, this.text, {this.mergeKey, this.total = 0});
   final int seq;
   final int actor;
   final String type;
@@ -261,6 +261,11 @@ class LogEntry {
   /// Texto curto em português; nomes de cartas vêm em [[oracleId]] para a
   /// UI substituir pelo nome.
   final String text;
+
+  /// Entradas seguidas com a mesma chave juntam-se numa só ("vida −1",
+  /// "vida −1" ficam "vida −2"); [total] é a soma até aqui.
+  final String? mergeKey;
+  final int total;
 }
 
 /// Estado público da mesa: igual em todos os dispositivos.

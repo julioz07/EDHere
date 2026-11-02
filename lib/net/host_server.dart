@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -19,13 +20,72 @@ class HostServer implements RoomLink {
     this.pin,
     this.maxSeats = 6,
     this.preferredPort = defaultRoomPort,
+    this.journalPath,
   });
+
+  /// Volta a abrir a sala que este dispositivo tinha antes de a app fechar,
+  /// a partir do diário ([journalPath]). Os clientes voltam sozinhos: tentam
+  /// a mesma porta com o mesmo token e recebem o que lhes falta.
+  static HostServer? restore(String journalPath) {
+    final file = File(journalPath);
+    if (!file.existsSync()) return null;
+    Map? header;
+    final log = <Envelope>[];
+    final tokens = <String, ({int seat, String name})>{};
+    try {
+      for (final line in file.readAsLinesSync()) {
+        if (line.trim().isEmpty) continue;
+        final j = jsonDecode(line) as Map<String, dynamic>;
+        if (j['h'] case final Map h) {
+          // Ao reabrir escreve-se outro cabeçalho: vale o último (a porta).
+          header = h;
+        } else if (j['e'] case final Map e) {
+          log.add(Envelope.fromJson(e.cast<String, dynamic>()));
+        } else if (j['t'] case final String token) {
+          tokens[token] = (seat: (j['s'] as num).toInt(), name: j['n'] as String? ?? '');
+        } else if (j['x'] case final String token) {
+          tokens.remove(token);
+        }
+      }
+    } catch (_) {
+      // Uma linha cortada a meio (a app morreu a escrever) não estraga o resto.
+    }
+    final h = header;
+    if (h == null || log.isEmpty) return null;
+    final server = HostServer(
+      roomName: h['room'] as String,
+      hostName: h['host'] as String,
+      pin: h['pin'] as String?,
+      maxSeats: (h['seats'] as num).toInt(),
+      preferredPort: (h['port'] as num).toInt(),
+      journalPath: journalPath,
+    ).._restored = true;
+    server._log.addAll(log);
+    server._seq = log.last.seq;
+    for (final MapEntry(key: token, value: t) in tokens.entries) {
+      server._tokens[token] = t.seat;
+      server._peers[t.seat] = _Peer(null)
+        ..seat = t.seat
+        ..token = token
+        ..name = t.name;
+    }
+    return server;
+  }
 
   final String roomName;
   final String hostName;
   final String? pin;
   final int maxSeats;
   final int preferredPort;
+
+  /// Ficheiro onde o anfitrião vai escrevendo a sala (eventos e tokens) para
+  /// a poder reabrir se a app fechar a meio. Apaga-se ao fechar a sala.
+  final String? journalPath;
+  RandomAccessFile? _journal;
+  bool _restored = false;
+
+  /// Esta sala foi reaberta a partir do diário.
+  bool get restored => _restored;
 
   ServerSocket? _server;
   Timer? _watchdog;
@@ -84,15 +144,68 @@ class HostServer implements RoomLink {
   String? lastError;
 
   Future<void> start() async {
-    try {
-      _server = await ServerSocket.bind(InternetAddress.anyIPv4, preferredPort);
-    } on SocketException {
-      _server = await ServerSocket.bind(InternetAddress.anyIPv4, 0);
+    // Ao reabrir, os clientes procuram a sala na porta antiga: tenta-a umas
+    // vezes antes de desistir dela.
+    for (var attempt = 0;; attempt++) {
+      try {
+        _server = await ServerSocket.bind(InternetAddress.anyIPv4, preferredPort);
+        break;
+      } on SocketException {
+        if (!_restored || attempt >= 4) {
+          _server = await ServerSocket.bind(InternetAddress.anyIPv4, 0);
+          break;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
     }
     _server!.listen(_onConnection, onError: (Object e) => lastError = '$e');
     _watchdog = Timer.periodic(heartbeatInterval, (_) => _checkTimeouts());
+    _openJournal();
     _setStatus(LinkStatus.connected);
-    _sequence(Envelope.intent(MsgType.join, actor: 0, payload: {'seat': 0, 'name': hostName, 'host': true}));
+    if (_restored) {
+      // Ninguém está ligado até voltar a dizer olá.
+      for (final seat in [..._peers.keys]) {
+        _sequence(Envelope.intent(MsgType.playerStatus, actor: -1, payload: {'seat': seat, 'connected': false}));
+      }
+    } else {
+      _sequence(Envelope.intent(MsgType.join, actor: 0, payload: {'seat': 0, 'name': hostName, 'host': true}));
+    }
+  }
+
+  void _openJournal() {
+    final path = journalPath;
+    if (path == null) return;
+    try {
+      _journal = File(path).openSync(mode: _restored ? FileMode.append : FileMode.write);
+      // A porta pode ter mudado (a antiga estava ocupada).
+      _write({
+        'h': {'room': roomName, 'host': hostName, 'pin': pin, 'seats': maxSeats, 'port': port}
+      });
+    } catch (_) {
+      _journal = null;
+    }
+  }
+
+  void _write(Map<String, dynamic> j) {
+    try {
+      _journal?.writeStringSync('${jsonEncode(j)}\n');
+    } catch (_) {
+      _journal = null;
+    }
+  }
+
+  /// Fecha e apaga o diário: a sala acabou de propósito.
+  void _dropJournal() {
+    try {
+      _journal?.closeSync();
+    } catch (_) {}
+    _journal = null;
+    final path = journalPath;
+    if (path != null) {
+      try {
+        File(path).deleteSync();
+      } catch (_) {}
+    }
   }
 
   @override
@@ -115,6 +228,7 @@ class HostServer implements RoomLink {
       flushing.add(socket.flush().catchError((_) {}));
     }
     await Future.wait(flushing).timeout(const Duration(milliseconds: 600), onTimeout: () => const []);
+    _dropJournal();
     _setStatus(LinkStatus.closed);
     for (final peer in [..._peers.values, ..._pending]) {
       peer.socket?.destroy();
@@ -123,6 +237,49 @@ class HostServer implements RoomLink {
     await _events.close();
     await _direct.close();
     await _status.close();
+  }
+
+  /// Tira um jogador da sala: o lugar fica livre e ele não volta com o token
+  /// que tinha (por exemplo, quem saiu sem fechar a app e deixou o lugar preso).
+  void kick(int seat) {
+    if (seat == 0) return;
+    final peer = _peers.remove(seat);
+    if (peer == null) return;
+    if (peer.token != null) {
+      _tokens.remove(peer.token);
+      _write({'x': peer.token});
+    }
+    final socket = peer.socket;
+    peer.socket = null;
+    if (socket != null) {
+      peer.subscription?.cancel();
+      try {
+        socket.add(encodeFrame(Envelope(
+          type: MsgType.reject,
+          actor: 0,
+          ts: DateTime.now().millisecondsSinceEpoch,
+          payload: {'reason': RejectReason.kicked},
+        ).toJson()));
+      } catch (_) {}
+      socket.flush().whenComplete(socket.destroy).ignore();
+    }
+    _sequence(Envelope.intent(MsgType.leave, actor: -1, payload: {'seat': seat}));
+  }
+
+  /// Morre como se a app tivesse sido fechada pelo sistema: sem avisar os
+  /// clientes e sem apagar o diário. Só para testes.
+  Future<void> crashForTest() async {
+    _watchdog?.cancel();
+    try {
+      _journal?.closeSync();
+    } catch (_) {}
+    _journal = null;
+    _setStatus(LinkStatus.closed);
+    for (final peer in [..._peers.values, ..._pending]) {
+      await peer.subscription?.cancel();
+      peer.socket?.destroy();
+    }
+    await _server?.close();
   }
 
   /// Corta a ligação de um jogador como se a rede tivesse caído. Só para testes.
@@ -188,6 +345,7 @@ class HostServer implements RoomLink {
         final seat = peer.seat!;
         _peers.remove(seat);
         _tokens.remove(peer.token);
+        if (peer.token != null) _write({'x': peer.token});
         final socket = peer.socket;
         peer.socket = null;
         peer.subscription?.cancel();
@@ -248,6 +406,7 @@ class HostServer implements RoomLink {
           : tr('Jogador {seat}', {'seat': seat}));
     _peers[seat] = peer;
     _tokens[newToken] = seat;
+    _write({'t': newToken, 's': seat, 'n': peer.name});
     _sendWelcome(peer, since: 0);
     _sequence(Envelope.intent(MsgType.join, actor: -1, payload: {'seat': seat, 'name': peer.name}));
   }
@@ -309,6 +468,7 @@ class HostServer implements RoomLink {
     if (_currentStatus == LinkStatus.closed) return;
     final env = intent.withSeq(++_seq);
     _log.add(env);
+    _write({'e': env.toJson()});
     final frame = encodeFrame(env.toJson());
     for (final peer in _peers.values) {
       final socket = peer.socket;
@@ -353,7 +513,7 @@ class HostServer implements RoomLink {
 }
 
 class _Peer {
-  _Peer(Socket this.socket);
+  _Peer(this.socket);
 
   Socket? socket;
   StreamSubscription<Map<String, dynamic>>? subscription;

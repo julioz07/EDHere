@@ -259,6 +259,7 @@ class _CounterBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = counterIconFor(kind);
+    final fallback = counterFallbackIcon(kind);
     final label = switch (kind) {
       CounterKind.plus => '+$value',
       CounterKind.minus => '-$value',
@@ -269,7 +270,8 @@ class _CounterBadge extends StatelessWidget {
       decoration: BoxDecoration(color: _color(kind), borderRadius: BorderRadius.circular(6)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) ManaIcon(icon, size: size * 0.85, color: Colors.white),
-        if (icon == null)
+        if (icon == null && fallback != null) Icon(fallback, size: size * 0.85, color: Colors.white),
+        if (icon == null && fallback == null)
           Text('${kind.length > 6 ? kind.substring(0, 6) : kind} ',
               style: TextStyle(color: Colors.white, fontSize: size * 0.7)),
         const SizedBox(width: 2),

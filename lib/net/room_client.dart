@@ -56,6 +56,9 @@ class RoomClient implements RoomLink {
 
   /// O anfitrião fechou a sala (não foi a rede que caiu).
   bool hostClosed = false;
+
+  /// O anfitrião tirou-me da sala.
+  bool kicked = false;
   String? get roomName => _roomName;
   String? _roomName;
   int get lastSeq => _lastSeq;
@@ -214,9 +217,14 @@ class RoomClient implements RoomLink {
         if (_handshake?.isCompleted == false) _handshake!.complete();
       case MsgType.reject:
         final reason = env.payload['reason'] as String? ?? '?';
-        _setStatus(LinkStatus.rejected);
         if (_handshake?.isCompleted == false) {
+          _setStatus(LinkStatus.rejected);
           _handshake!.completeError(RoomJoinException(_describeReject(reason)));
+        } else {
+          // Já estava na sala: o anfitrião tirou-me. Não volta a tentar.
+          lastError = _describeReject(reason);
+          kicked = reason == RejectReason.kicked;
+          close();
         }
       case MsgType.roomClosed:
         hostClosed = true;
@@ -297,6 +305,7 @@ class RoomClient implements RoomLink {
         RejectReason.badPin => tr('PIN errado'),
         RejectReason.roomFull => tr('A sala está cheia'),
         RejectReason.versionMismatch => tr('Versão da app diferente da do anfitrião'),
+        RejectReason.kicked => tr('O anfitrião tirou-te da sala.'),
         _ => tr('Recusado pelo anfitrião ({reason})', {'reason': reason}),
       };
 }

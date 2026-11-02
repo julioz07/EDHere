@@ -13,8 +13,9 @@ class RoomSession {
     required this.hostAddresses,
     this.advertiser,
     this.hotspot,
-    this.hasPin = false,
-  }) : link = server;
+    this.pin,
+  })  : link = server,
+        hasPin = pin != null;
 
   RoomSession.client({
     required RoomClient client,
@@ -23,6 +24,7 @@ class RoomSession {
         hostAddresses = const [],
         advertiser = null,
         hotspot = null,
+        pin = null,
         hasPin = false;
 
   final RoomLink link;
@@ -31,6 +33,9 @@ class RoomSession {
   final RoomAdvertiser? advertiser;
   final HotspotInfo? hotspot;
   final bool hasPin;
+
+  /// O PIN da sala (só no anfitrião, para o mostrar a quem chega).
+  final String? pin;
 
   bool get isHost => link is HostServer;
 

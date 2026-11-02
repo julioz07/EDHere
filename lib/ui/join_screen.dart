@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/theme.dart';
 import '../net/discovery.dart';
@@ -48,10 +49,15 @@ class _JoinScreenState extends State<JoinScreen> {
     super.dispose();
   }
 
-  Future<void> _join(List<String> hosts, int port, String roomName, {bool askPin = false}) async {
+  /// O último IP escrito à mão (quem joga sempre com o mesmo anfitrião).
+  static const _lastIpKey = 'join_last_ip';
+  static const _lastPortKey = 'join_last_port';
+
+  Future<void> _join(List<String> hosts, int port, String roomName,
+      {bool askPin = false, bool wrongPin = false, bool remember = false}) async {
     String? pin;
     if (askPin) {
-      pin = await _askPin();
+      pin = await _askPin(wrong: wrongPin);
       if (pin == null) return;
     }
     setState(() {
@@ -66,6 +72,11 @@ class _JoinScreenState extends State<JoinScreen> {
     );
     try {
       await client.connect();
+      if (remember) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastIpKey, hosts.first);
+        await prefs.setInt(_lastPortKey, port);
+      }
       final session = RoomSession.client(client: client, roomName: client.roomName ?? roomName);
       if (!mounted) {
         await session.close();
@@ -79,10 +90,10 @@ class _JoinScreenState extends State<JoinScreen> {
       ));
     } on RoomJoinException catch (e) {
       if (!mounted) return;
-      // Sala com PIN que não sabíamos: pede-o e tenta outra vez.
-      if (!askPin && e.message == tr('PIN errado')) {
+      // Sala com PIN (ou PIN errado): pede-o outra vez, sem voltar a escrever o IP.
+      if (e.message == tr('PIN errado')) {
         setState(() => _busy = false);
-        return _join(hosts, port, roomName, askPin: true);
+        return _join(hosts, port, roomName, askPin: true, wrongPin: askPin, remember: remember);
       }
       setState(() {
         _busy = false;
@@ -91,7 +102,7 @@ class _JoinScreenState extends State<JoinScreen> {
     }
   }
 
-  Future<String?> _askPin() {
+  Future<String?> _askPin({bool wrong = false}) {
     final ctrl = TextEditingController();
     return showDialog<String>(
       context: context,
@@ -103,6 +114,7 @@ class _JoinScreenState extends State<JoinScreen> {
           keyboardType: TextInputType.number,
           maxLength: 4,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(errorText: wrong ? tr('PIN errado. Tenta outra vez.') : null),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
@@ -143,8 +155,10 @@ class _JoinScreenState extends State<JoinScreen> {
   }
 
   Future<void> _manualIp() async {
-    final ipCtrl = TextEditingController();
-    final portCtrl = TextEditingController(text: '$defaultRoomPort');
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final ipCtrl = TextEditingController(text: prefs.getString(_lastIpKey) ?? '');
+    final portCtrl = TextEditingController(text: '${prefs.getInt(_lastPortKey) ?? defaultRoomPort}');
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -180,7 +194,7 @@ class _JoinScreenState extends State<JoinScreen> {
       setState(() => _error = tr('IP inválido: {ip}', {'ip': ip}));
       return;
     }
-    await _join([ip], port, tr('Sala'));
+    await _join([ip], port, tr('Sala'), remember: true);
   }
 
   @override

@@ -234,8 +234,17 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
             showCounterSheet(context, ctrl, c);
           }),
           if ((card?.faces.length ?? 0) > 1)
-            _tile(Icons.flip, tr('Transformar (outra face)'),
-                () => done(() => ctrl.send(Intent(Ev.flip, {'id': c.id})))),
+            _tile(Icons.flip, tr('Transformar (outra face)'), () {
+              done(() {
+                ctrl.send(Intent(Ev.flip, {'id': c.id}));
+                final next = c.faceIndex == 0 ? 1 : 0;
+                final landNow = GameController.isLandFace(card, next);
+                if (landNow != GameController.isLandFace(card, c.faceIndex)) {
+                  final spot = ctrl.nextSpot(isLand: landNow, seat: c.controller);
+                  ctrl.setPosition(c, spot.$1, spot.$2);
+                }
+              });
+            }),
           _tile(Icons.flip_to_back, c.faceDown ? tr('Virar para cima') : tr('Virar para baixo'),
               () => done(() => ctrl.send(Intent(Ev.faceDown, {'id': c.id, 'value': !c.faceDown})))),
           _tile(Icons.link, c.attachedTo == null ? tr('Anexar a…') : tr('Desanexar'), () async {
@@ -254,7 +263,9 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
           _tile(Icons.swap_horiz, tr('Dar o controlo a…'), () async {
             Navigator.pop(ctx);
             final seat = await pickPlayer(context, ctrl, tr('Novo controlador'));
-            if (seat != null) ctrl.send(Intent(Ev.control, {'id': c.id, 'seat': seat}));
+            if (seat == null) return;
+            final spot = ctrl.nextSpot(isLand: card?.isLand ?? false, seat: seat);
+            ctrl.send(Intent(Ev.control, {'id': c.id, 'seat': seat, 'x': spot.$1, 'y': spot.$2}));
           }),
           _tile(
               Icons.content_copy,
@@ -278,6 +289,18 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
               final n = await pickNumber(context, tr('Quantos separar?'), initial: 1, max: c.stackQty - 1);
               if (n != null) ctrl.splitStack(c, n);
             }, subtitle: tr('Por exemplo, para atacar só com alguns')),
+        ],
+        if ((c.zone == Zone.graveyard || c.zone == Zone.exile) && card != null) ...[
+          if (card.frontType.contains('Instant') || card.frontType.contains('Sorcery'))
+            // Do cemitério (flashback) vai para o exílio; do exílio, para o cemitério.
+            _tile(
+                Icons.flash_on,
+                c.zone == Zone.graveyard ? tr('Lançar (vai para o exílio)') : tr('Lançar (vai para o cemitério)'),
+                () => done(() =>
+                    ctrl.moveCard(c, c.zone == Zone.graveyard ? Zone.exile : Zone.graveyard, cast: true)))
+          else if (!card.isLand)
+            _tile(Icons.flash_on, tr('Lançar para o campo'),
+                () => done(() => ctrl.moveCard(c, Zone.battlefield, cast: true))),
         ],
         const Divider(),
         for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
@@ -496,9 +519,22 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
               final theme = Theme.of(ctx);
               final card = ctrl.card(cur.oracleId, printId: cur.printId);
               final pt = effectivePt(cur, card);
+              final type = card == null
+                  ? 'Creature'
+                  : card.faces.isNotEmpty
+                      ? card.faces[cur.faceIndex.clamp(0, card.faces.length - 1)].typeLine
+                      : card.typeLine;
+              final showPt = pt != null || type.contains('Creature') || type.contains('Vehicle');
+              // Uma Saga vive de marcadores de lore; um planeswalker de lealdade.
+              final first = [
+                if (type.contains('Saga')) 'lore',
+                if (type.contains('Planeswalker')) CounterKind.loyalty,
+                if (type.contains('Battle')) 'defense',
+              ];
+              final ordered = [...first, ...kinds.where((k) => !first.contains(k))];
               final extra = cur.counters.keys
                   .where((k) =>
-                      !kinds.contains(k) && !k.startsWith('mod:') && !k.startsWith(CounterKind.keyword))
+                      !ordered.contains(k) && !k.startsWith('mod:') && !k.startsWith(CounterKind.keyword))
                   .toList();
 
               void setValue(String kind, int v) =>
@@ -543,7 +579,9 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
 
               Widget icon(String kind) {
                 final i = counterIconFor(kind);
-                return i == null ? const SizedBox(width: 24) : ManaIcon(i, size: 22);
+                if (i != null) return ManaIcon(i, size: 22);
+                final fallback = counterFallbackIcon(kind);
+                return fallback == null ? const SizedBox(width: 24) : Icon(fallback, size: 22);
               }
 
               Future<void> addOther() async {
@@ -594,20 +632,22 @@ Future<void> showCounterSheet(BuildContext context, GameController ctrl, CardIns
                         ),
                     ]),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Text(tr('Poder e resistência (equipamentos, efeitos)'),
-                        style: theme.textTheme.labelLarge),
-                  ),
-                  stepper(CounterKind.modPower, tr('Poder ±'),
-                      signed: true, leading: const Icon(Icons.flash_on)),
-                  stepper(CounterKind.modToughness, tr('Resistência ±'),
-                      signed: true, leading: const Icon(Icons.shield_outlined)),
+                  if (showPt) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Text(tr('Poder e resistência (equipamentos, efeitos)'),
+                          style: theme.textTheme.labelLarge),
+                    ),
+                    stepper(CounterKind.modPower, tr('Poder ±'),
+                        signed: true, leading: const Icon(Icons.flash_on)),
+                    stepper(CounterKind.modToughness, tr('Resistência ±'),
+                        signed: true, leading: const Icon(Icons.shield_outlined)),
+                  ],
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Text(tr('Contadores'), style: theme.textTheme.labelLarge),
                   ),
-                  for (final k in [...kinds, ...extra]) stepper(k, k, leading: icon(k)),
+                  for (final k in [...ordered, ...extra]) stepper(k, counterLabel(k), leading: icon(k)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Align(
@@ -685,6 +725,12 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
         _tile(Icons.flash_on, tr('Lançar (vai para o cemitério)'),
             () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard, cast: true))),
       _tile(Icons.dashboard_outlined, tr('Jogar para o campo'), () => done(() => ctrl.playFromHand(pc))),
+      if (card != null &&
+          card.faces.length > 1 &&
+          !GameController.isLandFace(card, 0) &&
+          GameController.isLandFace(card, 1))
+        _tile(Icons.landscape_outlined, tr('Jogar como terreno ({name})', {'name': card.displayNameOf(1)}),
+            () => done(() => ctrl.playFromHand(pc, face: 1))),
       _tile(Icons.flip_to_back, tr('Jogar virada para baixo'),
           () => done(() => ctrl.playFromHand(pc, faceDown: true))),
       _tile(
@@ -753,10 +799,13 @@ Future<void> showLibraryMenu(BuildContext context, GameController ctrl) {
         Navigator.pop(ctx);
         ctrl.send(t.mill(seat, 1, to: Zone.exile));
       }),
+      _tile(Icons.block, tr('Exilar N do topo…'),
+          () => withN(tr('Exilar do topo'), (n) => ctrl.send(t.mill(seat, n, to: Zone.exile)), initial: 3)),
       _tile(Icons.search, tr('Procurar uma carta'), () {
         Navigator.pop(ctx);
         showLibrarySearch(context, ctrl);
       }),
+      if (ctrl.state.turn <= ctrl.state.players.length)
       _tile(Icons.refresh, tr('Mulligan (London)'), () async {
         Navigator.pop(ctx);
         ctrl.mulligan();
@@ -1055,39 +1104,53 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
               return ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 16), children: [
                 Center(child: Text(p.name, style: theme.textTheme.titleLarge)),
                 const SizedBox(height: 8),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  for (final d in [-5, -1])
-                    Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
-                        onPressed: () => ctrl.life(seat, d),
-                        // manter premido o −1 tira 10
-                        onLongPress: d == -1 ? () => ctrl.life(seat, -10) : null,
-                        child: Text('$d'),
+                // Os botões repartem a largura: num telemóvel pequeno o −5 e o +5
+                // ficavam cortados nas pontas.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(children: [
+                    for (final d in [-5, -1])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(3),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 48), padding: const EdgeInsets.symmetric(horizontal: 4)),
+                            onPressed: () => ctrl.life(seat, d),
+                            // manter premido o −1 tira 10
+                            onLongPress: d == -1 ? () => ctrl.life(seat, -10) : null,
+                            child: Text('$d'),
+                          ),
+                        ),
                       ),
+                    SizedBox(
+                      width: 88,
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('${p.life}',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                        ),
+                        // a altura fica guardada: o número não salta quando aparece a soma
+                        SizedBox(height: 18, child: LifeDelta(life: p.life, fontSize: 14)),
+                      ]),
                     ),
-                  SizedBox(
-                    width: 96,
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${p.life}',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
-                      // a altura fica guardada: o número não salta quando aparece a soma
-                      SizedBox(height: 18, child: LifeDelta(life: p.life, fontSize: 14)),
-                    ]),
-                  ),
-                  for (final d in [1, 5])
-                    Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(56, 48)),
-                        onPressed: () => ctrl.life(seat, d),
-                        onLongPress: d == 1 ? () => ctrl.life(seat, 10) : null,
-                        child: Text('+$d'),
+                    for (final d in [1, 5])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(3),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 48), padding: const EdgeInsets.symmetric(horizontal: 4)),
+                            onPressed: () => ctrl.life(seat, d),
+                            onLongPress: d == 1 ? () => ctrl.life(seat, 10) : null,
+                            child: Text('+$d'),
+                          ),
+                        ),
                       ),
-                    ),
-                ]),
+                  ]),
+                ),
                 Center(
                   child: Text(tr('Mantém premido o −1 ou o +1 para mudar 10.'),
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -1146,7 +1209,24 @@ Future<void> showPlayerSheet(BuildContext context, GameController ctrl, int seat
                   dense: true,
                   title: Text(tr('Derrotado')),
                   value: p.defeated,
-                  onChanged: (v) => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v})),
+                  onChanged: (v) async {
+                    // Sair do jogo não se faz com um toque por engano.
+                    if (v) {
+                      final ok = await showTableDialog<bool>(
+                        context: ctx,
+                        builder: (d) => AlertDialog(
+                          title: Text(tr('{v} foi derrotado?', {'v': p.name})),
+                          content: Text(tr('Sai do jogo e deixa de ter turnos. Dá para voltar atrás aqui.')),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(d, false), child: Text(tr('Cancelar'))),
+                            FilledButton(onPressed: () => Navigator.pop(d, true), child: Text(tr('Derrotado'))),
+                          ],
+                        ),
+                      );
+                      if (ok != true) return;
+                    }
+                    ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': v}));
+                  },
                 ),
               ]);
             },
@@ -1179,8 +1259,10 @@ Future<void> showTokenSheet(BuildContext context, GameController ctrl) {
             }
             void create({String? oracleId, String? n, String? p}) {
               Navigator.pop(ctx);
+              // Num lugar livre da fila das criaturas (no meio ficava por cima de tudo).
+              final spot = ctrl.nextSpot();
               ctrl.send(ctrl.table
-                  .createToken(ctrl.actor, oracleId: oracleId, name: n, pt: p, qty: qty, x: 0.5, y: 0.5));
+                  .createToken(ctrl.actor, oracleId: oracleId, name: n, pt: p, qty: qty, x: spot.$1, y: spot.$2));
             }
 
             Widget chips(String title, List<db.Card> tokens) => Padding(

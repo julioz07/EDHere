@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/providers.dart';
 import '../game/resume_store.dart';
+import '../net/discovery.dart';
+import '../net/host_server.dart';
+import '../net/network_util.dart';
 import '../net/room_client.dart';
 import '../room/room_session.dart';
 import 'lobby_screen.dart';
@@ -26,6 +29,44 @@ Future<void> resumeGame(BuildContext context, WidgetRef ref, ResumeInfo info) as
       ]),
     ),
   );
+  if (info.isHost) {
+    final server = HostServer.restore(info.journal!);
+    if (server == null) {
+      navigator.pop();
+      ref.read(resumeProvider).clear();
+      messenger.showSnackBar(SnackBar(content: Text(tr('Esse jogo já não existe.'))));
+      return;
+    }
+    await server.start();
+    // O anúncio mDNS é opcional: os outros voltam pelo endereço que já têm.
+    RoomAdvertiser? advertiser = RoomAdvertiser();
+    try {
+      await advertiser.start(RoomAd(
+        name: server.roomName,
+        port: server.port,
+        format: 'commander',
+        freeSeats: 0,
+        hasPin: server.pin != null,
+        appVersion: appVersion,
+        dbVersion: cardDbVersion,
+      ));
+    } catch (_) {
+      advertiser = null;
+    }
+    final session = RoomSession.host(
+      server: server,
+      roomName: server.roomName,
+      hostAddresses: await localIPv4Addresses(),
+      advertiser: advertiser,
+      pin: server.pin,
+    );
+    navigator.pop();
+    await navigator.push(MaterialPageRoute<void>(
+      settings: const RouteSettings(name: 'lobby'),
+      builder: (_) => LobbyScreen(session: session, resume: info),
+    ));
+    return;
+  }
   final client = RoomClient(
     hosts: info.hosts,
     port: info.port,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:edhoff/net/host_server.dart';
 import 'package:edhoff/net/room_client.dart';
 import 'package:edhoff/net/room_link.dart';
@@ -162,5 +164,60 @@ void main() {
     expect(b.mySeat, 1);
     expect(host.log.any((e) => e.type == MsgType.leave), isTrue);
     await b.close();
+  });
+
+  test('o anfitrião que morre reabre a sala pelo diário e os clientes voltam sozinhos', () async {
+    final journal = '${Directory.systemTemp.createTempSync('journal').path}/host.jsonl';
+    final first = HostServer(roomName: 'Mesa', hostName: 'Ana', pin: '1234', journalPath: journal);
+    await first.start();
+    final port = first.port;
+    final a = RoomClient(hosts: ['127.0.0.1'], port: port, playerName: 'Rui', pin: '1234');
+    await a.connect();
+    final rec = Recorder(a);
+    first.submit('ping', {'n': 1});
+    a.submit('ping', {'n': 2});
+    await rec.waitForSeq(first.log.last.seq);
+    final before = first.log.length;
+
+    await first.crashForTest();
+    host = HostServer.restore(journal)!;
+    expect(host.restored, isTrue);
+    expect(host.log.length, before);
+    await host.start();
+    expect(host.port, port, reason: 'reabre na mesma porta, que é onde os clientes procuram');
+
+    // O cliente volta ao mesmo lugar e recebe o que aconteceu entretanto.
+    host.submit('ping', {'n': 3});
+    await rec.waitForSeq(host.log.last.seq);
+    expect(a.mySeat, 1);
+    expect(a.status, LinkStatus.connected);
+    expect(rec.seen.map((e) => e.seq).toList(), [for (var i = 1; i <= host.log.last.seq; i++) i]);
+    // Um novo jogador não fica com o lugar de quem já lá estava.
+    final b = RoomClient(hosts: ['127.0.0.1'], port: port, playerName: 'Eva', pin: '1234');
+    await b.connect();
+    expect(b.mySeat, 2);
+    await a.close();
+    await b.close();
+    await host.close();
+    expect(File(journal).existsSync(), isFalse, reason: 'fechar a sala apaga o diário');
+  });
+
+  test('o anfitrião tira um jogador da sala: o lugar fica livre e o token deixa de valer', () async {
+    host = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0);
+    await host.start();
+    final a = await join('Rui');
+    final token = a.token;
+    host.kick(a.mySeat);
+    final end = DateTime.now().add(const Duration(seconds: 3));
+    while (a.status != LinkStatus.closed && DateTime.now().isBefore(end)) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(a.status, LinkStatus.closed);
+    expect(a.kicked, isTrue);
+    // Com o token antigo já não volta ao mesmo lugar: entra como novo.
+    final back = RoomClient(hosts: ['127.0.0.1'], port: host.port, playerName: 'Rui', token: token);
+    await back.connect();
+    expect(back.token, isNot(token));
+    await back.close();
   });
 }

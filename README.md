@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 1.9.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 1.10.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -113,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 1.10.0 | QA de um jogo real a 4 telemóveis: o anfitrião volta ao jogo se a app fechar (a sala reabre e os outros religam sozinhos); cartões dos jogadores que cabem no ecrã com 4; ronda em vez de turno; avisos de derrota e de "só resta um" que ficam à vista; cada oponente perde X numa só ação; o registo junta mudanças seguidas, diz quem mexeu na vida e já não tem texto em português noutras línguas; carta roubada vai para um lugar livre; lançar do exílio ou do cemitério, exilar N do topo, jogar cartas de duas faces como terreno, lembrete de 7 cartas na mão; tokens com imagem. Lobby: descarregar todas as imagens, confirmar começar sem todos, vida 20/25/30/40, tirar um jogador, PIN no QR, lembrar o último IP. Corrigido: a app passava a português na 2.ª vez que abria. Protocolo de rede novo: todos têm de atualizar |
 | 1.9.1 | Jogar contra até 4 bots em Commander: separadores com uma cor por jogador, o tabuleiro de quem ataca ou responde em foco, e o bot mostra o que está a pensar (cartas e alvos a brilhar na cor dele). Visual novo: menu Jogar com modos em cartões, lista de decks com o comandante, três vistas no editor, cores por jogador nas mesas. Estatísticas do deck com rampa, compra, remoção, limpezas e tutores e a probabilidade na mão inicial; o bracket mostra tutores e combos famosos. Mesa partilhada: manter premido muda a vida em 10, com o total das mudanças. Bots com deck aleatório, picks de draft melhores, avisos de derrota (0 de vida, 10 de veneno, 21 de dano de comandante). Textos do Forge traduzidos e muitas correções em ecrãs pequenos |
 | 1.8.1 | Jogo contra o bot: custos de mana com símbolos no pagamento, na pilha e nos diálogos; quem ataca já não se deita (avança como no Arena); as escolhas entre efeitos são botões |
 | 1.8.0 | Jogo contra o bot com mais vida: cartas a voar entre zonas, setas de ataque e bloqueio, destaque da carta do bot, pilha com mini-cartas, tremor e flash no dano, sons e vibração, barra das fases, vida animada, indicador do bot a pensar, mão em leque, moeda e mulligan em grande, ecrã de fim com gráfico da vida e revanche. Atacar e bloquear a arrastar, paragens por fase e controlo total, velocidade do bot, Desfazer em botão próprio |

@@ -9,11 +9,13 @@ import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 import 'app/theme.dart';
 import 'data/app_paths.dart';
-import 'data/card_data_service.dart';
 import 'data/providers.dart';
 import 'data/settings.dart';
 import 'ui/onboarding_screen.dart';
 import 'l10n/l10n.dart';
+
+/// Marca a reparação da língua da 1.9.2 (ver `main`).
+const _langRepairedKey = 'lang_repaired_192';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,14 +29,14 @@ Future<void> main() async {
     yield LicenseEntryWithLineBreaks(['Forge (motor de regras do bot)'], gpl);
   });
   final prefs = await SharedPreferences.getInstance();
-  // A língua da app: a escolhida nas Definições ou a do telemóvel. Quem já
-  // usava a app antes das línguas (1.3 ou anterior) continua em português,
-  // com as cartas em inglês como as tinha.
-  if (prefs.getString(Settings.langKey) == null && prefs.getKeys().isNotEmpty) {
-    await prefs.setString(Settings.langKey, AppLang.pt.code);
-    if (prefs.getString(CardDataService.cardLangKey) == null) {
-      await prefs.setString(CardDataService.cardLangKey, 'en');
+  // A língua da app: a escolhida nas Definições ou a do telemóvel. Até à
+  // 1.9.1 quem nunca escolheu língua passava a português na 2.ª vez que
+  // abria a app; quem ficou assim volta (uma vez) à língua do telemóvel.
+  if (prefs.getBool(_langRepairedKey) != true) {
+    if (prefs.getString(Settings.langKey) == AppLang.pt.code && L10n.fromSystem() != AppLang.pt) {
+      await prefs.remove(Settings.langKey);
     }
+    await prefs.setBool(_langRepairedKey, true);
   }
   L10n.use(AppLang.byCode(prefs.getString(Settings.langKey)) ?? L10n.fromSystem());
   final paths = await AppPaths.resolve();

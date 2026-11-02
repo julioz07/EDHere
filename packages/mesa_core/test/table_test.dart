@@ -296,4 +296,61 @@ void main() {
     final back = GameState.fromJson(jsonDecode(json) as Map<String, dynamic>);
     expect(jsonEncode(back.toJson()), json);
   });
+
+  test('vida: mudanças seguidas juntam-se no registo e dizem quem mexeu', () {
+    pod.send(1, const Intent(Ev.life, {'seat': 0, 'delta': -1}));
+    pod.send(1, const Intent(Ev.life, {'seat': 0, 'delta': -1}));
+    pod.send(1, const Intent(Ev.life, {'seat': 0, 'delta': -1}));
+    pod.expectInSync();
+    expect(pod.a.state.players[0]!.life, 37);
+    expect(pod.a.state.log.last.text, 'Rui: vida de Ana -3 (37)');
+    // Outro alvo começa uma linha nova.
+    pod.send(1, const Intent(Ev.life, {'seat': 1, 'delta': 2}));
+    expect(pod.a.state.log.last.text, 'Rui: vida +2 (42)');
+    // Desfazer tira só um passo e diz qual.
+    pod.send(1, pod.b.undo());
+    pod.expectInSync();
+    expect(pod.a.state.players[1]!.life, 40);
+    expect(pod.a.state.log.last.text, 'Rui desfez: Rui: vida +2 (42)');
+    pod.send(1, pod.b.undo());
+    expect(pod.a.state.players[0]!.life, 38);
+    expect(pod.a.state.log.last.text, contains('vida de Ana -1 (37)'));
+  });
+
+  test('cada oponente perde vida numa só ação', () {
+    pod.send(0, const Intent(Ev.lifeEach, {'seats': [1], 'delta': -3}));
+    pod.expectInSync();
+    expect(pod.a.state.players[1]!.life, 37);
+    expect(pod.a.state.log.last.text, 'Ana: Rui perdem 3 de vida');
+  });
+
+  test('mudar de controlador leva a carta para o sítio pedido', () {
+    pod.send(0, pod.a.draw(0, 1));
+    final pc = pod.a.private[0]!.hand.first;
+    pod.send(0, pod.a.moveHidden(0, Zone.hand, pc.pid, Zone.battlefield, x: 0.2, y: 0.0));
+    final c = pod.a.state.cards.values.firstWhere((c) => c.zone == Zone.battlefield);
+    pod.send(0, Intent(Ev.control, {'id': c.id, 'seat': 1, 'x': 0.4, 'y': 0.17}));
+    pod.expectInSync();
+    final now = pod.b.state.cards[c.id]!;
+    expect((now.controller, now.x, now.y), (1, 0.4, 0.17));
+  });
+
+  test('lançar do exílio fica no registo como lançada', () {
+    pod.send(0, pod.a.mill(0, 1, to: Zone.exile));
+    final c = pod.a.state.cards.values.firstWhere((c) => c.zone == Zone.exile);
+    pod.send(0, pod.a.movePublic(c.id, Zone.graveyard, cast: true));
+    expect(pod.a.state.log.last.text, 'Ana lançou [[${c.oracleId}]]');
+  });
+
+  test('virar fica no registo pela tradução', () {
+    pod.send(0, pod.a.draw(0, 1));
+    final pc = pod.a.private[0]!.hand.first;
+    pod.send(0, pod.a.moveHidden(0, Zone.hand, pc.pid, Zone.battlefield));
+    final c = pod.a.state.cards.values.firstWhere((c) => c.zone == Zone.battlefield);
+    final before = mesaTr;
+    mesaTr = (pt, [args]) => pt == '{v} virou {cards}' ? 'tapped' : pt;
+    addTearDown(() => mesaTr = before);
+    pod.send(0, Intent(Ev.tap, {'ids': [c.id], 'value': true}));
+    expect(pod.a.state.log.last.text, 'tapped');
+  });
 }

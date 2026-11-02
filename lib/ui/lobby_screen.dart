@@ -9,6 +9,7 @@ import '../data/providers.dart';
 import '../game/draft.dart';
 import '../game/network_game.dart';
 import '../game/resume_store.dart';
+import '../net/host_server.dart';
 import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
@@ -91,7 +92,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           ctrl: g,
           banner: switch (_game.link.status) {
             LinkStatus.reconnecting => MaterialBanner(
-                content: Text(tr('Ligação perdida. A voltar a ligar…')),
+                content: Text(_lostText),
                 leading: const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                 actions: [TextButton(onPressed: _leaveFromTable, child: Text(tr('Sair')))],
               ),
@@ -144,7 +145,57 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   String get _closedReason {
     final l = _game.link;
     if (l is RoomClient && l.hostClosed) return tr('O anfitrião fechou a sala.');
+    if (l is RoomClient && l.kicked) return tr('O anfitrião tirou-te da sala.');
     return tr('A ligação à sala terminou.');
+  }
+
+  /// "Ligação perdida": diz de quem se está à espera (é o anfitrião quem liga
+  /// todos; se ele cair, ninguém joga).
+  String get _lostText {
+    final host = _game.players.values.where((p) => p.isHost).firstOrNull;
+    return host == null
+        ? tr('Ligação perdida. A voltar a ligar…')
+        : tr('Sem ligação ao anfitrião ({v}). À espera que volte…', {'v': host.name});
+  }
+
+  /// Começar com quem está pronto: quem não está fica de fora, por isso pergunta.
+  Future<void> _start() async {
+    final g = _game;
+    final out = g.players.values.where((p) => p.connected && !p.ready).map((p) => p.name).toList();
+    if (out.isNotEmpty) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(tr('Começar sem todos?')),
+          content: Text(out.length == 1
+              ? tr('{v} ainda não está pronto e fica de fora deste jogo.', {'v': out.single})
+              : tr('{v} ainda não estão prontos e ficam de fora deste jogo.', {'v': out.join(', ')})),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Esperar'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Começar'))),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    g.start();
+  }
+
+  /// Anfitrião: tirar um jogador da sala (quem saiu e deixou o lugar preso).
+  Future<void> _kick(LobbyPlayer p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('Tirar {v} da sala?', {'v': p.name})),
+        content: Text(tr('O lugar fica livre. Pode voltar a entrar como um jogador novo.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Tirar da sala'))),
+        ],
+      ),
+    );
+    final link = _game.link;
+    if (ok == true && link is HostServer) link.kick(p.seat);
   }
 
   /// Sai da mesa e da sala (ligação perdida ou sala fechada).
@@ -242,9 +293,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             Row(children: [
               Text(tr('Vida inicial')),
               const Spacer(),
-              IconButton(onPressed: () => set(() => life--), icon: const Icon(Icons.remove)),
+              IconButton(onPressed: life > 1 ? () => set(() => life--) : null, icon: const Icon(Icons.remove)),
               Text('$life', style: Theme.of(ctx).textTheme.titleMedium),
               IconButton(onPressed: () => set(() => life++), icon: const Icon(Icons.add)),
+            ]),
+            Wrap(spacing: 6, children: [
+              for (final v in const [20, 25, 30, 40])
+                ChoiceChip(label: Text('$v'), selected: life == v, onSelected: (_) => set(() => life = v)),
             ]),
           ]),
           actions: [
@@ -292,6 +347,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           final me = g.me;
           final status = g.link.status;
           final narrow = MediaQuery.sizeOf(context).width < 440;
+          final dense = narrow && g.players.length >= 4;
+          final missingSeats = [
+            for (final p in g.players.values)
+              if (g.missingFrom(p.seat).isNotEmpty) p.seat
+          ];
           return Scaffold(
             appBar: AppBar(
               title: Text(widget.session.roomName, overflow: TextOverflow.ellipsis),
@@ -303,14 +363,34 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     onPressed: () => showRoomQr(context, widget.session),
                   ),
                 PopupMenuButton<String>(
-                  onSelected: (v) {
-                    if (v == 'diag') {
+                  onSelected: (v) async {
+                    if (v == 'kick') {
+                      final others = g.players.values.where((p) => p.seat != g.mySeat).toList();
+                      final who = await showDialog<LobbyPlayer>(
+                        context: context,
+                        builder: (ctx) => SimpleDialog(
+                          title: Text(tr('Tirar da sala')),
+                          children: [
+                            for (final p in others)
+                              SimpleDialogOption(
+                                onPressed: () => Navigator.pop(ctx, p),
+                                child: Text(p.name, style: const TextStyle(fontSize: 16)),
+                              ),
+                          ],
+                        ),
+                      );
+                      if (who != null) await _kick(who);
+                      return;
+                    }
+                    if (v == 'diag' && context.mounted) {
                       Navigator.of(context).push(MaterialPageRoute<void>(
                         builder: (_) => RoomScreen(session: widget.session, diagnostics: true),
                       ));
                     }
                   },
                   itemBuilder: (_) => [
+                    if (g.isHost && g.players.length > 1)
+                      PopupMenuItem(value: 'kick', child: Text(tr('Tirar um jogador da sala…'))),
                     PopupMenuItem(value: 'diag', child: Text(tr('Diagnóstico de rede'))),
                   ],
                 ),
@@ -341,7 +421,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       ]),
                     if (g.isHost) ...[
                       FilledButton.icon(
-                        onPressed: g.players.values.any((p) => p.ready) ? () => g.start() : null,
+                        onPressed: g.players.values.any((p) => p.ready) ? _start : null,
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: Text(g.allReady ? tr('Começar jogo') : tr('Começar (só com quem está pronto)')),
                       ),
@@ -352,7 +432,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               if (status == LinkStatus.reconnecting)
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(leading: const CircularProgressIndicator(), title: Text(tr('A voltar a ligar…')))),
+                    child: ListTile(leading: const CircularProgressIndicator(), title: Text(_lostText))),
               if (status == LinkStatus.closed && !_closing)
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -373,8 +453,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               const SizedBox(height: 8),
               for (final p in g.players.values)
                 Card(
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: EdgeInsets.only(bottom: dense ? 6 : 8),
                   child: ListTile(
+                    dense: dense,
+                    visualDensity: dense ? VisualDensity.compact : null,
+                    onLongPress: g.isHost && p.seat != g.mySeat ? () => _kick(p) : null,
                     leading: Icon(
                       p.isHost ? Icons.star_rounded : Icons.person,
                       color: p.connected ? EdhColors.ok : EdhColors.bad,
@@ -395,9 +478,29 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         ? Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
                             color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant,
                             semanticLabel: p.ready ? tr('Pronto') : tr('A escolher'))
-                        : p.ready
-                            ? Chip(label: Text(tr('Pronto')), backgroundColor: const Color(0x333FB27F))
-                            : Chip(label: Text(tr('A escolher'))),
+                        : Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
+                                size: 18, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 4),
+                            Text(p.ready ? tr('Pronto') : tr('A escolher'),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                    color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
+                          ]),
+                  ),
+                ),
+              if (missingSeats.length > 1 && g.downloadingFrom == null && g.transfer == null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      for (final seat in missingSeats) {
+                        await g.downloadMissing(seat);
+                      }
+                    },
+                    icon: const Icon(Icons.download),
+                    label: Text(tr('Descarregar todas as imagens (~{v} MB)', {
+                      'v': (g.missingTotal * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
+                    })),
                   ),
                 ),
               for (final p in g.players.values)
@@ -418,7 +521,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                               'v2': p.name
                             })),
                       trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
-                          ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
+                          ? SizedBox.square(
+                              dimension: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  value: g.transfer?.seat == p.seat && g.transfer!.expected > 0
+                                      ? g.transfer!.received / g.transfer!.expected
+                                      : null))
                           : FilledButton(
                               style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
                               onPressed: () => g.downloadMissing(p.seat),

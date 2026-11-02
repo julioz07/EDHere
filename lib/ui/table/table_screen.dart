@@ -5,6 +5,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../app/theme.dart';
 import '../../data/providers.dart';
+import 'package:card_db/card_db.dart' show ImageRef;
 import '../../data/settings.dart';
 import '../../game/game_controller.dart';
 import '../widgets/card_view.dart';
@@ -109,50 +110,132 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       _wasOver = false;
     }
     _maybeAskMulligan();
-    _checkLethal();
+    _fetchTokenImages();
   }
 
-  /// Os meus lugares que chegaram a um valor que mata e ainda não estão derrotados.
-  final Set<int> _lethalAsked = {};
+  /// Avisos que o jogador fechou ("Ignorar"); voltam se o valor descer e
+  /// voltar a subir.
+  final Set<String> _dismissed = {};
 
   /// Como nos contadores de vida: aos 0 de vida, 10 de veneno ou 21 de dano de um
-  /// comandante, pergunta (sem bloquear) se o jogador foi derrotado. Só nos meus
-  /// lugares, para não aparecer em todos os telemóveis; volta a perguntar se o
-  /// valor descer e subir outra vez.
-  void _checkLethal() {
+  /// comandante, pergunta se o jogador foi derrotado. Só nos meus lugares, para
+  /// não aparecer em todos os telemóveis. Fica à vista até se responder.
+  String? _lethalReason(int seat) {
     final s = ctrl.state;
-    if (!s.started || s.over || ctrl.scripted) return;
+    final p = s.players[seat];
+    if (p == null || p.defeated || !s.started || s.over || ctrl.scripted) return null;
+    final poison = p.counters[PlayerCounter.poison] ?? 0;
+    final cmd = p.commanderDamage.values.fold(0, (a, b) => a > b ? a : b);
+    return p.life <= 0
+        ? tr('{v} está com {n} de vida.', {'v': p.name, 'n': p.life})
+        : poison >= 10
+            ? tr('{v} tem {n} marcadores de veneno.', {'v': p.name, 'n': poison})
+            : cmd >= 21
+                ? tr('{v} levou {n} de dano de um só comandante.', {'v': p.name, 'n': cmd})
+                : null;
+  }
+
+  /// Avisos no topo da mesa: derrota possível, só resta um jogador, fui eliminado.
+  List<Widget> _notices(ThemeData theme) {
+    final s = ctrl.state;
+    final out = <Widget>[];
+    Widget notice(IconData icon, String text, List<Widget> actions, {Color? color}) => MaterialBanner(
+          backgroundColor: color ?? theme.colorScheme.secondaryContainer,
+          leading: Icon(icon),
+          content: Text(text),
+          actions: actions,
+        );
     for (final seat in ctrl.mySeats) {
-      final p = s.players[seat];
-      if (p == null) continue;
-      final poison = p.counters[PlayerCounter.poison] ?? 0;
-      final cmd = p.commanderDamage.values.fold(0, (a, b) => a > b ? a : b);
-      final reason = p.defeated
-          ? null
-          : p.life <= 0
-              ? tr('{v} está com {n} de vida.', {'v': p.name, 'n': p.life})
-              : poison >= 10
-                  ? tr('{v} tem {n} marcadores de veneno.', {'v': p.name, 'n': poison})
-                  : cmd >= 21
-                      ? tr('{v} levou {n} de dano de um só comandante.', {'v': p.name, 'n': cmd})
-                      : null;
+      final reason = _lethalReason(seat);
+      final key = 'lethal:$seat';
       if (reason == null) {
-        _lethalAsked.remove(seat);
+        _dismissed.remove(key);
         continue;
       }
-      if (!_lethalAsked.add(seat)) continue;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(reason),
-          duration: const Duration(seconds: 8),
-          action: SnackBarAction(
-            label: tr('Derrotado'),
-            onPressed: () => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': true})),
-          ),
-        ));
-      });
+      if (_dismissed.contains(key)) continue;
+      out.add(notice(Icons.heart_broken_outlined, reason, [
+        TextButton(onPressed: () => setState(() => _dismissed.add(key)), child: Text(tr('Ignorar'))),
+        FilledButton(
+          onPressed: () => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': true})),
+          child: Text(tr('Derrotado')),
+        ),
+      ]));
     }
+    if (!s.started || s.over || ctrl.scripted) return out;
+    final alive = s.players.values.where((p) => !p.defeated).toList();
+    if (s.players.length > 1 && alive.length == 1 && !_dismissed.contains('last')) {
+      final w = alive.single;
+      out.add(notice(
+        Icons.emoji_events_rounded,
+        tr('Só resta {v} em jogo.', {'v': w.name}),
+        [
+          TextButton(onPressed: () => setState(() => _dismissed.add('last')), child: Text(tr('Continuar'))),
+          FilledButton(onPressed: () => ctrl.gameOver(w.seat), child: Text(tr('{v} ganhou', {'v': w.name}))),
+        ],
+        color: GameColors.gold.withOpacity(0.35),
+      ));
+    } else if (ctrl.isNetwork &&
+        alive.length > 1 &&
+        ctrl.mySeats.isNotEmpty &&
+        ctrl.mySeats.every((m) => s.players[m]?.defeated ?? false) &&
+        !_dismissed.contains('out')) {
+      out.add(notice(
+        Icons.visibility_outlined,
+        tr('Foste derrotado. Podes ficar a ver o jogo ou sair.'),
+        [
+          TextButton(onPressed: () => setState(() => _dismissed.add('out')), child: Text(tr('Ver o jogo'))),
+          FilledButton(
+            onPressed: () async {
+              await widget.onLeave?.call();
+              if (mounted) Navigator.of(context).pop();
+            },
+            child: Text(tr('Sair')),
+          ),
+        ],
+      ));
+    }
+    return out;
+  }
+
+  /// Os tokens não vêm com as imagens do deck: vão buscá-las quando aparecem.
+  final Set<String> _tokenImagesAsked = {};
+
+  void _fetchTokenImages() {
+    final images = ref.read(imagesProvider);
+    final refs = <ImageRef>[];
+    for (final c in ctrl.state.cards.values) {
+      if (!c.isToken || c.oracleId == null) continue;
+      final card = ctrl.card(c.oracleId, printId: c.printId);
+      if (card == null) continue;
+      for (final r in ImageRef.allOf(card)) {
+        if (_tokenImagesAsked.add(r.key) && !images.has('small', r.key)) refs.add(r);
+      }
+    }
+    if (refs.isNotEmpty) images.ensureRefs(refs, sizes: const ['small']).ignore();
+  }
+
+  /// Passar o turno com mais de 7 cartas na mão: lembra o descarte.
+  Future<void> _passTurn() async {
+    final seat = ctrl.actor;
+    final hand = ctrl.zones(seat).hand.length;
+    if (!ctrl.scripted && ctrl.mySeats.contains(seat) && hand > 7) {
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          icon: const Icon(Icons.back_hand_outlined),
+          title: Text(tr('{n} cartas na mão', {'n': hand})),
+          content: Text(hand - 7 == 1
+              ? tr('No fim do turno a mão tem no máximo 7 cartas: descarta 1.')
+              : tr('No fim do turno a mão tem no máximo 7 cartas: descarta {n}.', {'n': hand - 7})),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Passar na mesma'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Descartar primeiro'))),
+          ],
+        ),
+      );
+      if (go != true) return;
+    }
+    ctrl.passTurn();
   }
 
   /// Dados, moeda e sorteio aparecem em grande para toda a gente ver.
@@ -298,7 +381,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
 
   /// Escolher o vencedor; o fim do jogo chega a todos os dispositivos.
   Future<void> _finishGame() async {
-    final players = ctrl.state.players.values.toList();
+    final players = ctrl.state.players.values.toList()
+      ..sort((a, b) => (a.defeated ? 1 : 0).compareTo(b.defeated ? 1 : 0));
     final winner = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -306,9 +390,16 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         children: [
           for (final p in players)
             SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, p.seat),
-              child: Text(ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
-                  style: const TextStyle(fontSize: 16)),
+              onPressed: p.defeated ? null : () => Navigator.pop(ctx, p.seat),
+              child: Text(
+                  [
+                    ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
+                    if (p.defeated) tr('derrotado'),
+                  ].join(' · '),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: p.defeated ? null : FontWeight.w600,
+                      color: p.defeated ? Theme.of(ctx).disabledColor : null)),
             ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(ctx, -1),
@@ -337,7 +428,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             : iWon
                 ? tr('Ganhaste!')
                 : tr('{v} ganhou', {'v': winner.name})),
-        content: Text(tr('Turno {turn} · guardado no histórico.', {'turn': s.turn})),
+        content: Text(tr('Ronda {round} · guardado no histórico.', {'round': ctrl.round})),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, 'view'), child: Text(tr('Ver a mesa'))),
           if (!ctrl.isNetwork)
@@ -354,6 +445,51 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       case 'again':
         widget.onNewGame?.call();
     }
+  }
+
+  /// "Cada oponente perde X" (ou ganha) numa só ação e numa linha do registo.
+  Future<void> _lifeEachOpponent() async {
+    final me = ctrl.actor;
+    final foes = [
+      for (final p in ctrl.state.players.values)
+        if (p.seat != me && !p.defeated) p.seat
+    ];
+    if (foes.isEmpty) return;
+    var n = 1;
+    var lose = true;
+    final delta = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          title: Text(tr('Vida de cada oponente')),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(value: true, label: Text(tr('Perde'))),
+                ButtonSegment(value: false, label: Text(tr('Ganha'))),
+              ],
+              selected: {lose},
+              onSelectionChanged: (v) => set(() => lose = v.first),
+            ),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              IconButton.filledTonal(onPressed: n > 1 ? () => set(() => n--) : null, icon: const Icon(Icons.remove)),
+              SizedBox(
+                width: 64,
+                child: Text('$n', textAlign: TextAlign.center, style: Theme.of(ctx).textTheme.headlineMedium),
+              ),
+              IconButton.filledTonal(onPressed: () => set(() => n++), icon: const Icon(Icons.add)),
+            ]),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, lose ? -n : n), child: const Text('OK')),
+          ],
+        ),
+      ),
+    );
+    if (delta == null) return;
+    ctrl.send(Intent(Ev.lifeEach, {'seats': foes, 'delta': delta}));
   }
 
   void _menu() {
@@ -406,6 +542,13 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   subtitle: Text(tr('Escolhe o vencedor; fica no histórico de todos')),
                   onTap: () => run(_finishGame),
                 ),
+                if (ctrl.state.players.length > 1)
+                  ListTile(
+                    leading: const Icon(Icons.groups_outlined),
+                    title: Text(tr('Vida de cada oponente…')),
+                    subtitle: Text(tr('Ex.: cada oponente perde 2')),
+                    onTap: () => run(_lifeEachOpponent),
+                  ),
                 ListTile(
                   leading: const Icon(Icons.toll_outlined),
                   title: Text(tr('Criar token')),
@@ -499,14 +642,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   toolbarHeight: layout.short ? 44 : 48,
                   titleSpacing: 0,
                   title: Text(
+                    // Em Commander conta-se por rondas ("o meu 3.º turno"), não pelo
+                    // turno de toda a gente.
                     s.over
                         ? tr('Jogo terminado')
-                        : ctrl.scripted
-                            ? tr('Ronda {round} · {v}',
-                                {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
-                            : myTurn
-                                ? tr('T{turn} · o teu turno', {'turn': s.turn})
-                                : 'T${s.turn} · ${active?.name ?? ''}',
+                        : tr('Ronda {round} · {v}',
+                            {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''}),
                     // Num telemóvel estreito o botão da fase tira espaço: duas linhas.
                     style: narrowBar ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
                     maxLines: narrowBar ? 2 : 1,
@@ -557,11 +698,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                       final tight = box.maxHeight < 600;
                       return Column(children: [
                         if (widget.banner != null) widget.banner!,
+                        ..._notices(theme),
                         _PlayersStrip(ctrl: ctrl, compact: tight),
                         Expanded(child: TableBattlefield(ctrl: ctrl)),
                         TableZonesRow(ctrl: ctrl, pileWidth: tight ? 34 : 44),
                         TableHand(ctrl: ctrl, height: (box.maxHeight * 0.2).clamp(92.0, 136.0)),
-                        _BottomBar(ctrl: ctrl, lastLog: lastLog),
+                        _BottomBar(ctrl: ctrl, lastLog: lastLog, onPass: _passTurn),
                       ]);
                     }
                     // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
@@ -571,13 +713,19 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     final panelW = layout.short ? 96.0 : 128.0;
                     return Column(children: [
                       if (widget.banner != null) widget.banner!,
+                      ..._notices(theme),
                       Expanded(
                         child: Row(children: [
                           Expanded(
                             child: Column(children: [
                               _PlayersStrip(ctrl: ctrl, compact: layout.short),
                               Expanded(child: TableBattlefield(ctrl: ctrl)),
-                              TableHand(ctrl: ctrl, height: handH),
+                              // Num dobrável aberto a mão ficava por baixo da barra de gestos.
+                              SafeArea(
+                                top: false,
+                                right: false,
+                                child: TableHand(ctrl: ctrl, height: handH),
+                              ),
                             ]),
                           ),
                           Container(
@@ -614,7 +762,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                                       padding: const EdgeInsets.symmetric(horizontal: 4),
                                     ),
                                     onPressed:
-                                        ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork ? ctrl.passTurn : null,
+                                        ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork ? _passTurn : null,
                                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                                       const Icon(Icons.skip_next),
                                       if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
@@ -686,116 +834,217 @@ class _PlayersStrip extends StatelessWidget {
     final s = ctrl.state;
     final seats = s.players.keys.toList()..sort();
     final theme = Theme.of(context);
-    return SizedBox(
-      height: compact ? 52 : 64,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 3 : 6),
-        children: [
-          for (final seat in seats)
-            Builder(builder: (context) {
-              final p = s.players[seat]!;
-              final isActive = s.activeSeat == seat;
-              final viewing = ctrl.viewSeat == seat;
-              final maxCmd = p.commanderDamage.values.fold(0, (m, v) => v > m ? v : m);
-              final poison = p.counters[PlayerCounter.poison] ?? 0;
-              final targeted = s.targets.any((t) => t.seat == seat);
-              // a mesma linguagem da mesa do bot: uma cor por lugar, numa faixa em
-              // cima; o ativo com o contorno nessa cor, o que está em vista tingido
-              final color = GameColors.player(seats.indexOf(seat));
-              final bg = viewing
-                  ? Color.alphaBlend(color.withOpacity(0.22), theme.colorScheme.surface)
-                  : theme.colorScheme.surface;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: GestureDetector(
-                  // No tutorial um toque mostra o campo e a folha do jogador.
-                  onTap: () {
-                    if (!viewing) ctrl.setView(seat);
-                    if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
-                  },
-                  onLongPress: () => showPlayerSheet(context, ctrl, seat),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.fromLTRB(10, 7, 10, 3),
-                    decoration: BoxDecoration(
-                      // a faixa de cor em cima faz parte do fundo (um gradiente de paragem
-                      // seca): numa lista horizontal não há largura para uma faixa à parte
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0, 0.07, 0.07, 1],
-                        colors: [color, color, bg, bg],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: targeted
-                            ? targetGlow
-                            : isActive
-                                ? color
-                                : theme.colorScheme.outline,
-                        width: isActive || targeted ? 2.5 : 1,
-                      ),
-                      boxShadow: targeted
-                          ? [BoxShadow(color: targetGlow.withOpacity(0.8), blurRadius: 12, spreadRadius: 1)]
-                          : null,
-                    ),
-                    // Com letra grande, o cartão encolhe em vez de transbordar.
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        if (targeted) ...[
-                          const Icon(Icons.gps_fixed, color: targetGlow, size: 20),
-                          const SizedBox(width: 6),
-                        ],
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              if (s.monarch == seat) const Icon(Icons.workspace_premium, size: 14, color: GameColors.gold),
-                              if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
-                              if (ctrl.offline.contains(seat))
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 3),
-                                  child: Tooltip(
-                                      message: tr('Sem ligação'),
-                                      child: const Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
-                                ),
-                              Text(p.name,
-                                  style: theme.textTheme.labelMedium
-                                      ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
-                            ]),
-                            // Cartas na mão e no grimório.
-                            Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(Icons.back_hand_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
-                              Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
-                              Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
-                              Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
+    // Num telemóvel com 3 ou mais jogadores, os cartões dividem a largura
+    // (antes era preciso deslizar para ver a vida do último).
+    final width = MediaQuery.sizeOf(context).width;
+    final split = seats.length >= 3 && width / seats.length < 150;
+    final chips = [
+      for (final seat in seats)
+        Builder(builder: (context) {
+          final p = s.players[seat]!;
+          final isActive = s.activeSeat == seat;
+          final viewing = ctrl.viewSeat == seat;
+          final maxCmd = p.commanderDamage.values.fold(0, (m, v) => v > m ? v : m);
+          final poison = p.counters[PlayerCounter.poison] ?? 0;
+          final targeted = s.targets.any((t) => t.seat == seat);
+          // a mesma linguagem da mesa do bot: uma cor por lugar, numa faixa em
+          // cima; o ativo com o contorno nessa cor, o que está em vista tingido
+          final color = GameColors.player(seats.indexOf(seat));
+          final bg = viewing
+              ? Color.alphaBlend(color.withOpacity(0.22), theme.colorScheme.surface)
+              : theme.colorScheme.surface;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              // No tutorial um toque mostra o campo e a folha do jogador.
+              onTap: () {
+                if (!viewing) ctrl.setView(seat);
+                if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
+              },
+              onLongPress: () => showPlayerSheet(context, ctrl, seat),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: split ? const EdgeInsets.fromLTRB(7, 6, 5, 2) : const EdgeInsets.fromLTRB(10, 7, 10, 3),
+                decoration: BoxDecoration(
+                  // a faixa de cor em cima faz parte do fundo (um gradiente de paragem
+                  // seca): numa lista horizontal não há largura para uma faixa à parte
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0, 0.07, 0.07, 1],
+                    colors: [color, color, bg, bg],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: targeted
+                        ? targetGlow
+                        : isActive
+                            ? color
+                            : theme.colorScheme.outline,
+                    width: isActive || targeted ? 2.5 : 1,
+                  ),
+                  boxShadow: targeted
+                      ? [BoxShadow(color: targetGlow.withOpacity(0.8), blurRadius: 12, spreadRadius: 1)]
+                      : null,
+                ),
+                // Com letra grande, o cartão encolhe em vez de transbordar.
+                child: split
+                    ? _SplitChip(
+                        name: p.name,
+                        life: p.life,
+                        hand: p.handCount,
+                        defeated: p.defeated,
+                        offline: ctrl.offline.contains(seat),
+                        targeted: targeted,
+                        monarch: s.monarch == seat,
+                        cmd: maxCmd,
+                        poison: poison,
+                      )
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          if (targeted) ...[
+                            const Icon(Icons.gps_fixed, color: targetGlow, size: 20),
+                            const SizedBox(width: 6),
+                          ],
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                if (s.monarch == seat)
+                                  const Icon(Icons.workspace_premium, size: 14, color: GameColors.gold),
+                                if (s.initiative == seat) const Icon(Icons.flag, size: 14, color: Colors.teal),
+                                if (ctrl.offline.contains(seat))
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 3),
+                                    child: Tooltip(
+                                        message: tr('Sem ligação'),
+                                        child: const Icon(Icons.wifi_off, size: 14, color: EdhColors.bad)),
+                                  ),
+                                Text(p.name,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(decoration: p.defeated ? TextDecoration.lineThrough : null)),
+                              ]),
+                              // Cartas na mão e no grimório.
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.back_hand_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                                Text(' ${p.handCount}   ', style: theme.textTheme.labelSmall),
+                                Icon(Icons.layers_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                                Text(' ${p.libraryCount}', style: theme.textTheme.labelSmall),
+                              ]),
+                            ],
+                          ),
+                          const SizedBox(width: 10),
+                          Text('${p.life}',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
+                          LifeDelta(life: p.life, fontSize: 12),
+                          if (poison > 0 || maxCmd > 0) ...[
+                            const SizedBox(width: 6),
+                            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                              if (poison > 0)
+                                Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                              if (maxCmd > 0)
+                                Text('★$maxCmd',
+                                    style:
+                                        TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : GameColors.gold)),
                             ]),
                           ],
-                        ),
-                        const SizedBox(width: 10),
-                        Text('${p.life}',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800, color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
-                        LifeDelta(life: p.life, fontSize: 12),
-                        if (poison > 0 || maxCmd > 0) ...[
-                          const SizedBox(width: 6),
-                          Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            if (poison > 0) Text('☠$poison', style: const TextStyle(fontSize: 11, color: Colors.green)),
-                            if (maxCmd > 0)
-                              Text('★$maxCmd',
-                                  style: TextStyle(fontSize: 11, color: maxCmd >= 21 ? EdhColors.bad : GameColors.gold)),
-                          ]),
-                        ],
-                      ]),
-                    ),
+                        ]),
+                      ),
+              ),
+            ),
+          );
+        }),
+    ];
+    return SizedBox(
+      height: compact ? 52 : 64,
+      child: split
+          ? Padding(
+              padding: EdgeInsets.fromLTRB(8, compact ? 3 : 6, 2, compact ? 3 : 6),
+              child: Row(children: [for (final c in chips) Expanded(child: c)]),
+            )
+          : ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: compact ? 3 : 6),
+              children: chips,
+            ),
+    );
+  }
+}
+
+/// Cartão de jogador estreito (4 ou mais num telemóvel): nome e vida.
+class _SplitChip extends StatelessWidget {
+  const _SplitChip({
+    required this.name,
+    required this.life,
+    required this.hand,
+    required this.defeated,
+    required this.offline,
+    required this.targeted,
+    required this.monarch,
+    required this.cmd,
+    required this.poison,
+  });
+  final String name;
+  final int life;
+  final int hand;
+  final bool defeated;
+  final bool offline;
+  final bool targeted;
+  final bool monarch;
+  final int cmd;
+  final int poison;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Encolhe em vez de transbordar (telemóvel pequeno com letra grande).
+    return LayoutBuilder(
+      builder: (context, box) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          width: box.maxWidth,
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(children: [
+                  if (targeted) const Icon(Icons.gps_fixed, color: targetGlow, size: 12),
+                  if (offline) const Icon(Icons.wifi_off, size: 12, color: EdhColors.bad),
+                  if (monarch) const Icon(Icons.workspace_premium, size: 12, color: GameColors.gold),
+                  Expanded(
+                    child: Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(decoration: defeated ? TextDecoration.lineThrough : null)),
                   ),
+                ]),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('$life',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                            color: life <= 0 || defeated ? EdhColors.bad : null)),
+                    const SizedBox(width: 4),
+                    if (cmd > 0)
+                      Text('★$cmd ',
+                          style: TextStyle(fontSize: 11, color: cmd >= 21 ? EdhColors.bad : GameColors.gold)),
+                    if (poison > 0) Text('☠$poison ', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                    Icon(Icons.back_hand_outlined, size: 11, color: theme.colorScheme.onSurfaceVariant),
+                    Text('$hand', style: theme.textTheme.labelSmall),
+                  ]),
                 ),
-              );
-            }),
-        ],
+              ]),
+        ),
       ),
     );
   }
@@ -1043,7 +1292,14 @@ class TableZonesRow extends StatelessWidget {
                 ),
               ]),
             ),
-            Text(label, style: const TextStyle(fontSize: 10)),
+            // O nome da zona não pode alargar a pilha (com letra grande a fila transbordava).
+            SizedBox(
+              width: w + 14,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label, maxLines: 1, style: const TextStyle(fontSize: 10)),
+              ),
+            ),
           ]),
         );
 
@@ -1087,7 +1343,13 @@ class TableZonesRow extends StatelessWidget {
               mine
                   ? () {
                       ctrl.actAs(seat);
-                      ctrl.draw();
+                      // Em rede uma compra por engano vê-se em todos os telemóveis:
+                      // o toque abre o menu (Comprar 1 é a primeira opção).
+                      if (ctrl.isNetwork) {
+                        showLibraryMenu(context, ctrl);
+                      } else {
+                        ctrl.draw();
+                      }
                     }
                   : () {},
               onLong: mine
@@ -1247,19 +1509,23 @@ class _TableHandState extends ConsumerState<TableHand> {
               );
               if (covered) return item;
               // Tocar e manter, e arrastar para o campo.
-              return LongPressDraggable<PrivateCard>(
-                data: pc,
-                delay: const Duration(milliseconds: 250),
-                onDragStarted: () => ctrl.actAs(seat),
-                feedback: Material(
-                  color: Colors.transparent,
-                  child: SizedBox(
-                    width: cardW * 1.15,
-                    child: card == null ? const CardBack() : CardImage(card),
+              return Semantics(
+                button: true,
+                label: card?.displayName ?? tr('carta'),
+                child: LongPressDraggable<PrivateCard>(
+                  data: pc,
+                  delay: const Duration(milliseconds: 250),
+                  onDragStarted: () => ctrl.actAs(seat),
+                  feedback: Material(
+                    color: Colors.transparent,
+                    child: SizedBox(
+                      width: cardW * 1.15,
+                      child: card == null ? const CardBack() : CardImage(card),
+                    ),
                   ),
+                  childWhenDragging: Opacity(opacity: 0.3, child: item),
+                  child: item,
                 ),
-                childWhenDragging: Opacity(opacity: 0.3, child: item),
-                child: item,
               );
             },
           );
@@ -1280,9 +1546,10 @@ class _TableHandState extends ConsumerState<TableHand> {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.ctrl, required this.lastLog});
+  const _BottomBar({required this.ctrl, required this.lastLog, required this.onPass});
   final GameController ctrl;
   final String lastLog;
+  final VoidCallback onPass;
 
   @override
   Widget build(BuildContext context) {
@@ -1306,7 +1573,7 @@ class _BottomBar extends StatelessWidget {
           const SizedBox(width: 8),
           FilledButton.icon(
             style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
-            onPressed: myTurn || !ctrl.isNetwork ? ctrl.passTurn : null,
+            onPressed: myTurn || !ctrl.isNetwork ? onPass : null,
             icon: const Icon(Icons.skip_next),
             label: Text(tr('Passar turno')),
           ),

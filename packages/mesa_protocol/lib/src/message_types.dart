@@ -35,4 +35,7 @@ abstract final class RejectReason {
   static const badPin = 'bad_pin';
   static const roomFull = 'room_full';
   static const versionMismatch = 'version_mismatch';
+
+  /// O anfitrião tirou este jogador da sala.
+  static const kicked = 'kicked';
 }

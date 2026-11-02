@@ -248,27 +248,45 @@ class NetworkGame extends ChangeNotifier {
   void _saveResume(Envelope e) {
     final store = resumeStore;
     final g = game;
-    final client = link is RoomClient ? link as RoomClient : null;
-    if (store == null || g == null || client == null || _replaying(e)) return;
-    final token = client.token;
-    if (token == null || !g.state.players.containsKey(mySeat)) return;
+    if (store == null || g == null || _replaying(e)) return;
+    if (!g.state.players.containsKey(mySeat)) return;
     if (g.state.over || link.status == LinkStatus.closed) {
       store.clear();
       return;
     }
-    store.save(ResumeInfo(
-      room: session.roomName,
-      hosts: [if (client.connectedHost != null) client.connectedHost!, ...client.hosts],
-      port: client.port,
-      pin: client.pin,
-      token: token,
-      seat: mySeat,
-      name: client.playerName,
-      deckId: myDeck?.id,
-      seq: e.seq,
-      private: g.table.localSeats.contains(mySeat) ? g.table.exportPrivate(mySeat) : null,
-      savedAt: DateTime.now(),
-    ));
+    final private = g.table.localSeats.contains(mySeat) ? g.table.exportPrivate(mySeat) : null;
+    switch (link) {
+      case RoomClient client when client.token != null:
+        store.save(ResumeInfo(
+          room: session.roomName,
+          hosts: [if (client.connectedHost != null) client.connectedHost!, ...client.hosts],
+          port: client.port,
+          pin: client.pin,
+          token: client.token!,
+          seat: mySeat,
+          name: client.playerName,
+          deckId: myDeck?.id,
+          seq: e.seq,
+          private: private,
+          savedAt: DateTime.now(),
+        ));
+      // O anfitrião também volta: a sala reabre a partir do diário.
+      case HostServer host when host.journalPath != null:
+        store.save(ResumeInfo(
+          room: session.roomName,
+          hosts: const [],
+          port: host.port,
+          pin: host.pin,
+          token: '',
+          seat: mySeat,
+          name: host.hostName,
+          deckId: myDeck?.id,
+          seq: e.seq,
+          private: private,
+          savedAt: DateTime.now(),
+          journal: host.journalPath,
+        ));
+    }
   }
 
   /// Os lugares desligados aparecem marcados na mesa.

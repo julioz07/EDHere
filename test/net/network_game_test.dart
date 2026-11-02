@@ -8,6 +8,9 @@ import 'package:edhoff/data/image_service.dart';
 import 'package:edhoff/game/network_game.dart';
 import 'package:edhoff/net/host_server.dart';
 import 'package:edhoff/net/room_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:edhoff/net/room_link.dart';
+import 'package:edhoff/game/resume_store.dart';
 import 'package:edhoff/room/room_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mesa_core/mesa_core.dart';
@@ -145,6 +148,66 @@ void main() {
     host.dispose();
     await client.close();
     await server.close();
+  });
+
+  test('o anfitrião que fecha a meio volta ao jogo com a mão e a sala de antes', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ResumeStore(await SharedPreferences.getInstance());
+    final journal = '${Directory.systemTemp.createTempSync('hostj').path}/host.jsonl';
+    final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0, journalPath: journal);
+    await server.start();
+    final deckA = _deck('A');
+    final host = NetworkGame(
+      session: RoomSession.host(server: server, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+      resumeStore: store,
+    );
+    final client = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: 'Rui');
+    await client.connect();
+    final guest = NetworkGame(session: RoomSession.client(client: client, roomName: 'Mesa'), repo: repo);
+    host.configure(format: 'commander', life: 40);
+    await _until(() => guest.players.length == 2, 'lobby');
+    host.selectDeck(deckA, legal: true, commanderNames: ['Boss']);
+    guest.selectDeck(_deck('B'), legal: true, commanderNames: ['Boss']);
+    await _until(() => host.players[1]?.deckName == 'B', 'decks');
+    host.setReady(true);
+    guest.setReady(true);
+    await _until(() => host.allReady, 'prontos');
+    host.start(randomFirst: false);
+    await _until(() => host.game?.state.players[0]?.handCount == 7 && guest.game?.state.players[1]?.handCount == 7,
+        'mãos');
+    host.game!.playFromHand(host.game!.zones(0).hand.first);
+    await _until(() => guest.game!.state.cards.values.any((c) => c.owner == 0 && c.zone == Zone.battlefield),
+        'carta do anfitrião');
+    final hand = host.game!.zones(0).hand.map((c) => c.oracleId).toList();
+    expect(store.current?.isHost, isTrue);
+
+    // A app do anfitrião morre; volta pelo diário e pelo que guardou.
+    final info = store.current!;
+    host.dispose();
+    await server.crashForTest();
+    final again = HostServer.restore(info.journal!)!;
+    await again.start();
+    final back = NetworkGame(
+      session: RoomSession.host(server: again, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+      resume: info,
+      resumeStore: store,
+      resumeDeck: deckA,
+    );
+    expect(back.game, isNotNull);
+    expect(back.game!.zones(0).hand.map((c) => c.oracleId).toList(), hand, reason: 'a mão volta igual');
+
+    // O convidado volta a ligar-se sozinho e o jogo continua.
+    await _until(() => client.reconnects >= 1 && client.status == LinkStatus.connected, 'religação');
+    back.game!.life(1, -2);
+    await _until(() => guest.game!.state.players[1]!.life == 38, 'evento depois de reabrir');
+    await _until(() => _public(back) == _public(guest), 'sincronia');
+
+    guest.dispose();
+    back.dispose();
+    await client.close();
+    await again.close();
   });
 
   test('imagens que faltam vêm do outro dispositivo pela sala', () async {

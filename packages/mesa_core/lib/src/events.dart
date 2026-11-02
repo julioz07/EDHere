@@ -27,6 +27,9 @@ abstract final class Ev {
 
   // Jogador
   static const life = 'set_life';
+
+  /// Vários jogadores ganham ou perdem a mesma vida ("cada oponente perde 2").
+  static const lifeEach = 'set_life_each';
   static const commanderDamage = 'commander_damage';
   static const playerCounter = 'set_player_counter';
   static const monarch = 'set_monarch';

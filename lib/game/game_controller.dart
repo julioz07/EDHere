@@ -333,10 +333,18 @@ class GameController extends ChangeNotifier {
       double? y,
       bool faceDown = false,
       String pos = 'top',
-      bool cast = false}) {
-    final placed = nextSpot(isLand: card(pc.oracleId)?.isLand ?? false);
+      bool cast = false,
+      int face = 0}) {
+    final placed = nextSpot(isLand: isLandFace(card(pc.oracleId), face));
     send(table.moveHidden(actor, Zone.hand, pc.pid, to,
-        x: x ?? placed.$1, y: y ?? placed.$2, faceDown: faceDown, pos: pos, cast: cast));
+        x: x ?? placed.$1, y: y ?? placed.$2, faceDown: faceDown, pos: pos, cast: cast, face: face));
+  }
+
+  /// A face [face] da carta é um terreno (cartas de duas faces: o verso pode ser).
+  static bool isLandFace(db.Card? c, int face) {
+    if (c == null) return false;
+    if (c.faces.length > 1) return c.faces[face.clamp(0, c.faces.length - 1)].typeLine.contains('Land');
+    return c.isLand;
   }
 
   void fromLibrary(PrivateCard pc, Zone to, {String pos = 'top'}) {
@@ -344,13 +352,14 @@ class GameController extends ChangeNotifier {
     send(table.moveHidden(actor, Zone.library, pc.pid, to, x: placed.$1, y: placed.$2, pos: pos));
   }
 
-  void moveCard(CardInstance c, Zone to, {double? x, double? y, String pos = 'top'}) {
+  /// [cast]: lançada do exílio ou do cemitério (o registo diz "lançou").
+  void moveCard(CardInstance c, Zone to, {double? x, double? y, String pos = 'top', bool cast = false}) {
     if (to == Zone.battlefield && x == null) {
       final placed = nextSpot(isLand: card(c.oracleId)?.isLand ?? false);
       x = placed.$1;
       y = placed.$2;
     }
-    send(table.movePublic(c.id, to, x: x, y: y, pos: pos));
+    send(table.movePublic(c.id, to, x: x, y: y, pos: pos, cast: cast));
   }
 
   /// Primeiro lugar livre numa grelha de 6 colunas: terrenos em baixo, o

@@ -32,6 +32,9 @@ class AppPaths {
   String get cardsDb => p.join(root, 'cards.sqlite');
   String get cardsDbNew => p.join(root, 'cards.sqlite.new');
   String get userDb => p.join(root, 'user.sqlite');
+
+  /// Diário da sala aberta por este dispositivo (para a reabrir se a app fechar).
+  String get hostJournal => p.join(root, 'host_room.jsonl');
   String imagesDir(String size) => p.join(root, 'images', size);
   String image(String size, String key) => p.join(imagesDir(size), '$key.jpg');
   String download(String name) => p.join(cache, name);

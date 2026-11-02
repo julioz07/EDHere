@@ -53,6 +53,7 @@ class Table {
         _Snapshot(seq, actor, type, state.clone(), {for (final e in private.entries) e.key: e.value.clone()});
     state.seq = seq;
     String? text;
+    _merge = null;
     try {
       text = _applyInner(type, actor, p);
     } catch (_) {
@@ -65,14 +66,33 @@ class Table {
       state.seq = seq;
       return false;
     }
+    final m = _merge;
     if (!Ev.silent.contains(type)) {
+      snapshot.text = text ?? m?.text(m.delta);
       _history.add(snapshot);
       if (_history.length > historyLimit) _history.removeAt(0);
     }
-    if (text != null && !Ev.silent.contains(type)) {
+    if (m != null) {
+      _log(seq, actor, type, m);
+    } else if (text != null && (!Ev.silent.contains(type) || type == Ev.highlight)) {
       state.log.add(LogEntry(seq, actor, type, text));
     }
     return true;
+  }
+
+  /// Mudanças seguidas do mesmo jogador ao mesmo alvo (vida, dano de
+  /// comandante) ficam numa só linha do registo, com a soma.
+  ({String key, int delta, String Function(int total) text})? _merge;
+
+  void _log(int seq, int actor, String type, ({String key, int delta, String Function(int total) text}) m) {
+    final log = state.log;
+    final last = log.isEmpty ? null : log.last;
+    if (last != null && last.mergeKey == m.key) {
+      final total = last.total + m.delta;
+      log[log.length - 1] = LogEntry(seq, actor, type, m.text(total), mergeKey: m.key, total: total);
+    } else {
+      log.add(LogEntry(seq, actor, type, m.text(m.delta), mergeKey: m.key, total: m.delta));
+    }
   }
 
   /// Último evento que entrou no registo (para saber o que se pode desfazer).
@@ -90,7 +110,8 @@ class Table {
     final last = _history.last;
     if (last.seq != target || last.actor != actor) return false;
     _history.removeLast();
-    final undone = state.log.isNotEmpty ? state.log.last.text : last.type;
+    // O texto só deste passo (o registo pode ter juntado vários numa linha).
+    final undone = last.text ?? (state.log.isNotEmpty ? state.log.last.text : last.type);
     state = last.state;
     private
       ..clear()
@@ -195,7 +216,9 @@ class Table {
           names.add(_cardName(c));
         }
         if (names.isEmpty) return null;
-        return '${_n(actor)} ${value ? 'virou' : 'desvirou'} ${names.join(', ')}';
+        return value
+            ? mesaTr('{v} virou {cards}', {'v': _n(actor), 'cards': names.join(', ')})
+            : mesaTr('{v} desvirou {cards}', {'v': _n(actor), 'cards': names.join(', ')});
 
       case Ev.flip:
         final c = s.cards[i('id')];
@@ -229,6 +252,20 @@ class Table {
         final c = s.cards[i('id')];
         if (c == null) return null;
         c.controller = i('seat');
+        // Vai para um lugar livre no campo do novo controlador (senão ficava
+        // por baixo de uma carta dele, no sítio onde estava no outro campo).
+        final x = (p['x'] as num?)?.toDouble(), y = (p['y'] as num?)?.toDouble();
+        if (x != null && y != null) {
+          final dx = x - c.x, dy = y - c.y;
+          c
+            ..x = x
+            ..y = y;
+          for (final a in s.cards.values.where((a) => a.attachedTo == c.id)) {
+            a
+              ..x += dx
+              ..y += dy;
+          }
+        }
         for (final a in s.cards.values.where((a) => a.attachedTo == c.id)) {
           a.controller = c.controller;
         }
@@ -276,7 +313,8 @@ class Table {
         final label = switch (kind) {
           CounterKind.modPower => mesaTr('poder'),
           CounterKind.modToughness => mesaTr('resistência'),
-          _ => mesaTr('contadores {kind}', {'kind': kind}),
+          // "1 lore counter", "2 lore counters": o singular é outra frase.
+          _ => now.abs() == 1 ? mesaTr('contador {kind}', {'kind': kind}) : mesaTr('contadores {kind}', {'kind': kind}),
         };
         return mesaTr('{v}: {v2} com {v3}{now} {label}', {'v': _n(actor), 'v2': _cardName(c), 'v3': signed && now > 0 ? '+' : '', 'now': now, 'label': label});
 
@@ -320,7 +358,27 @@ class Table {
         final pl = s.players[i('seat')]!;
         final d = i('delta');
         pl.life += d;
-        return mesaTr('{v}: vida {v2}{d} ({life})', {'v': pl.name, 'v2': d > 0 ? '+' : '', 'd': d, 'life': pl.life});
+        final life = pl.life;
+        _merge = (
+          key: 'life:$actor:${pl.seat}',
+          delta: d,
+          text: (t) => actor == pl.seat || !s.players.containsKey(actor)
+              ? mesaTr('{v}: vida {v2}{d} ({life})', {'v': pl.name, 'v2': t > 0 ? '+' : '', 'd': t, 'life': life})
+              : mesaTr('{actor}: vida de {v} {v2}{d} ({life})',
+                  {'actor': _n(actor), 'v': pl.name, 'v2': t > 0 ? '+' : '', 'd': t, 'life': life}),
+        );
+        return null;
+
+      case Ev.lifeEach:
+        final d = i('delta');
+        final seats = (p['seats'] as List).cast<num>().map((e) => e.toInt()).toList();
+        for (final seat in seats) {
+          s.players[seat]!.life += d;
+        }
+        final who = seats.map(_n).join(', ');
+        return d < 0
+            ? mesaTr('{v}: {who} perdem {n} de vida', {'v': _n(actor), 'who': who, 'n': -d})
+            : mesaTr('{v}: {who} ganham {n} de vida', {'v': _n(actor), 'who': who, 'n': d});
 
       case Ev.commanderDamage:
         final pl = s.players[i('seat')]!;
@@ -331,14 +389,40 @@ class Table {
         final d = pl.commanderDamage[cmd]! - before;
         pl.life -= d;
         final c = s.cards[cmd];
-        return mesaTr('{v}: {v2}{d} dano de comandante de {v3} ({v4}; vida {life})', {'v': pl.name, 'v2': d > 0 ? '+' : '', 'd': d, 'v3': c == null ? '?' : _cardName(c), 'v4': pl.commanderDamage[cmd], 'life': pl.life});
+        final now = pl.commanderDamage[cmd], life = pl.life;
+        _merge = (
+          key: 'cmd:$actor:${pl.seat}:$cmd',
+          delta: d,
+          text: (t) => mesaTr('{v}: {v2}{d} dano de comandante de {v3} ({v4}; vida {life})', {
+            'v': pl.name,
+            'v2': t > 0 ? '+' : '',
+            'd': t,
+            'v3': c == null ? '?' : _cardName(c),
+            'v4': now,
+            'life': life
+          }),
+        );
+        return null;
 
       case Ev.playerCounter:
         final pl = s.players[i('seat')]!;
         final kind = p['kind'] as String;
         final v = ((pl.counters[kind] ?? 0) + i('delta')).clamp(0, 9999);
         v == 0 ? pl.counters.remove(kind) : pl.counters[kind] = v;
-        return '${pl.name}: $kind $v';
+        if (kind == PlayerCounter.blessing) {
+          return v > 0
+              ? mesaTr("{v} tem a City's Blessing", {'v': pl.name})
+              : mesaTr("{v} perdeu a City's Blessing", {'v': pl.name});
+        }
+        final label = switch (kind) {
+          PlayerCounter.poison => mesaTr('veneno'),
+          PlayerCounter.energy => mesaTr('energia'),
+          PlayerCounter.experience => mesaTr('experiência'),
+          PlayerCounter.rad => mesaTr('rad'),
+          PlayerCounter.tickets => mesaTr('bilhetes'),
+          _ => kind,
+        };
+        return mesaTr('{v}: {label} {n}', {'v': pl.name, 'label': label, 'n': v});
 
       case Ev.monarch:
         s.monarch = oi('seat');
@@ -490,7 +574,9 @@ class Table {
 
       case Ev.highlight:
         s.highlight = oi('id');
-        return null;
+        final h = s.highlight == null ? null : s.cards[s.highlight];
+        // Destacar entra no registo (sem se poder desfazer) para os outros repararem.
+        return h == null ? null : mesaTr('{v} destacou {v2}', {'v': _n(actor), 'v2': _cardName(h)});
 
       case Ev.arrow:
         final from = oi('from');
@@ -630,6 +716,8 @@ class Table {
       if (castTax != null) {
         return mesaTr('{v} lançou o comandante {name}{v2}', {'v': _n(actor), 'name': name, 'v2': castTax > 0 ? mesaTr(' (imposto +{castTax})', {'castTax': castTax}) : ''});
       }
+      // Lançar do exílio ou do cemitério (flashback, "podes jogá-la este turno").
+      if (p['cast'] == true) return mesaTr('{v} lançou {shown}', {'v': _n(actor), 'shown': name});
       return mesaTr('{v} moveu {name} {v2}', {'v': _n(actor), 'name': name, 'v2': _whereTo(to, pos)});
     }
 
@@ -683,6 +771,7 @@ class Table {
       x: x ?? 0.5,
       y: y ?? 0.5,
       faceDown: p['fd'] == true,
+      faceIndex: to == Zone.battlefield ? ((p['face'] as num?)?.toInt() ?? 0) : 0,
       isCommander: card?.isCommander ?? (p['cmd'] == true),
       order: s.maxOrder() + 1,
       printId: p['p'] as String?,
@@ -758,8 +847,10 @@ class Table {
 
   /// Move uma carta da mão ou do grimório (pid) para outra zona.
   /// [cast]: um instantâneo ou feitiço lançado (o registo diz "lançou").
+  /// [face]: entra com outra face para cima (uma carta de duas faces jogada
+  /// como terreno).
   Intent moveHidden(int seat, Zone from, int pid, Zone to,
-      {double? x, double? y, String pos = 'top', bool faceDown = false, bool cast = false}) {
+      {double? x, double? y, String pos = 'top', bool faceDown = false, bool cast = false, int face = 0}) {
     final z = zonesOf(seat);
     final list = from == Zone.hand ? z.hand : z.library;
     final card = list.firstWhere((c) => c.pid == pid);
@@ -773,6 +864,7 @@ class Table {
       if (y != null) 'y': y,
       if (faceDown) 'fd': true,
       if (cast) 'cast': true,
+      if (face != 0) 'face': face,
       if (!to.hidden) ...{
         'newId': newId(seat),
         'o': card.oracleId,
@@ -783,7 +875,9 @@ class Table {
   }
 
   /// Move uma carta pública (com id).
-  Intent movePublic(int id, Zone to, {double? x, double? y, String pos = 'top', bool faceDown = false}) =>
+  /// [cast]: lançada do exílio ou do cemitério (o registo diz "lançou").
+  Intent movePublic(int id, Zone to,
+          {double? x, double? y, String pos = 'top', bool faceDown = false, bool cast = false}) =>
       Intent(Ev.move, {
         'id': id,
         'to': to.id,
@@ -791,6 +885,7 @@ class Table {
         if (x != null) 'x': x,
         if (y != null) 'y': y,
         if (faceDown) 'fd': true,
+        if (cast) 'cast': true,
       });
 
   /// Põe as [n] cartas do topo no cemitério (ou no exílio).
@@ -940,4 +1035,7 @@ class _Snapshot {
   final String type;
   final GameState state;
   final Map<int, PrivateZones> private;
+
+  /// O texto deste evento (antes de se juntar a outro no registo).
+  String? text;
 }

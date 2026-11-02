@@ -447,7 +447,7 @@ class _QrSheetState extends State<_QrSheet> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: QrImageView(data: data, size: 240),
+              child: QrImageView(data: data, size: 240, semanticsLabel: tr('QR code da sala')),
             ),
             const SizedBox(height: 16),
             Text(
@@ -465,6 +465,13 @@ class _QrSheetState extends State<_QrSheet> {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
+            ],
+            // O PIN não vai no QR: o anfitrião di-lo a quem chega.
+            if (!_wifi && s.pin != null) ...[
+              const SizedBox(height: 12),
+              Text(tr('PIN da sala: {pin}', {'pin': s.pin}),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
             ],
           ],
         ),

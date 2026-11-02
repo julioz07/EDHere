@@ -19,6 +19,7 @@ class ResumeInfo {
     this.pin,
     this.deckId,
     this.private,
+    this.journal,
   });
 
   final String room;
@@ -37,6 +38,11 @@ class ResumeInfo {
   final Map<String, dynamic>? private;
   final DateTime savedAt;
 
+  /// Era eu o anfitrião: a sala reabre a partir deste diário (ver
+  /// `HostServer.restore`) e os outros voltam a ligar-se sozinhos.
+  final String? journal;
+  bool get isHost => journal != null;
+
   /// Jogos com mais de umas horas já não valem a pena.
   bool get fresh => DateTime.now().difference(savedAt) < const Duration(hours: 8);
 
@@ -51,6 +57,7 @@ class ResumeInfo {
         if (deckId != null) 'deck': deckId,
         'seq': seq,
         if (private != null) 'private': private,
+        if (journal != null) 'journal': journal,
         'at': savedAt.millisecondsSinceEpoch,
       };
 
@@ -66,6 +73,7 @@ class ResumeInfo {
         seq: (j['seq'] as num).toInt(),
         private: (j['private'] as Map?)?.cast<String, dynamic>(),
         savedAt: DateTime.fromMillisecondsSinceEpoch((j['at'] as num).toInt()),
+        journal: j['journal'] as String?,
       );
 }
 
