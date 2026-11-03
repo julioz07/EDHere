@@ -46,6 +46,8 @@ class TableScreen extends ConsumerStatefulWidget {
       this.onLeave,
       this.banner,
       this.onNewGame,
+      this.matchStatus,
+      this.afterGame,
       this.confirmLeave,
       this.hostsRoom = false});
 
@@ -60,6 +62,15 @@ class TableScreen extends ConsumerStatefulWidget {
 
   /// Só o anfitrião: volta todos ao lobby para outra partida.
   final VoidCallback? onNewGame;
+
+  /// Encontros 1 contra 1: o jogo e o resultado ("Jogo 2 · 1–0"), no
+  /// cabeçalho e no fim de cada jogo.
+  final String Function()? matchStatus;
+
+  /// Encontros 1 contra 1: os botões do fim do jogo (sideboard e jogo
+  /// seguinte, ou voltar à sala quando o encontro acabou); o último é o
+  /// principal. Trocam o "Nova partida".
+  final List<({String label, VoidCallback onPressed})> Function()? afterGame;
 
   /// Troca a pergunta "Sair da mesa?" (o playtest pergunta se grava).
   final Future<bool> Function(BuildContext context)? confirmLeave;
@@ -149,12 +160,41 @@ class _TableScreenState extends ConsumerState<TableScreen> {
   List<Widget> _notices(ThemeData theme) {
     final s = ctrl.state;
     final out = <Widget>[];
-    Widget notice(IconData icon, String text, List<Widget> actions, {Color? color}) => MaterialBanner(
-          backgroundColor: color ?? theme.colorScheme.secondaryContainer,
-          leading: Icon(icon),
-          content: Text(text),
-          actions: actions,
-        );
+    // Num telemóvel pequeno o MaterialBanner (botões por baixo) tapava meio campo:
+    // aí o aviso é uma faixa estreita, com texto pequeno e botões compactos.
+    final small = MediaQuery.sizeOf(context).height < 700;
+    Widget notice(IconData icon, String text, List<Widget> actions, {Color? color}) => small
+        ? Material(
+            color: color ?? theme.colorScheme.secondaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+              child: Theme(
+                // os botões do tema ocupam a largura toda; aqui ficam lado a lado
+                data: theme.copyWith(
+                  visualDensity: VisualDensity.compact,
+                  filledButtonTheme: FilledButtonThemeData(
+                      style: theme.filledButtonTheme.style
+                          ?.copyWith(minimumSize: const WidgetStatePropertyAll(Size(64, 36)))),
+                ),
+                child: Row(children: [
+                  Icon(icon, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Text(text, style: theme.textTheme.bodySmall, maxLines: 4, overflow: TextOverflow.ellipsis),
+                      OverflowBar(alignment: MainAxisAlignment.end, spacing: 4, children: actions),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          )
+        : MaterialBanner(
+            backgroundColor: color ?? theme.colorScheme.secondaryContainer,
+            leading: Icon(icon),
+            content: Text(text),
+            actions: actions,
+          );
     for (final seat in ctrl.mySeats) {
       final reason = _lethalReason(seat);
       final key = 'lethal:$seat';
@@ -167,7 +207,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         TextButton(onPressed: () => setState(() => _dismissed.add(key)), child: Text(tr('Ignorar'))),
         FilledButton(
           onPressed: () => ctrl.send(Intent(Ev.defeated, {'seat': seat, 'value': true})),
-          child: Text(tr('Derrotado')),
+          child: Text(tr('Marcar derrota')),
         ),
       ]));
     }
@@ -193,8 +233,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       out.add(notice(
         Icons.visibility_outlined,
         widget.hostsRoom
-            ? tr('Foste derrotado. És o anfitrião: o jogo dos outros continua no teu telemóvel, por isso fica na mesa.')
-            : tr('Foste derrotado. Podes ficar a ver o jogo ou sair.'),
+            ? tr('Perdeste. És o anfitrião: o jogo dos outros continua no teu telemóvel, por isso fica na mesa.')
+            : tr('Perdeste. Podes ficar a ver o jogo ou sair.'),
         [
           TextButton(onPressed: () => setState(() => _dismissed.add('out')), child: Text(tr('Ver o jogo'))),
           if (!widget.hostsRoom)
@@ -408,7 +448,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
               child: Text(
                   [
                     ctrl.mySeats.contains(p.seat) && ctrl.isNetwork ? tr('{v} (tu)', {'v': p.name}) : p.name,
-                    if (p.defeated) tr('derrotado'),
+                    if (p.defeated) tr('perdeu'),
                   ].join(' · '),
                   style: TextStyle(
                       fontSize: 16,
@@ -433,6 +473,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     ref.read(deckStoreProvider).saveGame(ctrl.record(winnerSeat: s.winner));
     final winner = s.winner == null ? null : s.players[s.winner];
     final iWon = s.winner != null && ctrl.mySeats.contains(s.winner) && ctrl.mySeats.length == 1;
+    final next = widget.afterGame?.call();
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -442,10 +483,18 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             : iWon
                 ? tr('Ganhaste!')
                 : tr('{v} ganhou', {'v': winner.name})),
-        content: Text(tr('Ronda {round} · guardado no histórico.', {'round': ctrl.round})),
+        content: Text(widget.matchStatus != null
+            ? tr('{m} · guardado no histórico.', {'m': widget.matchStatus!()})
+            : tr('Ronda {round} · guardado no histórico.', {'round': ctrl.round})),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, 'view'), child: Text(tr('Ver a mesa'))),
-          if (!ctrl.isNetwork)
+          if (next != null && next.isNotEmpty) ...[
+            for (final (i, a) in next.indexed)
+              if (i < next.length - 1)
+                TextButton(onPressed: () => Navigator.pop(ctx, 'next$i'), child: Text(a.label))
+              else
+                FilledButton(onPressed: () => Navigator.pop(ctx, 'next$i'), child: Text(a.label)),
+          ] else if (!ctrl.isNetwork)
             FilledButton(onPressed: () => Navigator.pop(ctx, 'close'), child: Text(tr('Fechar')))
           else if (widget.onNewGame != null)
             FilledButton(onPressed: () => Navigator.pop(ctx, 'again'), child: Text(tr('Nova partida'))),
@@ -458,6 +507,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         Navigator.of(context).pop();
       case 'again':
         widget.onNewGame?.call();
+      case final String a when a.startsWith('next'):
+        next?[int.parse(a.substring(4))].onPressed();
     }
   }
 
@@ -612,8 +663,8 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                   onTap: () => run(() {
                     final hand = ctrl.zones(ctrl.actor).hand;
                     if (hand.isNotEmpty) {
-                      ctrl.send(ctrl.table
-                          .revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
+                      ctrl.send(
+                          ctrl.table.revealHidden(ctrl.actor, Zone.hand, [for (final c in hand) c.pid], what: 'a mão'));
                     }
                   }),
                 ),
@@ -645,7 +696,7 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           final phaseLabel = _phases.firstWhere((p) => p.$1 == s.phase, orElse: () => _phases[2]).$2;
           final myTurn = ctrl.mySeats.contains(s.activeSeat) && ctrl.isNetwork;
           final layout = tableLayoutFor(MediaQuery.sizeOf(context));
-          final narrowBar = MediaQuery.sizeOf(context).width < 400;
+          final narrowBar = MediaQuery.sizeOf(context).width < 480;
           // A mesa é densa: com a letra do sistema muito grande, os cartões dos
           // jogadores e as zonas deixavam de caber. Os menus e diálogos (fora
           // deste MediaQuery) continuam com o tamanho escolhido.
@@ -660,8 +711,11 @@ class _TableScreenState extends ConsumerState<TableScreen> {
                     // turno de toda a gente.
                     s.over
                         ? tr('Jogo terminado')
-                        : tr('Ronda {round} · {v}',
-                            {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''}),
+                        : widget.matchStatus != null
+                            ? tr('{m} · {v}',
+                                {'m': widget.matchStatus!(), 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
+                            : tr('Ronda {round} · {v}',
+                                {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''}),
                     // Num telemóvel estreito o botão da fase tira espaço: duas linhas.
                     style: narrowBar ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
                     maxLines: narrowBar ? 2 : 1,

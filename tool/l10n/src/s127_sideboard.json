@@ -1,0 +1,9 @@
+[
+  ["=Para o sideboard", "To the sideboard", "Al sideboard", "Nel sideboard"],
+  ["=Para o deck", "To the deck", "Al mazo", "Nel mazzo"],
+  ["=Troca cartas entre o deck e o sideboard. Vale só para este encontro.", "Swap cards between your deck and sideboard. It only lasts for this match.", "Cambia cartas entre el mazo y el sideboard. Solo vale para este enfrentamiento.", "Scambia carte tra mazzo e sideboard. Vale solo per questo incontro."],
+  ["=Sideboard ({n})", "Sideboard ({n})", "Sideboard ({n})", "Sideboard ({n})"],
+  ["=Pronto: jogo seguinte", "Done: next game", "Listo: siguiente partida", "Fatto: partita successiva"],
+  ["=Marcar derrota", "Mark as lost", "Marcar derrota", "Segna sconfitta"],
+  ["=Perdeu o jogo", "Lost the game", "Perdió la partida", "Ha perso la partita"]
+]

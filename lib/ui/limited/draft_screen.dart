@@ -338,12 +338,14 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
           Text(
             c.finished
                 ? tr('Terminado · {n} cartas', {'n': c.pool.length})
-                : tr('Booster {v} de {packs} · escolha {pickNo} · passa para a {v2}', {
-                    'v': c.round + 1,
-                    'packs': cfg.packs,
-                    'pickNo': c.pickNo,
-                    'v2': c.direction > 0 ? tr('esquerda') : tr('direita')
-                  }),
+                : c.done
+                    ? tr('{n} cartas · à espera que os outros acabem', {'n': c.pool.length})
+                    : tr('Booster {v} de {packs} · escolha {pickNo} · passa para a {v2}', {
+                        'v': c.round + 1,
+                        'packs': cfg.packs,
+                        'pickNo': c.pickNo,
+                        'v2': c.direction > 0 ? tr('esquerda') : tr('direita')
+                      }),
             style: theme.textTheme.bodySmall,
           ),
         ]),
@@ -378,7 +380,9 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                   avatar: Icon(cfg.seats[i].seat == null ? Icons.smart_toy_outlined : Icons.person, size: 16),
                   label: Tooltip(
                     message: i < c.seats.length
-                        ? '${c.seats[i].waiting} ${c.seats[i].waiting == 1 ? 'pack à espera' : 'packs à espera'}'
+                        ? (c.seats[i].waiting == 1
+                            ? tr('1 pack à espera')
+                            : tr('{n} packs à espera', {'n': c.seats[i].waiting}))
                         : '',
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(cfg.seats[i].name),
@@ -393,13 +397,14 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                       i < c.seats.length && c.seats[i].waiting > 1 ? theme.colorScheme.tertiaryContainer : null,
                 ),
               ),
-            Center(
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.inventory_2_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
-                Text(tr(' = packs à espera'),
-                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ]),
-            ),
+            if (!c.finished)
+              Center(
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.inventory_2_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                  Text(tr(' = packs à espera'),
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                ]),
+              ),
           ]),
         ),
         Expanded(
@@ -423,7 +428,12 @@ class _DraftScreenState extends ConsumerState<DraftScreen> {
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         const CircularProgressIndicator(),
                         const SizedBox(height: 12),
-                        Text(tr('À espera do próximo pack…'), style: theme.textTheme.titleMedium),
+                        Text(
+                            c.done
+                                ? tr('Já tens as tuas cartas. À espera que os outros acabem…')
+                                : tr('À espera do próximo pack…'),
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleMedium),
                       ]),
                     )
                   : ListView(padding: const EdgeInsets.only(bottom: 24), children: [

@@ -1,0 +1,13 @@
+[
+  ["={v} ainda não confirmou e fica de fora deste jogo.", "{v} isn't ready yet and will sit out this game.", "{v} aún no ha confirmado y se queda fuera de esta partida.", "{v} non ha ancora confermato e resta fuori da questa partita."],
+  ["={v} ainda não confirmaram e ficam de fora deste jogo.", "{v} aren't ready yet and will sit out this game.", "{v} aún no han confirmado y se quedan fuera de esta partida.", "{v} non hanno ancora confermato e restano fuori da questa partita."],
+  ["=Tudo pronto", "I'm ready", "Todo listo", "Tutto pronto"],
+  ["=Espera, ainda não", "Not ready yet", "Espera, aún no", "Aspetta, non ancora"],
+  ["=Perdeste. És o anfitrião: o jogo dos outros continua no teu telemóvel, por isso fica na mesa.", "You lost. You're the host: the others' game runs on your phone, so stay at the table.", "Has perdido. Eres quien aloja la sala: la partida de los demás sigue en tu móvil, así que quédate en la mesa.", "Hai perso. Ospiti tu la stanza: la partita degli altri continua sul tuo telefono, quindi resta al tavolo."],
+  ["=Perdeste. Podes ficar a ver o jogo ou sair.", "You lost. You can keep watching or leave.", "Has perdido. Puedes seguir mirando la partida o salir.", "Hai perso. Puoi continuare a guardare o uscire."],
+  ["=perdeu", "lost", "perdió", "ha perso"],
+  ["=Perdeste?", "Did you lose?", "¿Has perdido?", "Hai perso?"],
+  ["={v} perdeu?", "Did {v} lose?", "¿{v} perdió?", "{v} ha perso?"],
+  ["={v} perdeu", "{v} lost", "{v} perdió", "{v} ha perso"],
+  ["=Este telemóvel está sem rede. Liga o Wi-Fi: o jogo volta sozinho.", "This phone has no network. Turn Wi-Fi on and the game will reconnect by itself.", "Este móvil no tiene red. Activa el Wi-Fi y la partida volverá sola.", "Questo telefono non ha rete. Attiva il Wi-Fi e la partita si ricollegherà da sola."]
+]

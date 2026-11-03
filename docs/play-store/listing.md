@@ -63,8 +63,8 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (1.11.1)
-Correções da 1.11.0: quem sai da mesa a meio volta mesmo com a mão que tinha (às vezes recebia uma mão nova); no draft em rede o pack podia aparecer vazio; os decks base já trazem as imagens das cartas e, ao escolher um deck na sala, as imagens descarregam logo. Na sala, os decks do formato aparecem primeiro.
+### Notas da versão (2.0.0)
+Modern, Draft e outros formatos jogam-se agora 1 contra 1: encontros à melhor de 3, todos contra todos, com folga, classificação e sideboard entre jogos. O Commander continua com todos na mesma mesa. Correções: deck que não chegava ao anfitrião, ecrã preto ao sair de uma sala fechada, avisos em ecrãs pequenos, aviso de telemóvel sem rede, textos sem género. Todos na sala precisam desta versão.
 
 ---
 
@@ -127,8 +127,8 @@ You only need the internet to download the cards once (about 25 MB) and their im
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (1.11.1)
-Fixes for 1.11.0: leaving the table mid-game now really brings you back with the hand you had (sometimes you got a new one); in network drafts the pack could show up empty; starter decks now come with card images, and picking a deck in a room downloads its images right away. In a room, decks for that format are listed first.
+### Release notes (2.0.0)
+Modern, Draft and other formats are now played 1 vs 1: best-of-3 matches, everyone plays everyone, with byes, standings and sideboarding between games. Commander still seats everyone at one table. Fixes: a deck that never reached the host, a black screen after leaving a closed room, notices on small screens, a no-network warning, gender-neutral texts. Everyone in a room needs this version.
 
 ---
 
@@ -191,8 +191,8 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (1.11.1)
-Correcciones de la 1.11.0: quien sale de la mesa a mitad vuelve de verdad con la mano que tenía (a veces recibía una nueva); en el draft en red el sobre podía salir vacío; los mazos base ya traen las imágenes y, al elegir un mazo en la sala, se descargan enseguida. En la sala, los mazos del formato salen primero.
+### Notas de la versión (2.0.0)
+Modern, Draft y otros formatos se juegan ahora 1 contra 1: enfrentamientos al mejor de 3, todos contra todos, con descanso, clasificación y sideboard entre partidas. El Commander sigue con todos en la misma mesa. Correcciones: mazo que no llegaba al anfitrión, pantalla negra al salir de una sala cerrada, avisos en pantallas pequeñas, aviso de móvil sin red, textos sin género. Todos en la sala necesitan esta versión.
 
 ---
 
@@ -255,5 +255,5 @@ Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro imm
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (1.11.1)
-Correzioni della 1.11.0: chi esce dal tavolo a metà torna davvero con la mano che aveva (a volte ne riceveva una nuova); nel draft in rete la busta poteva apparire vuota; i mazzi base ora hanno le immagini e, scegliendo un mazzo nella stanza, si scaricano subito. Nella stanza, i mazzi del formato compaiono per primi.
+### Note sulla versione (2.0.0)
+Modern, Draft e altri formati ora si giocano 1 contro 1: incontri al meglio di 3, tutti contro tutti, con riposo, classifica e sideboard tra le partite. Il Commander resta con tutti allo stesso tavolo. Correzioni: mazzo che non arrivava all'host, schermo nero uscendo da una stanza chiusa, avvisi su schermi piccoli, avviso di telefono senza rete, testi senza genere. Tutti nella stanza devono avere questa versione.

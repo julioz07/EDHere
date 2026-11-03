@@ -26,8 +26,6 @@
   ["=Os outros jogadores saem também.", "The other players leave too.", "Los demás jugadores también salen.", "Anche gli altri giocatori escono."],
   ["=Saíste a meio do jogo. A tua mão e o grimório ficaram guardados no teu lugar.", "You left mid-game. Your hand and library are saved in your seat.", "Saliste a mitad de la partida. Tu mano y tu biblioteca quedaron guardadas en tu puesto.", "Sei uscito a metà partita. La tua mano e il grimorio sono salvati al tuo posto."],
   ["=Voltar ao jogo", "Return to the game", "Volver a la partida", "Torna alla partita"],
-  ["=Foste derrotado. És o anfitrião: o jogo dos outros continua no teu telemóvel, por isso fica na mesa.", "You've been defeated. You're the host: the others' game runs on your phone, so stay at the table.", "Has sido derrotado. Eres el anfitrión: la partida de los demás sigue en tu móvil, así que quédate en la mesa.", "Sei stato sconfitto. Sei l'host: la partita degli altri continua sul tuo telefono, quindi resta al tavolo."],
-  ["=Foste derrotado?", "Were you defeated?", "¿Has sido derrotado?", "Sei stato sconfitto?"],
   ["=Sais do jogo e deixas de ter turnos. Dá para voltar atrás aqui.", "You leave the game and get no more turns. You can undo it here.", "Sales de la partida y dejas de tener turnos. Se puede deshacer aquí.", "Esci dalla partita e non hai più turni. Puoi annullarlo qui."],
   ["=Ronda {round}: {v}", "Round {round}: {v}", "Ronda {round}: {v}", "Round {round}: {v}"],
   ["={v}: {who} perdem 1 ponto de vida", "{v}: {who} lose 1 life", "{v}: {who} pierden 1 punto de vida", "{v}: {who} perdono 1 punto vita"],

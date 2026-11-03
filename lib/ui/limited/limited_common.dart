@@ -99,7 +99,7 @@ class PoolCardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final border = rarityColor(card.print.rarity);
-    return GestureDetector(
+    final tile = GestureDetector(
       onTap: onTap,
       onLongPress: () => Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => CardDetailScreen(card: card.shown),
@@ -149,14 +149,17 @@ class PoolCardView extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(8)),
                   child: Text('×$qty',
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12)),
+                          color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
                 ),
               ),
           ]),
         ),
       ),
+    );
+    return Semantics(
+      button: onTap != null,
+      label: qty > 1 ? '${card.shown.displayName} ×$qty' : card.shown.displayName,
+      child: tile,
     );
   }
 }
@@ -218,8 +221,7 @@ class _SetImagesTileState extends ConsumerState<SetImagesTile> {
     for (final p in boosters.prints) {
       final base = repo.get(p.oracleId);
       if (base == null) continue;
-      final shown =
-          p.scryfallId.isEmpty || p.scryfallId == base.printId ? base : base.withPrint(p.printInfo(base));
+      final shown = p.scryfallId.isEmpty || p.scryfallId == base.printId ? base : base.withPrint(p.printInfo(base));
       for (final r in db.ImageRef.allOf(shown)) {
         if (seen.add(r.key)) refs.add(r);
       }

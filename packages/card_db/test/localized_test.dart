@@ -152,4 +152,13 @@ void main() {
     // Sem impressão na língua (só o nome), a imagem continua a inglesa.
     repo.close();
   });
+
+  test('quem guardou a base antiga continua a funcionar depois da troca', () {
+    final old = CardRepository.open(path)!;
+    old.close();
+    final fresh = CardRepository.open(path)!;
+    old.follow(fresh);
+    expect(old.get('oid-Lightning Bolt')!.displayName, 'Fulmine');
+    fresh.close();
+  });
 }

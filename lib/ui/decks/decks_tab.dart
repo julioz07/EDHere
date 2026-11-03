@@ -136,7 +136,22 @@ class DecksTab extends ConsumerWidget {
                     final format = GameFormat.byId(d.format);
                     final cmdIds = d.inBoard(Board.command).map((e) => e.oracleId).toList();
                     final cmds = repo?.getMany(cmdIds).values.toList() ?? const [];
-                    final identity = cmds.fold(0, (m, c) => m | c.identityMask);
+                    // sem comandante (Modern, limitado…): a capa é a criatura mais cara, ou
+                    // o feitiço mais caro; as cores vêm das cartas do deck
+                    final mainCards = cmds.isNotEmpty
+                        ? const <Card>[]
+                        : (repo?.getMany(d.inBoard(Board.main).map((e) => e.oracleId).toList()).values ??
+                                const <Card>[])
+                            .where((c) => !c.isLand)
+                            .toList();
+                    Card? best(bool Function(Card) ok) => mainCards
+                        .where(ok)
+                        .fold<Card?>(null, (b, c) => b == null || c.mv > b.mv ? c : b);
+                    final cover = cmds.isNotEmpty
+                        ? cmds.first
+                        : best((c) => c.frontType.contains('Creature')) ?? best((_) => true);
+                    final identity = (cmds.isNotEmpty ? cmds : mainCards)
+                        .fold(0, (m, c) => m | (cmds.isNotEmpty ? c.identityMask : c.colorMask));
                     return m.Card(
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
@@ -152,7 +167,7 @@ class DecksTab extends ConsumerWidget {
                             alignment: Alignment.center,
                             child: SizedBox(
                               width: 72,
-                              child: cmds.isEmpty
+                              child: cover == null
                                   ? AspectRatio(
                                       aspectRatio: cardAspect,
                                       child: Container(
@@ -163,9 +178,8 @@ class DecksTab extends ConsumerWidget {
                                         child: Icon(Icons.style, color: theme.colorScheme.primary),
                                       ),
                                     )
-                                  : CardImage(
-                                      ref.read(printsProvider).resolve(cmds.first,
-                                          printId: d.inBoard(Board.command).first.printId)),
+                                  : CardImage(ref.read(printsProvider).resolve(cover,
+                                      printId: d.entries.firstWhere((e) => e.oracleId == cover.oracleId).printId)),
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -190,7 +204,7 @@ class DecksTab extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall,
                                 ),
-                                if (cmds.isNotEmpty) ...[
+                                if (identity != 0) ...[
                                   const SizedBox(height: 4),
                                   ColorIdentity(identity),
                                 ],

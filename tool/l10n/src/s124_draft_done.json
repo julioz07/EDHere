@@ -1,0 +1,6 @@
+[
+  ["={n} cartas · à espera que os outros acabem", "{n} cards · waiting for the others to finish", "{n} cartas · esperando a que los demás terminen", "{n} carte · in attesa che gli altri finiscano"],
+  ["=Já tens as tuas cartas. À espera que os outros acabem…", "You have all your cards. Waiting for the others to finish…", "Ya tienes todas tus cartas. Esperando a que los demás terminen…", "Hai tutte le tue carte. In attesa che gli altri finiscano…"],
+  ["=1 pack à espera", "1 pack waiting", "1 sobre esperando", "1 busta in attesa"],
+  ["={n} packs à espera", "{n} packs waiting", "{n} sobres esperando", "{n} buste in attesa"]
+]

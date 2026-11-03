@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:card_db/card_db.dart' hide Card;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,14 +10,17 @@ import '../data/bracket.dart';
 import '../data/providers.dart';
 import '../data/settings.dart';
 import '../game/draft.dart';
+import '../game/match.dart';
 import '../game/network_game.dart';
 import '../game/resume_store.dart';
 import '../net/host_server.dart';
+import '../net/network_util.dart';
 import '../net/room_client.dart';
 import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'limited/draft_screen.dart';
 import 'room_screen.dart';
+import 'table/sideboard_sheet.dart';
 import 'table/table_screen.dart';
 import 'widgets/responsive.dart';
 import '../l10n/l10n.dart';
@@ -56,6 +61,24 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   /// A mesa fecha porque o anfitrião começou outra partida: o lobby fica.
   bool _backToLobby = false;
 
+  /// Sem ligação, vê se o problema é o próprio telemóvel (Wi-Fi desligado,
+  /// modo avião): aí não adianta esperar pelo anfitrião.
+  final _offline = ValueNotifier(false);
+  Timer? _netCheck;
+
+  void _watchNetwork() {
+    if (_game.link.status != LinkStatus.reconnecting) {
+      _netCheck?.cancel();
+      _netCheck = null;
+      _offline.value = false;
+      return;
+    }
+    _netCheck ??= Timer.periodic(const Duration(seconds: 2), (_) async {
+      final off = !await hasLocalNetwork();
+      if (mounted) _offline.value = off;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +90,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     _game.addListener(_maybeShowTable);
     _game.addListener(_maybeShowDraft);
     _game.addListener(_maybeClosed);
+    _game.addListener(_watchNetwork);
     // A voltar a um jogo: a mesa já existe (o registo foi repetido) e abre logo.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTable());
   }
@@ -89,7 +113,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(
       builder: (_) => ListenableBuilder(
-        listenable: _game,
+        listenable: Listenable.merge([_game, _offline]),
         builder: (context, _) => TableScreen(
           ctrl: g,
           banner: switch (_game.link.status) {
@@ -108,7 +132,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           onLeave: _leaveRoom,
           confirmLeave: _confirmLeaveTable,
           hostsRoom: _game.isHost,
-          onNewGame: _game.isHost ? _game.newGame : null,
+          onNewGame: _game.isHost && _game.tournament == null ? _game.newGame : null,
+          matchStatus: _game.tournament == null ? null : _matchStatus,
+          afterGame: _game.tournament == null ? null : _afterGame,
         ),
       ),
     ))
@@ -117,9 +143,39 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         _backToLobby = false;
         return;
       }
-      // Quem sai da mesa sai da sala: não fica num lobby sem ligação.
-      if (mounted) Navigator.of(context).pop();
+      // Quem sai da mesa sai da sala: não fica num lobby sem ligação. Se o
+      // lobby já saiu (Sair com a sala fechada volta ao início), não se tira
+      // mais nada: era o ecrã inicial e a app ficava preta.
+      if (mounted && (ModalRoute.of(context)?.isActive ?? false)) Navigator.of(context).pop();
     });
+  }
+
+  /// Encontro 1 contra 1: "Jogo 2 · 1–0" (as minhas vitórias primeiro).
+  String _matchStatus() {
+    final info = _game.myTableInfo;
+    final m = info == null ? null : _game.tournament?.matchOf(info.round, _game.mySeat);
+    if (info == null || m == null) return '';
+    final me = _game.mySeat;
+    return tr('Jogo {g} · {w}–{l}', {'g': info.game, 'w': m.wins(me), 'l': m.wins(m.other(me))});
+  }
+
+  /// No fim de cada jogo: o seguinte do encontro (antes, se houver
+  /// sideboard, pode-se trocar cartas), ou voltar à sala.
+  List<({String label, VoidCallback onPressed})> _afterGame() {
+    final info = _game.myTableInfo;
+    final m = info == null ? null : _game.tournament?.matchOf(info.round, _game.mySeat);
+    if (m == null || m.done) return [(label: tr('Voltar à sala'), onPressed: _game.backToRoom)];
+    return [
+      if ((_game.myDeck?.count(Board.side) ?? 0) > 0) (label: tr('Sideboard'), onPressed: _sideboard),
+      (label: tr('Jogo seguinte'), onPressed: _game.requestNextGame),
+    ];
+  }
+
+  Future<void> _sideboard() async {
+    final deck = _game.myDeck;
+    if (deck == null || !mounted) return;
+    _game.sideboard(await showSideboardSheet(context, deck, _game.repo));
+    _game.requestNextGame();
   }
 
   /// A meio de um jogo, um cliente que sai só desliga: o lugar e a mão ficam
@@ -149,9 +205,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 : tr('Sais da sala.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Ficar'))),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(host ? tr('Acabar o jogo') : tr('Sair'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(host ? tr('Acabar o jogo') : tr('Sair'))),
         ],
       ),
     );
@@ -204,9 +258,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     return tr('A ligação à sala terminou.');
   }
 
+  /// Os comandantes chegam com o nome Oracle; mostram-se nas cartas deste telemóvel.
+  String _localName(String name) => _game.repo.findByName(name)?.displayName ?? name;
+
   /// "Ligação perdida": diz de quem se está à espera (é o anfitrião quem liga
   /// todos; se ele cair, ninguém joga).
   String get _lostText {
+    if (_offline.value) return tr('Este telemóvel está sem rede. Liga o Wi-Fi: o jogo volta sozinho.');
     final host = _game.players.values.where((p) => p.isHost).firstOrNull;
     return host == null
         ? tr('Ligação perdida. A voltar a ligar…')
@@ -226,8 +284,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         builder: (ctx) => AlertDialog(
           title: Text(tr('Começar sem todos?')),
           content: Text(out.length == 1
-              ? tr('{v} ainda não está pronto e fica de fora deste jogo.', {'v': out.single})
-              : tr('{v} ainda não estão prontos e ficam de fora deste jogo.', {'v': out.join(', ')})),
+              ? tr('{v} ainda não confirmou e fica de fora deste jogo.', {'v': out.single})
+              : tr('{v} ainda não confirmaram e ficam de fora deste jogo.', {'v': out.join(', ')})),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Esperar'))),
             FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Começar'))),
@@ -236,7 +294,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       );
       if (ok != true) return;
     }
-    g.start();
+    // Modern, Limited…: 1 contra 1, em encontros; o Commander junta todos.
+    if (g.oneVsOne) {
+      g.startMatches();
+    } else {
+      g.start();
+    }
   }
 
   /// Anfitrião: tirar um jogador da sala (quem saiu e deixou o lugar preso).
@@ -275,6 +338,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     _game.removeListener(_maybeShowTable);
     _game.removeListener(_maybeShowDraft);
     _game.removeListener(_maybeClosed);
+    _game.removeListener(_watchNetwork);
+    _netCheck?.cancel();
+    _offline.dispose();
     _game.dispose();
     WakelockPlus.disable();
     if (!_closing) widget.session.close();
@@ -320,13 +386,13 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     final prints = ref.read(printsProvider);
     ref
         .read(imagesProvider)
-        .ensureRefs(cards.values.expand((c) => ImageRef.allOf(prints.resolve(c))), sizes: const ['small'])
-        .ignore();
+        .ensureRefs(cards.values.expand((c) => ImageRef.allOf(prints.resolve(c))), sizes: const ['small']).ignore();
     _game.selectDeck(
       chosen,
       legal: legal,
       commanderNames: [
-        for (final e in chosen.inBoard(Board.command)) cards[e.oracleId]?.displayName ?? '?',
+        for (final e in chosen.inBoard(Board.command))
+          cards[e.oracleId]?.name ?? '?', // Oracle: cada um mostra na sua língua
       ],
       gameChangers: format.hasCommandZone ? BracketEstimate.of(chosen, cards).count : null,
     );
@@ -365,10 +431,23 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               Text('$life', style: Theme.of(ctx).textTheme.titleMedium),
               IconButton(onPressed: () => set(() => life++), icon: const Icon(Icons.add)),
             ]),
-            Wrap(spacing: 6, children: [
-              for (final v in const [20, 25, 30, 40])
-                ChoiceChip(label: Text('$v'), selected: life == v, onSelected: (_) => set(() => life = v)),
-            ]),
+            // numa só linha, mesmo em ecrãs pequenos (os chips partiam o 40 para baixo)
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<int>(
+                segments: [
+                  for (final v in const [20, 25, 30, 40]) ButtonSegment(value: v, label: Text('$v'))
+                ],
+                selected: {
+                  if (const [20, 25, 30, 40].contains(life)) life
+                },
+                emptySelectionAllowed: true,
+                showSelectedIcon: false,
+                onSelectionChanged: (s) {
+                  if (s.isNotEmpty) set(() => life = s.first);
+                },
+              ),
+            ),
           ]),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
@@ -408,7 +487,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
         }
       },
       child: ListenableBuilder(
-        listenable: _game,
+        listenable: Listenable.merge([_game, _offline]),
         builder: (context, _) {
           final theme = Theme.of(context);
           final g = _game;
@@ -470,7 +549,26 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             bottomNavigationBar: me == null && !g.isHost
                 ? null
                 : BottomActions(children: [
-                    if (me != null)
+                    if (g.tournament case final t? when g.isHost)
+                      if (t.finished)
+                        FilledButton.icon(
+                          onPressed: g.newGame,
+                          icon: const Icon(Icons.replay),
+                          label: Text(tr('Nova partida')),
+                        )
+                      else if (t.roundDone(t.round))
+                        FilledButton.icon(
+                          onPressed: g.startNextRound,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: Text(tr('Começar a ronda {n}', {'n': t.round + 2})),
+                        )
+                      else
+                        FilledButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.hourglass_empty_rounded),
+                          label: Text(tr('À espera dos encontros')),
+                        ),
+                    if (me != null && g.tournament == null)
                       Row(children: [
                         Expanded(
                           child: OutlinedButton(
@@ -483,16 +581,22 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         Expanded(
                           child: FilledButton.tonal(
                             onPressed: g.myDeck == null ? null : () => g.setReady(!me.ready),
-                            child: Text(me.ready ? tr('Já não estou pronto') : tr('Estou pronto'),
+                            child: Text(me.ready ? tr('Espera, ainda não') : tr('Tudo pronto'),
                                 textAlign: TextAlign.center),
                           ),
                         ),
                       ]),
-                    if (g.isHost) ...[
+                    if (g.isHost && g.tournament == null) ...[
                       FilledButton.icon(
-                        onPressed: g.players.values.any((p) => p.ready) ? _start : null,
+                        onPressed: g.oneVsOne
+                            ? (g.players.values.where((p) => p.ready).length >= 2 ? _start : null)
+                            : (g.players.values.any((p) => p.ready) ? _start : null),
                         icon: const Icon(Icons.play_arrow_rounded),
-                        label: Text(g.allReady ? tr('Começar jogo') : tr('Começar (só com quem está pronto)')),
+                        label: Text(g.oneVsOne
+                            ? tr('Começar encontros (melhor de 3)')
+                            : g.allReady
+                                ? tr('Começar jogo')
+                                : tr('Começar (só com quem está pronto)')),
                       ),
                     ],
                   ]),
@@ -506,15 +610,24 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                 Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
+              if (g.tournament case final t?) ...[
+                _TournamentCard(game: g, tournament: t),
+                const SizedBox(height: 8),
+              ],
               Card(
                 child: ListTile(
                   leading: Icon(Icons.rule, color: theme.colorScheme.primary),
                   title: Text(tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
-                  subtitle: Text(g.players.length == 1
-                      ? tr('1 jogador na sala')
-                      : tr('{n} jogadores na sala', {'n': g.players.length})),
-                  trailing: g.isHost ? const Icon(Icons.edit) : null,
-                  onTap: g.isHost ? _configure : null,
+                  subtitle: Text([
+                    g.players.length == 1
+                        ? tr('1 jogador na sala')
+                        : tr('{n} jogadores na sala', {'n': g.players.length}),
+                    // Só o Commander junta todos na mesma mesa.
+                    if (g.oneVsOne) tr('1 contra 1, à melhor de 3; todos jogam com todos'),
+                  ].join('\n')),
+                  trailing: g.isHost && g.tournament == null ? const Icon(Icons.edit) : null,
+                  // a meio dos encontros o formato e a vida não mudam
+                  onTap: g.isHost && g.tournament == null ? _configure : null,
                 ),
               ),
               const SizedBox(height: 16),
@@ -537,7 +650,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                         : tr('{deckName} · {deckSize} cartas{v}{v2}{v3}', {
                             'deckName': p.deckName,
                             'deckSize': p.deckSize,
-                            'v': p.commanders.isEmpty ? '' : ' · ${p.commanders.join(' + ')}',
+                            'v': p.commanders.isEmpty ? '' : ' · ${p.commanders.map(_localName).join(' + ')}',
                             'v2': p.gameChangers == null
                                 ? ''
                                 : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}',
@@ -549,16 +662,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                             Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
                                 size: 20, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
                             Text(p.ready ? tr('Pronto') : tr('A escolher'),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                    color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
+                                style: theme.textTheme.labelSmall
+                                    ?.copyWith(color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
                           ])
                         : Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
                                 size: 18, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
                             const SizedBox(width: 4),
                             Text(p.ready ? tr('Pronto') : tr('A escolher'),
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                    color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
+                                style: theme.textTheme.labelMedium
+                                    ?.copyWith(color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
                           ]),
                   ),
                 ),
@@ -617,7 +730,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                   label: Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
                 ),
               ],
-              if (g.isHost) ...[
+              // a meio dos encontros não se começa outro draft
+              if (g.isHost && (g.tournament?.finished ?? true)) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => showDraftSetup(context, ref, g),
@@ -633,6 +747,75 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             ])),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Encontros 1 contra 1: a ronda em curso, quem joga com quem e a classificação.
+class _TournamentCard extends StatelessWidget {
+  const _TournamentCard({required this.game, required this.tournament});
+  final NetworkGame game;
+  final Tournament tournament;
+
+  String _name(int seat) {
+    final n = game.players[seat]?.name ?? '?';
+    return seat == game.mySeat ? tr('{v} (tu)', {'v': n}) : n;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = tournament;
+    final standings = t.standings();
+    final byes = t.byes(t.round);
+    return Card(
+      color: theme.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            t.finished
+                ? tr('Encontros acabados: {v} ganhou', {'v': _name(standings.first.seat)})
+                : tr('Ronda {r} de {n}', {'r': t.round + 1, 'n': t.roundCount}),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (!t.finished) ...[
+            const SizedBox(height: 8),
+            for (final m in t.results[t.round])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(children: [
+                  Icon(m.done ? Icons.check_circle_outline : Icons.sports_esports_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(tr(
+                        '{a} {wa}–{wb} {b}', {'a': _name(m.a), 'wa': m.wins(m.a), 'wb': m.wins(m.b), 'b': _name(m.b)})),
+                  ),
+                  Text(m.done ? tr('acabou') : tr('a jogar'), style: theme.textTheme.labelMedium),
+                ]),
+              ),
+            for (final s in byes)
+              Text(
+                s == game.mySeat
+                    ? tr('Tens folga nesta ronda: conta como vitória.')
+                    : tr('{v} tem folga nesta ronda (conta como vitória).', {'v': _name(s)}),
+                style: theme.textTheme.bodySmall,
+              ),
+          ],
+          const SizedBox(height: 12),
+          Text(tr('Classificação'), style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          for (final (i, s) in standings.indexed)
+            Text(tr('{i}. {v} · {p} · {w}-{l}{d} em encontros', {
+              'i': i + 1,
+              'v': _name(s.seat),
+              'p': s.points == 1 ? tr('1 ponto') : tr('{n} pontos', {'n': s.points}),
+              'w': s.matchWins + s.byes,
+              'l': s.matchLosses,
+              'd': s.matchDraws > 0 ? '-${s.matchDraws}' : '',
+            })),
+        ]),
       ),
     );
   }

@@ -67,6 +67,27 @@ class CardDataService extends ChangeNotifier {
 
   CardRepository? get repo => _repo;
   bool get hasData => _repo != null;
+
+  /// As bases que já foram substituídas mas que alguém ainda pode ter guardadas
+  /// (o lobby de uma sala aberta durante a descarga da língua, a mesa…).
+  final List<CardRepository> _replaced = [];
+
+  void _closeRepo() {
+    final r = _repo;
+    if (r == null) return;
+    r.close();
+    _replaced.add(r);
+    _repo = null;
+  }
+
+  void _openRepo() {
+    final r = _repo = CardRepository.open(paths.cardsDb);
+    if (r == null) return;
+    for (final old in _replaced) {
+      old.follow(r);
+    }
+  }
+
   bool get busy =>
       phase == DataPhase.checking || phase == DataPhase.downloading || phase == DataPhase.importing;
 
@@ -152,12 +173,11 @@ class CardDataService extends ChangeNotifier {
       );
 
       // Troca a base antiga pela nova.
-      _repo?.close();
-      _repo = null;
+      _closeRepo();
       final old = File(paths.cardsDb);
       if (old.existsSync()) old.deleteSync();
       File(paths.cardsDbNew).renameSync(paths.cardsDb);
-      _repo = CardRepository.open(paths.cardsDb);
+      _openRepo();
       generation++;
       net.cardDbVersion = localDate ?? 'none';
       for (final f in [oraclePath, rulingsPath]) {
@@ -172,7 +192,7 @@ class CardDataService extends ChangeNotifier {
     } catch (e) {
       final partial = File(paths.cardsDbNew);
       if (partial.existsSync()) partial.deleteSync();
-      _repo ??= CardRepository.open(paths.cardsDb);
+      if (_repo == null) _openRepo();
       _set(DataPhase.error, message: tr('Falhou: {e}', {'e': e}));
     }
   }
@@ -187,8 +207,7 @@ class CardDataService extends ChangeNotifier {
     final label = langName(lang);
     try {
       if (lang == 'en') {
-        _repo?.close();
-        _repo = null;
+        _closeRepo();
         LocalizedImporter.clear(paths.cardsDb);
       } else {
         _set(DataPhase.downloading,
@@ -230,8 +249,7 @@ class CardDataService extends ChangeNotifier {
         await Future.wait([for (var i = 0; i < 2; i++) worker()]);
         final cards = [for (var i = 1; i <= pages; i++) ...?results[i]];
         _set(DataPhase.importing, progress: null, message: tr('A preparar a base offline…'));
-        _repo?.close();
-        _repo = null;
+        _closeRepo();
         final imp = LocalizedImporter(paths.cardsDb)..begin(lang);
         try {
           cards.forEach(imp.add);
@@ -241,7 +259,7 @@ class CardDataService extends ChangeNotifier {
           rethrow;
         }
       }
-      _repo = CardRepository.open(paths.cardsDb);
+      _openRepo();
       generation++;
       _set(DataPhase.idle,
           progress: null,
@@ -249,10 +267,10 @@ class CardDataService extends ChangeNotifier {
               ? tr('Cartas em inglês.')
               : tr('Cartas em {lang}: {n} traduzidas.', {'lang': label, 'n': localizedCount}));
     } on DownloadCancelled {
-      _repo ??= CardRepository.open(paths.cardsDb);
+      if (_repo == null) _openRepo();
       _set(DataPhase.idle, progress: null, message: tr('Descarga cancelada.'));
     } catch (e) {
-      _repo ??= CardRepository.open(paths.cardsDb);
+      if (_repo == null) _openRepo();
       _set(DataPhase.error, progress: null, message: tr('Falhou: {e}', {'e': e}));
     }
   }

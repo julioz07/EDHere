@@ -37,8 +37,7 @@ class CardBack extends StatelessWidget {
                   color: Colors.black54,
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: FittedBox(
-                    child: Text(label!,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    child: Text(label!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ),
@@ -127,12 +126,15 @@ class TableCardView extends StatelessWidget {
     }
 
     final iconSize = (width * 0.16).clamp(10.0, 18.0);
+    // Virada, a carta roda 90°; os números rodam ao contrário para se lerem direitos.
+    final tapped = showTapped && c.tapped;
+    Widget upright(Widget w) => tapped ? RotatedBox(quarterTurns: 3, child: w) : w;
     final counters = <Widget>[
       for (final e in c.counters.entries)
         if (!e.key.startsWith('mod:') && !e.key.startsWith(CounterKind.keyword))
-          _CounterBadge(kind: e.key, value: e.value, size: iconSize),
-      if (c.stackQty > 1) _Badge('×${c.stackQty}', scheme.primary, iconSize),
-      if (tax != null && tax! > 0) _Badge('+$tax', Colors.orange, iconSize),
+          upright(_CounterBadge(kind: e.key, value: e.value, size: iconSize)),
+      if (c.stackQty > 1) upright(_Badge('×${c.stackQty}', scheme.primary, iconSize)),
+      if (tax != null && tax! > 0) upright(_Badge('+$tax', Colors.orange, iconSize)),
     ];
 
     // Habilidades: as dadas por efeitos (destacadas) e as da própria carta.
@@ -208,16 +210,15 @@ class TableCardView extends StatelessWidget {
           Positioned(
             bottom: 2,
             right: 2,
-            child: Container(
+            child: upright(Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
                 color: pt.$2 ? scheme.primary : Colors.black87,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(pt.$1,
-                  style:
-                      TextStyle(color: Colors.white, fontSize: iconSize * 0.9, fontWeight: FontWeight.w800)),
-            ),
+                  style: TextStyle(color: Colors.white, fontSize: iconSize * 0.9, fontWeight: FontWeight.w800)),
+            )),
           ),
         if (targeted)
           Positioned.fill(
@@ -243,7 +244,7 @@ class TableCardView extends StatelessWidget {
           ),
       ]),
     );
-    if (showTapped && c.tapped) {
+    if (tapped) {
       body = Transform.rotate(angle: pi / 2, child: Opacity(opacity: 0.92, child: body));
     }
     return body;
@@ -275,8 +276,7 @@ class _CounterBadge extends StatelessWidget {
           Text('${kind.length > 6 ? kind.substring(0, 6) : kind} ',
               style: TextStyle(color: Colors.white, fontSize: size * 0.7)),
         const SizedBox(width: 2),
-        Text(label,
-            style: TextStyle(color: Colors.white, fontSize: size * 0.85, fontWeight: FontWeight.w800)),
+        Text(label, style: TextStyle(color: Colors.white, fontSize: size * 0.85, fontWeight: FontWeight.w800)),
       ]),
     );
   }
@@ -299,8 +299,7 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
         decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6)),
-        child: Text(text,
-            style: TextStyle(color: Colors.white, fontSize: size * 0.85, fontWeight: FontWeight.w800)),
+        child: Text(text, style: TextStyle(color: Colors.white, fontSize: size * 0.85, fontWeight: FontWeight.w800)),
       );
 }
 
@@ -325,14 +324,12 @@ class _TokenFace extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: c.maxWidth * 0.12, fontWeight: FontWeight.w700, color: Colors.black87)),
+                  style: TextStyle(fontSize: c.maxWidth * 0.12, fontWeight: FontWeight.w700, color: Colors.black87)),
               const Spacer(),
               Text(tr('Token'), style: TextStyle(fontSize: c.maxWidth * 0.09, color: Colors.black54)),
               if (pt != null)
                 Text(pt!,
-                    style: TextStyle(
-                        fontSize: c.maxWidth * 0.14, fontWeight: FontWeight.w800, color: Colors.black87)),
+                    style: TextStyle(fontSize: c.maxWidth * 0.14, fontWeight: FontWeight.w800, color: Colors.black87)),
             ]),
           ),
         ),

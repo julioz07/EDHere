@@ -89,8 +89,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     super.dispose();
   }
 
-  PoolCard _extraCard(db.Card c) =>
-      PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c);
+  PoolCard _extraCard(db.Card c) => PoolCard(db.PackCard(db.BoosterPrint(c.printId, c.oracleId, 'R', '')), c, c);
 
   /// setState e guarda (um pouco depois, para não escrever a cada toque).
   void _set(VoidCallback fn) {
@@ -253,8 +252,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
     if (!mounted) return;
     final done = widget.onSaved;
     if (done != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(tr('"{v}" guardado.', {'v': deck.name}))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('"{v}" guardado.', {'v': deck.name}))));
       done(context, deck);
       return;
     }
@@ -269,8 +267,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(tr('Sair sem guardar o deck?')),
-        content:
-            Text(tr('A pool e o que já escolheste ficam em Jogar → Decks por montar, para acabares depois.')),
+        content: Text(tr('A pool e o que já escolheste ficam em Jogar → Decks por montar, para acabares depois.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, 'stay'), child: Text(tr('Ficar'))),
           TextButton(onPressed: () => Navigator.pop(ctx, 'drop'), child: Text(tr('Deitar fora'))),
@@ -311,16 +308,19 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           (index: i, card: widget.pool[i]),
     ];
     final seen = {for (final c in candidates) c.card.base.oracleId};
+    final extraRefs = <db.ImageRef>[];
     for (final name in db.draftWildCommanders) {
       final c = repo.findByName(name);
       if (c == null || seen.contains(c.oracleId)) continue;
       candidates.add((index: null, card: _extraCard(c)));
+      extraRefs.addAll(db.ImageRef.allOf(c));
     }
+    // Não vêm nos boosters do draft: sem isto ficavam só com o texto.
+    if (extraRefs.isNotEmpty) ref.read(imagesProvider).ensureRefs(extraRefs, sizes: const ['small']).ignore();
     final picked = <int>{
       for (var k = 0; k < candidates.length; k++)
         if ((candidates[k].index != null && _cmdPool.contains(candidates[k].index)) ||
-            (candidates[k].index == null &&
-                _cmdExtra.any((e) => e.base.oracleId == candidates[k].card.base.oracleId)))
+            (candidates[k].index == null && _cmdExtra.any((e) => e.base.oracleId == candidates[k].card.base.oracleId)))
           k,
     };
     bool valid(Set<int> s) => commanderPairOk([for (final k in s) candidates[k].card.base]);
@@ -350,31 +350,34 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
               child: ListView(children: [
                 PoolGrid(target: 110, children: [
                   for (var k = 0; k < candidates.length; k++)
-                    Stack(children: [
-                      PoolCardView(
-                        card: candidates[k].card,
-                        onTap: () => set_(() {
-                          if (!picked.remove(k)) {
-                            if (picked.length >= 2) picked.clear();
-                            picked.add(k);
-                          }
-                        }),
-                      ),
-                      if (picked.contains(k))
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(color: theme.colorScheme.primary, width: 4),
+                    Semantics(
+                      selected: picked.contains(k),
+                      child: Stack(children: [
+                        PoolCardView(
+                          card: candidates[k].card,
+                          onTap: () => set_(() {
+                            if (!picked.remove(k)) {
+                              if (picked.length >= 2) picked.clear();
+                              picked.add(k);
+                            }
+                          }),
+                        ),
+                        if (picked.contains(k))
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(9),
+                                  border: Border.all(color: theme.colorScheme.primary, width: 4),
+                                ),
+                                alignment: Alignment.topRight,
+                                padding: const EdgeInsets.all(4),
+                                child: const Icon(Icons.check_circle, color: Colors.white),
                               ),
-                              alignment: Alignment.topRight,
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(Icons.check_circle, color: Colors.white),
                             ),
                           ),
-                        ),
-                    ]),
+                      ]),
+                    ),
                 ]),
               ]),
             ),
@@ -435,8 +438,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
             _inIdentity(widget.pool[i].base))
           i,
     ]);
-    final outside =
-        widget.pool.indexed.where((e) => !_cmdPool.contains(e.$1) && !_inIdentity(e.$2.base)).length;
+    final outside = widget.pool.indexed.where((e) => !_cmdPool.contains(e.$1) && !_inIdentity(e.$2.base)).length;
     final commanders = _commanders;
     final curve = List.filled(7, 0);
     var creatures = 0;
@@ -479,11 +481,10 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
       if (widget.commander && commanders.isEmpty)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(tr(
-              'Escolhe primeiro o comandante: a pool passa a mostrar só as cartas da sua identidade de cor.')),
+          child:
+              Text(tr('Escolhe primeiro o comandante: a pool passa a mostrar só as cartas da sua identidade de cor.')),
         ),
-      if (commanders.isNotEmpty)
-        PoolGrid(target: 96, children: [for (final c in commanders) PoolCardView(card: c)]),
+      if (commanders.isNotEmpty) PoolGrid(target: 96, children: [for (final c in commanders) PoolCardView(card: c)]),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Row(children: [
@@ -532,8 +533,7 @@ class _LimitedBuilderScreenState extends ConsumerState<LimitedBuilderScreen> {
           landNote ??
               tr('Terrenos no deck: {lands} (recomendado: cerca de {recommendedLands}).',
                   {'lands': lands, 'recommendedLands': _recommendedLands}),
-          style:
-              theme.textTheme.bodySmall?.copyWith(color: landNote != null ? theme.colorScheme.error : null),
+          style: theme.textTheme.bodySmall?.copyWith(color: landNote != null ? theme.colorScheme.error : null),
         ),
       ),
       Wrap(alignment: WrapAlignment.center, spacing: 4, children: [
@@ -690,8 +690,7 @@ class LimitedBuildsCard extends ConsumerWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: Text(tr('Deitar fora a pool?')),
-                  content: Text(
-                      tr('{title}: as {n} cartas perdem-se.', {'title': b.title, 'n': b.pool.length})),
+                  content: Text(tr('{title}: as {n} cartas perdem-se.', {'title': b.title, 'n': b.pool.length})),
                   actions: [
                     TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
                     TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Deitar fora'))),

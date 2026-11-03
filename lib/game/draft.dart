@@ -139,6 +139,14 @@ class DraftEngine {
   /// Pack à frente do lugar (null se estiver à espera).
   List<DraftCard>? current(int pos) => queues[pos].isEmpty ? null : queues[pos].first;
 
+  /// O lugar já tirou todas as cartas que lhe cabem e só espera pelos outros
+  /// (cada um acaba com tantas cartas quantas as dos seus boosters).
+  bool doneFor(int pos) =>
+      finished ||
+      (round == packs.length - 1 &&
+          current(pos) == null &&
+          pools[pos].length >= packs.fold(0, (n, r) => n + r[pos].length));
+
   /// Quantas cartas tem de tirar agora (no fim do pack pode ser menos).
   int picksNow(int pos) => min(picks, current(pos)?.length ?? 0);
 
@@ -329,6 +337,7 @@ class DraftHost {
       'finished': engine.finished,
       'picks': engine.picksNow(pos),
       'pick': engine.pools[pos].length + 1,
+      'done': engine.doneFor(pos),
       if (pack != null) 'pack': [for (final c in pack) c.toJson()],
       if (_deadline[pos] != null) 'deadline': _deadline[pos]!.millisecondsSinceEpoch,
     });
@@ -348,8 +357,7 @@ class DraftHost {
       'finished': engine.finished,
       'dir': engine.direction,
       'seats': [
-        for (var p = 0; p < engine.seats; p++)
-          {'waiting': engine.queues[p].length, 'picked': engine.pools[p].length},
+        for (var p = 0; p < engine.seats; p++) {'waiting': engine.queues[p].length, 'picked': engine.pools[p].length},
       ],
     };
     for (final s in config.seats) {
@@ -381,6 +389,9 @@ class DraftClient extends ChangeNotifier {
   int picks = 1;
   int pickNo = 1;
   bool finished = false;
+
+  /// Já escolhi tudo o que me cabe; falta os outros acabarem.
+  bool done = false;
   DateTime? deadline;
   int direction = 1;
   List<({int waiting, int picked})> seats = const [];
@@ -395,6 +406,7 @@ class DraftClient extends ChangeNotifier {
         finished = p['finished'] == true;
         picks = (p['picks'] as num?)?.toInt() ?? 1;
         pickNo = (p['pick'] as num?)?.toInt() ?? 1;
+        done = p['done'] == true;
         pack = p['pack'] == null
             ? null
             : [for (final c in (p['pack'] as List).cast<Map<String, dynamic>>()) DraftCard.fromJson(c)];

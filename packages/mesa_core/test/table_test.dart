@@ -369,7 +369,7 @@ void main() {
     expect(t.state.activeSeat, 1);
     send(1, const Intent(Ev.defeated, {'seat': 1}));
     expect(t.state.activeSeat, 2);
-    expect(t.state.log.last.text, contains('Rui foi derrotado'));
+    expect(t.state.log.last.text, contains('Rui perdeu'));
     // A Eva passa: salta o Zé, que está fora, e vai para a Ana.
     send(2, const Intent(Ev.passTurn, {}));
     expect(t.state.activeSeat, 0);

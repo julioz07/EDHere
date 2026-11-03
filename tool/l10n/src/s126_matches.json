@@ -1,0 +1,22 @@
+[
+  ["=Jogo {g} · {w}–{l}", "Game {g} · {w}–{l}", "Partida {g} · {w}–{l}", "Partita {g} · {w}–{l}"],
+  ["=Voltar à sala", "Back to the room", "Volver a la sala", "Torna alla stanza"],
+  ["=Jogo seguinte", "Next game", "Siguiente partida", "Partita successiva"],
+  ["=Começar a ronda {n}", "Start round {n}", "Empezar la ronda {n}", "Inizia il round {n}"],
+  ["=À espera dos encontros", "Waiting for the matches", "Esperando a los enfrentamientos", "In attesa degli incontri"],
+  ["=Começar encontros (melhor de 3)", "Start matches (best of 3)", "Empezar enfrentamientos (al mejor de 3)", "Inizia gli incontri (al meglio di 3)"],
+  ["=1 contra 1, à melhor de 3; todos jogam com todos", "1 vs 1, best of 3; everyone plays everyone", "1 contra 1, al mejor de 3; todos juegan contra todos", "1 contro 1, al meglio di 3; tutti giocano contro tutti"],
+  ["=Encontros acabados: {v} ganhou", "Matches over: {v} won", "Enfrentamientos terminados: ganó {v}", "Incontri finiti: ha vinto {v}"],
+  ["=Ronda {r} de {n}", "Round {r} of {n}", "Ronda {r} de {n}", "Round {r} di {n}"],
+  ["={a} {wa}–{wb} {b}", "{a} {wa}–{wb} {b}", "{a} {wa}–{wb} {b}", "{a} {wa}–{wb} {b}"],
+  ["=acabou", "finished", "terminado", "finito"],
+  ["=a jogar", "playing", "jugando", "in corso"],
+  ["=Tens folga nesta ronda: conta como vitória.", "You have a bye this round: it counts as a win.", "Descansas esta ronda: cuenta como victoria.", "Riposi in questo round: conta come vittoria."],
+  ["={v} tem folga nesta ronda (conta como vitória).", "{v} has a bye this round (counts as a win).", "{v} descansa esta ronda (cuenta como victoria).", "{v} riposa in questo round (conta come vittoria)."],
+  ["=Classificação", "Standings", "Clasificación", "Classifica"],
+  ["={i}. {v} · {p} · {w}-{l}{d} em encontros", "{i}. {v} · {p} · {w}-{l}{d} in matches", "{i}. {v} · {p} · {w}-{l}{d} en enfrentamientos", "{i}. {v} · {p} · {w}-{l}{d} negli incontri"],
+  ["=1 ponto", "1 point", "1 punto", "1 punto"],
+  ["={n} pontos", "{n} points", "{n} puntos", "{n} punti"],
+  ["={m} · guardado no histórico.", "{m} · saved to history.", "{m} · guardado en el historial.", "{m} · salvato nella cronologia."],
+  ["={m} · {v}", "{m} · {v}", "{m} · {v}", "{m} · {v}"]
+]

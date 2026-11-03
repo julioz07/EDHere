@@ -336,4 +336,104 @@ void main() {
     await client.close();
     await server.close();
   });
+
+  test('Modern a 4: duas mesas 1 contra 1, à melhor de 3, e depois a ronda seguinte', () async {
+    final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0);
+    await server.start();
+    final host = NetworkGame(
+      session: RoomSession.host(server: server, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+    );
+    final clients = <RoomClient>[];
+    final all = [host];
+    for (final name in ['Rui', 'Eva', 'Leo']) {
+      final c = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: name);
+      await c.connect();
+      clients.add(c);
+      all.add(NetworkGame(session: RoomSession.client(client: c, roomName: 'Mesa'), repo: repo));
+    }
+    host.configure(format: 'modern', life: 20);
+    await _until(() => all.every((g) => g.players.length == 4 && g.format == 'modern'), 'lobby');
+    expect(host.oneVsOne, isTrue);
+    var d = const Deck(name: 'M', format: 'modern');
+    for (var i = 0; i < 20; i++) {
+      d = d.add('o-Card$i');
+    }
+    d = d.add('o-Mountain', qty: 40);
+    for (final g in all) {
+      g.selectDeck(d, legal: true, commanderNames: const []);
+    }
+    await _until(() => host.players.values.every((p) => p.deckName != null), 'decks');
+    for (final g in all) {
+      g.setReady(true);
+    }
+    await _until(() => host.allReady, 'prontos');
+
+    host.startMatches();
+    await _until(
+        () => all.every((g) => g.game != null && g.game!.state.players[g.mySeat]?.handCount == 7), 'mãos iniciais');
+    // Cada mesa tem só os dois do encontro, com vida 20.
+    for (final g in all) {
+      expect(g.game!.state.players.length, 2);
+      expect(g.game!.state.players.values.every((p) => p.life == 20), isTrue);
+      final m = g.myMatch!;
+      expect(g.game!.state.players.keys.toSet(), {m.a, m.b});
+    }
+    // O que se faz numa mesa não aparece na outra.
+    final m0 = host.myMatch!;
+    final other = all.firstWhere((g) => !m0.has(g.mySeat));
+    final mate = all.firstWhere((g) => g != host && m0.has(g.mySeat));
+    host.game!.life(m0.other(0), -5);
+    await _until(() => mate.game!.state.players[m0.other(0)]!.life == 15, 'vida na mesa do anfitrião');
+    expect(other.game!.state.players.values.every((p) => p.life == 20), isTrue);
+
+    // Jogo 1: o anfitrião ganha; o seguinte começa quem perdeu.
+    host.game!.gameOver(0);
+    await _until(() => all.every((g) => g.tournament!.matchOf(0, 0)!.games.length == 1), 'resultado do jogo 1');
+    final firstTable = host.myTable;
+    // Sideboard: uma Mountain sai do deck só para este encontro.
+    host.sideboard(host.myDeck!.setQty('o-Mountain', Board.main, 39).add('o-Mountain', board: Board.side));
+    mate.requestNextGame();
+    host.requestNextGame(); // os dois pedem: só começa um jogo
+    await _until(() => host.myTable != firstTable && host.game?.state.players[0]?.handCount == 7, 'jogo 2');
+    expect(host.myTableInfo!.game, 2);
+    expect(host.game!.state.players[0]!.libraryCount, 59 - 7, reason: 'o jogo 2 usa o deck com o sideboard');
+    expect(host.myTableInfo!.first, m0.other(0), reason: 'quem perdeu começa');
+    expect(host.tables.values.where((t) => t.round == 0 && t.a == m0.a).length, 2);
+    host.game!.gameOver(0);
+    await _until(() => all.every((g) => g.tournament!.matchOf(0, 0)!.done), 'encontro 2-0');
+    expect(host.tournament!.roundDone(0), isFalse, reason: 'a outra mesa ainda joga');
+
+    // A outra mesa acaba 2-1 (com o pedido do jogo seguinte pelo meio).
+    final m1 = other.myMatch!;
+    for (final (i, w) in [m1.a, m1.b, m1.a].indexed) {
+      final before = other.myTable;
+      other.game!.gameOver(w);
+      await _until(() => host.tournament!.matchOf(0, m1.a)!.games.length == i + 1, 'jogo da outra mesa');
+      if (!host.tournament!.matchOf(0, m1.a)!.done) {
+        other.requestNextGame();
+        await _until(() => other.myTable != before && other.game != null, 'jogo seguinte da outra mesa');
+      }
+    }
+    expect(host.tournament!.matchOf(0, m1.a)!.winner, m1.a);
+    await _until(() => host.tournament!.roundDone(0), 'ronda 1 acabada');
+
+    host.startNextRound();
+    await _until(() => all.every((g) => g.tournament!.round == 1 && g.game != null && g.myTableInfo?.round == 1),
+        'ronda 2');
+    for (final g in all) {
+      final m = g.myMatch!;
+      expect(g.game!.state.players.keys.toSet(), {m.a, m.b});
+    }
+    expect(host.tournament!.standings().first.points, 3);
+    expect(host.myDeck!.count(Board.main), 60, reason: 'no encontro seguinte o deck volta ao original');
+
+    for (final g in all.reversed) {
+      g.dispose();
+    }
+    for (final c in clients) {
+      await c.close();
+    }
+    await server.close();
+  });
 }

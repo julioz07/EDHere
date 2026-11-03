@@ -19,6 +19,20 @@ List<List<List<DraftCard>>> packs(int rounds, int seats, int size) {
 }
 
 void main() {
+  test('quem já escolheu tudo na última ronda fica à espera dos outros', () {
+    final e = DraftEngine(packs: packs(1, 2, 2))..start();
+    e.pick(0, [e.current(0)!.first.id]);
+    e.pick(1, [e.current(1)!.first.id]);
+    // o lugar 0 tira a última carta; o lugar 1 ainda tem uma por tirar
+    e.pick(0, [e.current(0)!.first.id]);
+    expect(e.doneFor(0), isTrue);
+    expect(e.doneFor(1), isFalse);
+    expect(e.finished, isFalse);
+    e.pick(1, [e.current(1)!.first.id]);
+    expect(e.finished, isTrue);
+    expect(e.doneFor(1), isTrue);
+  });
+
   test('o pack passa para a esquerda na 1.ª ronda e para a direita na 2.ª', () {
     final e = DraftEngine(packs: packs(2, 3, 3))..start();
     final first = e.current(0)!;

@@ -51,7 +51,7 @@ class CardRepository {
     return CardRepository._(db).._localized = localized;
   }
 
-  final Database _db;
+  Database _db;
 
   /// Há cartas numa língua (tabela card_i18n): junta-se às consultas.
   bool _localized = false;
@@ -64,6 +64,14 @@ class CardRepository {
   final Map<String, Card> _cache = {};
 
   void close() => _db.dispose();
+
+  /// Passa a usar a base de [other], que substituiu esta (base nova ou noutra
+  /// língua): quem guardou este objeto (o lobby, a mesa) continua a funcionar.
+  void follow(CardRepository other) {
+    _db = other._db;
+    _localized = other._localized;
+    _cache.clear();
+  }
 
   Map<String, String> get meta => {
         for (final r in _db.select('SELECT key, value FROM meta')) r['key'] as String: r['value'] as String,

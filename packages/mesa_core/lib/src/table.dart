@@ -453,7 +453,7 @@ class Table {
         final pl = s.players[i('seat')]!;
         pl.defeated = p['value'] != false;
         if (!pl.defeated) return mesaTr('{v} voltou ao jogo', {'v': pl.name});
-        final out = mesaTr('{v} foi derrotado', {'v': pl.name});
+        final out = mesaTr('{v} perdeu', {'v': pl.name});
         // Era a vez dele: o turno passa logo a quem se segue (senão ninguém
         // mais podia passar a vez). Com um só vivo, o jogo está decidido.
         if (pl.seat == s.activeSeat && s.players.values.where((x) => !x.defeated).length > 1) {

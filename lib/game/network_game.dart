@@ -15,6 +15,7 @@ import '../net/room_link.dart';
 import '../room/room_session.dart';
 import 'draft.dart';
 import 'game_controller.dart';
+import 'match.dart';
 import 'resume_store.dart';
 import '../l10n/l10n.dart';
 
@@ -32,6 +33,21 @@ abstract final class LobbyEv {
 
   /// Anfitrião: começa um draft com estas regras (os packs vão em privado).
   static const draftStart = 'draft_start';
+
+  /// Anfitrião: formatos 1 contra 1, as rondas do torneio ([MatchPlan]).
+  static const matchStart = 'match_start';
+
+  /// Jogador: quer o próximo jogo do encontro da mesa `tbl`.
+  static const nextGame = 'match_next_game';
+
+  /// Anfitrião: passa à ronda seguinte do torneio.
+  static const nextRound = 'match_next_round';
+}
+
+/// Um jogo de um encontro 1 contra 1: a mesa `tbl` da ronda [round].
+class MatchTable {
+  MatchTable(this.round, this.a, this.b, this.game, this.first);
+  final int round, a, b, game, first;
 }
 
 /// Eventos da camada de sala que não são da mesa.
@@ -46,6 +62,9 @@ const _roomOnly = {
   LobbyEv.ready,
   LobbyEv.newGame,
   LobbyEv.draftStart,
+  LobbyEv.matchStart,
+  LobbyEv.nextGame,
+  LobbyEv.nextRound,
 };
 
 class LobbyPlayer {
@@ -102,9 +121,11 @@ class NetworkGame extends ChangeNotifier {
     db.Deck? resumeDeck,
   }) {
     if (resume != null) myDeck = resumeDeck;
+    _inHistory = true;
     for (final e in session.link.history) {
       _onEvent(e);
     }
+    _inHistory = false;
     _sub = session.link.events.listen((e) {
       _onEvent(e);
       notifyListeners();
@@ -157,6 +178,26 @@ class NetworkGame extends ChangeNotifier {
   bool get inDraft => draft?.seats.any((s) => s.seat == mySeat) ?? false;
   bool get started => game != null;
 
+  /// A repetir o histórico da sala (ao entrar ou voltar): o anfitrião não
+  /// volta a agir sobre pedidos antigos.
+  bool _inHistory = false;
+
+  /// Formatos sem zona de comando jogam-se 1 contra 1, em encontros.
+  bool get oneVsOne => !db.GameFormat.byId(format).hasCommandZone;
+
+  /// Torneio em curso (formatos 1 contra 1) e os jogos de cada mesa.
+  Tournament? tournament;
+  final Map<int, MatchTable> tables = {};
+
+  /// A mesa em que estou sentado agora (null no Commander: há só uma).
+  int? myTable;
+  int _tblSeq = 0;
+
+  MatchTable? get myTableInfo => tables[myTable];
+
+  /// O meu encontro na ronda atual (null com folga ou sem torneio).
+  MatchResult? get myMatch => tournament?.matchOf(tournament!.round, mySeat);
+
   RoomLink get link => session.link;
   int get mySeat => link.mySeat;
   bool get isHost => session.isHost;
@@ -169,8 +210,7 @@ class NetworkGame extends ChangeNotifier {
     int seat() => (p['seat'] as num).toInt();
     switch (e.type) {
       case MsgType.join:
-        players[seat()] =
-            LobbyPlayer(seat(), p['name'] as String? ?? tr('Jogador'), isHost: p['host'] == true);
+        players[seat()] = LobbyPlayer(seat(), p['name'] as String? ?? tr('Jogador'), isHost: p['host'] == true);
       case MsgType.leave:
         players.remove(seat());
       case MsgType.playerStatus:
@@ -201,18 +241,37 @@ class NetworkGame extends ChangeNotifier {
         }
         // Guarda as versões que o outro jogador usa, para as mostrar.
         prints?.remember([
-          for (final j in (p['prints'] as List? ?? const []).cast<Map<String, dynamic>>())
-            db.PrintInfo.fromJson(j),
+          for (final j in (p['prints'] as List? ?? const []).cast<Map<String, dynamic>>()) db.PrintInfo.fromJson(j),
         ]);
       case LobbyEv.ready:
         players[seat()]?.ready = p['value'] == true;
       case LobbyEv.draftStart:
+        // Um draft novo começa outra partida: os encontros anteriores ficam para trás.
+        tournament = null;
+        tables.clear();
+        _counted.clear();
+        myTable = null;
+        game?.dispose();
+        game = null;
         draft = DraftConfig.fromJson(p);
         draftClient?.dispose();
         // O lobby mostra o estado do draft (terminado ou não).
-        draftClient =
-            inDraft ? (DraftClient(link: link, config: draft!)..addListener(notifyListeners)) : null;
+        draftClient = inDraft ? (DraftClient(link: link, config: draft!)..addListener(notifyListeners)) : null;
+      case LobbyEv.matchStart:
+        tournament = Tournament(MatchPlan.fromJson(p));
+        tables.clear();
+        _counted.clear();
+        myTable = null;
+      case LobbyEv.nextRound:
+        final t = tournament;
+        if (t != null && t.round < t.roundCount - 1) t.round++;
+      case LobbyEv.nextGame:
+        if (isHost && !_inHistory) _startNextGame((p['tbl'] as num).toInt());
       case LobbyEv.newGame:
+        tournament = null;
+        tables.clear();
+        _counted.clear();
+        myTable = null;
         game?.dispose();
         game = null;
         _pending.clear();
@@ -224,6 +283,26 @@ class NetworkGame extends ChangeNotifier {
     }
 
     if (_roomOnly.contains(e.type)) return;
+    // Encontros 1 contra 1: cada mesa tem os seus eventos; só aplico os da minha.
+    final tbl = (p['tbl'] as num?)?.toInt();
+    if (tbl != null) {
+      // Cada entrada na mesa diz quem lá se senta: a do adversário pode chegar antes da minha.
+      final seats = (p['seats'] as List? ?? const []).cast<num>().map((n) => n.toInt());
+      if (e.type == Ev.joinTable && seats.contains(mySeat) && tbl != myTable) {
+        // Encontro novo (outra ronda): o sideboard do anterior desfaz-se.
+        if ((p['round'] as num?)?.toInt() != tables[myTable]?.round) _restoreDeck();
+        myTable = tbl;
+        game?.dispose();
+        game = null;
+        _pending.clear();
+      }
+      if (e.type == Ev.startGame) {
+        int i(String k) => (p[k] as num).toInt();
+        tables[tbl] = MatchTable(i('round'), i('a'), i('b'), i('game'), i('first'));
+      }
+      if (e.type == Ev.gameOver) _recordGame(tbl, (p['winner'] as num?)?.toInt());
+      if (tbl != myTable) return;
+    }
     if (e.type == Ev.startGame && game == null) _createGame();
     final g = game;
     if (g == null) {
@@ -245,6 +324,15 @@ class NetworkGame extends ChangeNotifier {
   }
 
   /// Guarda o necessário para voltar a este jogo se a app fechar.
+  /// O fim de um jogo conta para o encontro (uma vez por mesa).
+  final Set<int> _counted = {};
+  void _recordGame(int tbl, int? winner) {
+    final info = tables[tbl];
+    final m = info == null ? null : tournament?.matchOf(info.round, info.a);
+    if (m == null || m.done || !_counted.add(tbl)) return;
+    m.games.add(winner);
+  }
+
   void _saveResume(Envelope e) {
     final store = resumeStore;
     final g = game;
@@ -316,7 +404,7 @@ class NetworkGame extends ChangeNotifier {
       isNetwork: true,
       decks: {if (myDeck != null) mySeat: myDeck!},
     );
-    g.networkSend = (_, intent) => link.submit(intent.type, intent.payload);
+    g.networkSend = (_, intent) => _submitGame(intent.type, intent.payload);
     final ps = prints;
     if (ps != null) {
       g
@@ -336,13 +424,17 @@ class NetworkGame extends ChangeNotifier {
     // Quando o jogo começa, cada um baralha o seu deck; quando o meu deck
     // está carregado, compro a mão inicial.
     if (e.type == Ev.startGame && players.containsKey(mySeat) && myDeck != null) {
-      link.submit(Ev.deckLoaded, g.deckIntent(mySeat, myDeck!).payload);
+      _submitGame(Ev.deckLoaded, g.deckIntent(mySeat, myDeck!).payload);
     }
     if (e.type == Ev.deckLoaded && e.actor == mySeat) {
       final n = g.state.players[mySeat]?.libraryCount ?? 0;
-      link.submit(Ev.draw, g.table.draw(mySeat, n < 7 ? n : 7).payload);
+      _submitGame(Ev.draw, g.table.draw(mySeat, n < 7 ? n : 7).payload);
     }
   }
+
+  /// Os eventos de mesa levam a mesa a que pertencem (nos encontros 1 contra 1).
+  void _submitGame(String type, Map<String, dynamic> payload) =>
+      link.submit(type, {...payload, if (myTable != null) 'tbl': myTable});
 
   // ---------------------------------------------------------------------
   // Ações do lobby
@@ -353,8 +445,7 @@ class NetworkGame extends ChangeNotifier {
     link.submit(LobbyEv.config, {'format': format, 'life': life, 'seats': seats ?? maxSeats});
   }
 
-  void selectDeck(db.Deck deck,
-      {required bool legal, required List<String> commanderNames, int? gameChangers}) {
+  void selectDeck(db.Deck deck, {required bool legal, required List<String> commanderNames, int? gameChangers}) {
     myDeck = deck;
     // As versões e imagens do deck, para os outros saberem o que lhes falta.
     final usedPrints = <String, db.PrintInfo>{};
@@ -477,6 +568,96 @@ class NetworkGame extends ChangeNotifier {
     link.submit(LobbyEv.draftStart, config.toJson());
   }
 
+  // ---------------------------------------------------------------------
+  // Encontros 1 contra 1
+  // ---------------------------------------------------------------------
+
+  /// Anfitrião: quem está pronto entra num torneio todos-contra-todos, cada
+  /// encontro à melhor de 3. Com 2 pessoas é um só encontro.
+  void startMatches() {
+    if (!isHost || tournament != null) return;
+    final seated = [
+      for (final p in players.values)
+        if (p.connected && p.ready) p.seat
+    ];
+    if (seated.length < 2) return;
+    final plan = MatchPlan.roundRobin(seated);
+    link.submit(LobbyEv.matchStart, plan.toJson());
+    _startRound(plan, 0);
+  }
+
+  void _startRound(MatchPlan plan, int round) {
+    final coin = DateTime.now().microsecondsSinceEpoch;
+    var i = 0;
+    for (final (a, b) in plan.rounds[round]) {
+      _startTable(round, a, b, 1, (coin >> i++).isEven ? a : b);
+    }
+  }
+
+  void _startTable(int round, int a, int b, int gameNo, int first) {
+    final tbl = _tblSeq = [_tblSeq, ...tables.keys].fold(0, (m, k) => k > m ? k : m) + 1;
+    for (final s in [a, b]) {
+      link.submit(Ev.joinTable, {
+        'seat': s,
+        'name': players[s]?.name ?? '?',
+        'life': startingLife,
+        'tbl': tbl,
+        'seats': [a, b],
+        'round': round,
+      });
+    }
+    link.submit(Ev.startGame, {'first': first, 'tbl': tbl, 'round': round, 'a': a, 'b': b, 'game': gameNo});
+  }
+
+  /// Anfitrião: o jogo seguinte do encontro da mesa [tbl]. Começa quem
+  /// perdeu o anterior (num empate, quem não começou).
+  void _startNextGame(int tbl) {
+    final info = tables[tbl];
+    final m = info == null ? null : tournament?.matchOf(info.round, info.a);
+    if (info == null || m == null || m.done || m.games.length < info.game) return;
+    // Já começou (os dois pediram).
+    if (tables.values.any((t) => t.round == info.round && t.a == info.a && t.game > info.game)) return;
+    final w = m.games.last;
+    final first = w == null ? (info.first == info.a ? info.b : info.a) : m.other(w);
+    _startTable(info.round, info.a, info.b, info.game + 1, first);
+  }
+
+  /// Jogador: acabou o jogo da minha mesa, quero o seguinte do encontro.
+  void requestNextGame() {
+    final tbl = myTable;
+    if (tbl != null) link.submit(LobbyEv.nextGame, {'tbl': tbl});
+  }
+
+  /// Anfitrião: todos os encontros da ronda acabaram; começa a seguinte.
+  void startNextRound() {
+    final t = tournament;
+    if (!isHost || t == null || !t.roundDone(t.round) || t.round >= t.roundCount - 1) return;
+    link.submit(LobbyEv.nextRound, {});
+    _startRound(t.plan, t.round + 1);
+  }
+
+  /// O deck como estava antes do sideboard deste encontro.
+  db.Deck? _deckBeforeSide;
+
+  /// Entre jogos do encontro: o deck com as trocas do sideboard (só para este encontro).
+  void sideboard(db.Deck deck) {
+    _deckBeforeSide ??= myDeck;
+    myDeck = deck;
+  }
+
+  void _restoreDeck() {
+    if (_deckBeforeSide case final d?) myDeck = d;
+    _deckBeforeSide = null;
+  }
+
+  /// O meu encontro acabou: deixo a mesa e volto à sala (onde está a classificação).
+  void backToRoom() {
+    _restoreDeck();
+    game?.dispose();
+    game = null;
+    notifyListeners();
+  }
+
   /// Anfitrião: volta todos ao lobby para outra partida.
   void newGame() {
     if (isHost) link.submit(LobbyEv.newGame, {});
@@ -498,8 +679,7 @@ class NetworkGame extends ChangeNotifier {
     for (final p in seated) {
       host.submit(Ev.joinTable, {'seat': p.seat, 'name': p.name, 'life': startingLife});
     }
-    final first =
-        randomFirst ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat : seated.first.seat;
+    final first = randomFirst ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat : seated.first.seat;
     host.submit(Ev.startGame, {'first': first});
   }
 

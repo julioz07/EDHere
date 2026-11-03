@@ -21,6 +21,29 @@ Future<List<String>> localIPv4Addresses({bool preferHotspot = false}) async {
 
 bool _hotspotFound = false;
 
+/// Este dispositivo tem rede local? Joga-se por Wi-Fi (ou no hotspot de
+/// alguém): sem IP de Wi-Fi e sem hotspot próprio, o telemóvel está sem rede.
+/// Não se olha para as outras interfaces: os dados móveis não chegam ao
+/// anfitrião e há telemóveis com interfaces internas sempre ligadas.
+Future<bool> hasLocalNetwork() async {
+  try {
+    final ip = await _wifiIp();
+    if (ip != null && ip.isNotEmpty && ip != '0.0.0.0') return true;
+    final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false);
+    return interfaces.any((i) {
+      final n = i.name.toLowerCase();
+      return n.startsWith('swlan') || n.contains('softap') || n.startsWith('ap');
+    });
+  } catch (_) {
+    return true; // na dúvida, não acusa o telemóvel
+  }
+}
+
+bool _mobileData(String iface) {
+  final n = iface.toLowerCase();
+  return n.startsWith('rmnet') || n.startsWith('ccmni') || n.startsWith('pdp');
+}
+
 Future<List<String>> _rankedAddresses(bool preferHotspot) async {
   final interfaces = await NetworkInterface.list(
     type: InternetAddressType.IPv4,
@@ -44,10 +67,7 @@ Future<List<String>> _rankedAddresses(bool preferHotspot) async {
     final (iface, ip) = e;
     if (preferHotspot && looksLikeHotspot(iface, ip)) return 0;
     // Mobile data (rmnet, ccmni) não serve na rede local.
-    final n = iface.toLowerCase();
-    if (n.startsWith('rmnet') || n.startsWith('ccmni') || n.startsWith('pdp')) {
-      return 9;
-    }
+    if (_mobileData(iface)) return 9;
     if (ip.startsWith('192.168.')) return 1;
     if (ip.startsWith('10.')) return 2;
     if (RegExp(r'^172\.(1[6-9]|2\d|3[01])\.').hasMatch(ip)) return 3;
