@@ -8,6 +8,7 @@ import 'package:edhoff/data/providers.dart';
 import 'package:edhoff/game/game_controller.dart';
 import 'package:edhoff/ui/table/table_screen.dart';
 import 'package:edhoff/ui/table/table_sheets.dart';
+import 'package:edhoff/ui/table/table_tour.dart';
 import 'package:flutter/material.dart' hide Intent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,11 +66,13 @@ void main() {
     return d.add('o-Mountain', qty: 30);
   }
 
-  Future<GameController> pump(WidgetTester tester, Size size) async {
+  Future<GameController> pump(WidgetTester tester, Size size,
+      {bool tour = false, void Function(GameController ctrl)? before}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({});
+    // a visita à mesa tem o seu teste; nos outros já foi vista
+    SharedPreferences.setMockInitialValues({'table_tour_done': !tour});
     final prefs = await SharedPreferences.getInstance();
     final ctrl = GameController.playtest(
       repo: repo,
@@ -79,7 +82,11 @@ void main() {
           SeatSetup(seat: i, name: n, deck: deck(n)),
       ],
     );
-    ctrl.openingDone.addAll([0, 1, 2, 3]);
+    if (before != null) {
+      before(ctrl);
+    } else {
+      ctrl.openingDone.addAll([0, 1, 2, 3]);
+    }
     await tester.pumpWidget(ProviderScope(
       overrides: [
         prefsProvider.overrideWithValue(prefs),
@@ -91,7 +98,12 @@ void main() {
     return ctrl;
   }
 
-  for (final (name, size) in const [('Small Phone', Size(360, 640)), ('Pixel Fold aberto', Size(944, 978))]) {
+  for (final (name, size) in const [
+    ('Small Phone', Size(360, 640)),
+    ('Pixel Fold aberto', Size(944, 978)),
+    ('Pixel Tablet deitado', Size(1280, 800)),
+    ('Pixel Tablet ao alto', Size(800, 1280)),
+  ]) {
     testWidgets('4 jogadores no $name: cabe tudo e os avisos aparecem', (tester) async {
       final ctrl = await pump(tester, size);
       expect(tester.takeException(), isNull);
@@ -113,6 +125,44 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('no tablet: um só campo, jogadores grandes e o registo ao lado', (tester) async {
+    await pump(tester, const Size(1280, 800));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TableBattlefield), findsOneWidget);
+    expect(find.bySemanticsLabel('Maria: 40 de vida'), findsOneWidget);
+    expect(find.text('Registo'), findsOneWidget);
+  });
+
+  testWidgets('ao voltar a um jogo, quem já ficou com a mão não volta a ver o mulligan', (tester) async {
+    await pump(tester, const Size(1280, 800), before: (ctrl) {
+      // o anfitrião volta ao jogo: o "fiquei" está no estado, não no controlador
+      for (final seat in [0, 1, 2, 3]) {
+        ctrl.sendAs(seat, Intent(Ev.keepHand, {'seat': seat}));
+      }
+    });
+    await tester.pump();
+    expect(find.textContaining('MULLIGAN'), findsNothing);
+  });
+
+  testWidgets('a visita à mesa no primeiro jogo cabe num telemóvel de 360 e só aparece uma vez', (tester) async {
+    await pump(tester, const Size(360, 640), tour: true);
+    await tester.pump();
+    expect(find.text('Os jogadores'), findsOneWidget);
+    for (var i = 0; i < 4; i++) {
+      // o balão fica sempre dentro do ecrã
+      expect(tester.getRect(find.byType(TableTour)).contains(tester.getCenter(find.text('Seguinte'))), isTrue);
+      await tester.tap(find.text('Seguinte'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    }
+    expect(find.text('Passar o turno'), findsOneWidget);
+    await tester.tap(find.text('Começar a jogar'));
+    await tester.pump();
+    expect(find.text('Os jogadores'), findsNothing);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('table_tour_done'), isTrue);
+  });
 
   testWidgets('a folha do jogador cabe num telemóvel de 360 (os −5 e +5 ficavam cortados)', (tester) async {
     final ctrl = await pump(tester, const Size(360, 640));

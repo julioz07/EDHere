@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings/backup_actions.dart';
 import '../../data/providers.dart';
 import '../cards/cards_tab.dart';
-import '../widgets/card_view.dart';
+import '../widgets/card_art.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'deck_editor_screen.dart';
@@ -126,7 +126,7 @@ class DecksTab extends ConsumerWidget {
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     // no tablet, três colunas: duas deixavam dois terços do ecrã vazios
                     maxCrossAxisExtent: isWide(context) ? 420 : 10000,
-                    mainAxisExtent: 128,
+                    mainAxisExtent: 132,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
                   ),
@@ -134,84 +134,57 @@ class DecksTab extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final d = decks[i];
                     final format = GameFormat.byId(d.format);
-                    final cmdIds = d.inBoard(Board.command).map((e) => e.oracleId).toList();
-                    final cmds = repo?.getMany(cmdIds).values.toList() ?? const [];
-                    // sem comandante (Modern, limitado…): a capa é a criatura mais cara, ou
-                    // o feitiço mais caro; as cores vêm das cartas do deck
-                    final mainCards = cmds.isNotEmpty
-                        ? const <Card>[]
-                        : (repo?.getMany(d.inBoard(Board.main).map((e) => e.oracleId).toList()).values ??
-                                const <Card>[])
-                            .where((c) => !c.isLand)
-                            .toList();
-                    Card? best(bool Function(Card) ok) => mainCards
-                        .where(ok)
-                        .fold<Card?>(null, (b, c) => b == null || c.mv > b.mv ? c : b);
-                    final cover = cmds.isNotEmpty
-                        ? cmds.first
-                        : best((c) => c.frontType.contains('Creature')) ?? best((_) => true);
-                    final identity = (cmds.isNotEmpty ? cmds : mainCards)
-                        .fold(0, (m, c) => m | (cmds.isNotEmpty ? c.identityMask : c.colorMask));
+                    final (:cover, :commanders, :identity) = deckCover(d, repo, ref.read(printsProvider));
+                    const white = Colors.white;
                     return m.Card(
                       clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => DeckEditorScreen(deckId: d.id!),
-                        )),
-                        child: Row(children: [
-                          // o comandante em destaque, num painel no tom das cores do deck
-                          // (a imagem não se corta: regras do Scryfall)
-                          Container(
-                            width: 100,
-                            color: identityTint(identity).withOpacity(0.22),
-                            alignment: Alignment.center,
-                            child: SizedBox(
-                              width: 72,
-                              child: cover == null
-                                  ? AspectRatio(
-                                      aspectRatio: cardAspect,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.primaryContainer,
-                                          borderRadius: BorderRadius.circular(6),
+                      margin: EdgeInsets.zero,
+                      child: ArtBanner.card(
+                        cover,
+                        identity: identity,
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: InkWell(
+                            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                              builder: (_) => DeckEditorScreen(deckId: d.id!),
+                            )),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 8, 14),
+                              child: Row(children: [
+                                Expanded(
+                                  child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(d.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: theme.textTheme.titleLarge
+                                                ?.copyWith(fontWeight: FontWeight.w800, color: white, height: 1.15)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          tr('{v} · {v2} cartas{v3}', {
+                                            'v': format.label,
+                                            'v2': format.hasCommandZone ? d.playableCount : d.count(Board.main),
+                                            'v3': commanders.isEmpty
+                                                ? ''
+                                                : ' · ${commanders.map((c) => c.displayFrontName).join(' + ')}'
+                                          }),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
                                         ),
-                                        child: Icon(Icons.style, color: theme.colorScheme.primary),
-                                      ),
-                                    )
-                                  : CardImage(ref.read(printsProvider).resolve(cover,
-                                      printId: d.entries.firstWhere((e) => e.oracleId == cover.oracleId).printId)),
+                                        if (identity != 0) ...[
+                                          const SizedBox(height: 6),
+                                          ColorIdentity(identity),
+                                        ],
+                                      ]),
+                                ),
+                                const Icon(Icons.chevron_right, color: Colors.white70),
+                              ]),
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                Text(d.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  tr('{v} · {v2} cartas{v3}', {
-                                    'v': format.label,
-                                    'v2': format.hasCommandZone ? d.playableCount : d.count(Board.main),
-                                    'v3': cmds.isEmpty ? '' : ' · ${cmds.map((c) => c.displayFrontName).join(' + ')}'
-                                  }),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                                if (identity != 0) ...[
-                                  const SizedBox(height: 4),
-                                  ColorIdentity(identity),
-                                ],
-                              ]),
-                          ),
-                          const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.chevron_right)),
-                        ]),
+                        ),
                       ),
                     );
                   },
@@ -266,8 +239,8 @@ class _DeckSettingsDialogState extends State<DeckSettingsDialog> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Cancelar'))),
         TextButton(
-          onPressed: () => Navigator.pop(
-              context, (_name.text.trim().isEmpty ? tr('Deck sem nome') : _name.text.trim(), _format)),
+          onPressed: () =>
+              Navigator.pop(context, (_name.text.trim().isEmpty ? tr('Deck sem nome') : _name.text.trim(), _format)),
           child: Text(tr('Guardar')),
         ),
       ],

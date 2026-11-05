@@ -148,6 +148,8 @@ class RoomClient implements RoomLink {
       try {
         final socket = await Socket.connect(host, port, timeout: connectTimeout);
         socket.setOption(SocketOption.tcpNoDelay, true);
+        // como no anfitrião: um erro de escrita chega pelo `done`; a queda trata-se na leitura
+        socket.done.ignore();
         if (await _handshakeWith(socket)) {
           _connectedHost = host;
           return true;

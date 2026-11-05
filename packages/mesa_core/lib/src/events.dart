@@ -45,6 +45,10 @@ abstract final class Ev {
   static const mulligan = 'mulligan';
   static const bottom = 'bottom';
 
+  /// Fiquei com a mão inicial (os outros veem quem ainda está a decidir).
+  /// Versões antigas ignoram-no.
+  static const keepHand = 'keep_hand';
+
   // Mesa
   static const highlight = 'highlight';
   static const arrow = 'target_arrow';

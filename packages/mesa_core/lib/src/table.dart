@@ -134,6 +134,11 @@ class Table {
 
   int? get lastUndoableSeq => _history.isEmpty ? null : _history.last.seq;
 
+  /// O que [undo] desfaz, como aparece no registo (para o botão o dizer).
+  /// Null quando o passo não escreve no registo (mudar de fase…): o registo
+  /// mostraria a ação anterior, que não é a que se desfaz.
+  String? get undoText => _history.isEmpty ? null : _history.last.text;
+
   bool _undo(int seq, int actor, int target) {
     if (_history.isEmpty) return false;
     final last = _history.last;
@@ -500,7 +505,15 @@ class Table {
           z.hand.addAll(z.library.take(take));
           z.library.removeRange(0, take);
         }
+        pl.mulligans++;
         return mesaTr('{v} fez mulligan', {'v': pl.name});
+
+      case Ev.keepHand:
+        final pl = s.players[i('seat')]!;
+        pl.kept = true;
+        return pl.handCount == 1
+            ? mesaTr('{v} ficou com a mão (1 carta)', {'v': pl.name})
+            : mesaTr('{v} ficou com a mão ({n} cartas)', {'v': pl.name, 'n': pl.handCount});
 
       case Ev.bottom:
         final seat = i('seat');

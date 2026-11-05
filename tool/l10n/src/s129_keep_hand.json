@@ -1,0 +1,9 @@
+[
+  ["={v} ainda está a decidir a mão inicial.", "{v} is still deciding on their opening hand.", "{v} todavía está decidiendo su mano inicial.", "{v} sta ancora decidendo la mano iniziale."],
+  ["=Ainda a decidir a mão inicial: {v}.", "Still deciding on their opening hand: {v}.", "Todavía decidiendo la mano inicial: {v}.", "Stanno ancora decidendo la mano iniziale: {v}."],
+  ["=ficou com {n}", "kept {n}", "se quedó con {n}", "ha tenuto {n}"],
+  ["=mulligan {n}", "mulligan {n}", "mulligan {n}", "mulligan {n}"],
+  ["=a decidir", "deciding", "decidiendo", "sta decidendo"],
+  ["={v} ficou com a mão (1 carta)", "{v} kept their hand (1 card)", "{v} se quedó con la mano (1 carta)", "{v} ha tenuto la mano (1 carta)"],
+  ["={v} ficou com a mão ({n} cartas)", "{v} kept their hand ({n} cards)", "{v} se quedó con la mano ({n} cartas)", "{v} ha tenuto la mano ({n} carte)"]
+]

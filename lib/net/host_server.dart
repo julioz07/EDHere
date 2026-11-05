@@ -298,6 +298,9 @@ class HostServer implements RoomLink {
 
   void _onConnection(Socket socket) {
     socket.setOption(SocketOption.tcpNoDelay, true);
+    // Escrever num socket que o outro lado acabou de fechar falha mais tarde,
+    // no `done`; a queda já é tratada no onDone/onError da leitura.
+    socket.done.ignore();
     final peer = _Peer(socket);
     _pending.add(peer);
     peer.subscription = socket.cast<List<int>>().transform(const FrameDecoder()).listen(

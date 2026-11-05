@@ -1,4 +1,4 @@
-import 'package:card_db/card_db.dart' show GameFormat;
+import 'package:card_db/card_db.dart' show Deck, GameFormat;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,9 +13,12 @@ import 'widgets/responsive.dart';
 import '../l10n/l10n.dart';
 
 class CreateRoomScreen extends StatefulWidget {
-  const CreateRoomScreen({super.key, required this.playerName});
+  const CreateRoomScreen({super.key, required this.playerName, this.deck});
 
   final String playerName;
+
+  /// Vindo de um deck: a sala fica no formato dele e o deck já escolhido.
+  final Deck? deck;
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -25,7 +28,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   late final _roomName = TextEditingController(text: tr('Mesa de {playerName}', {'playerName': widget.playerName}));
   final _pin = TextEditingController();
   int _seats = 4;
-  String _format = 'commander';
+  late String _format = GameFormat.all.any((f) => f.id == widget.deck?.format) ? widget.deck!.format : 'commander';
   bool _useHotspot = false;
   bool _busy = false;
   String? _error;
@@ -125,6 +128,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           session: session,
           format: _format,
           life: GameFormat.byId(_format).startingLife,
+          deck: widget.deck,
         ),
       ));
     } catch (e) {
@@ -160,11 +164,15 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _format,
-                decoration: InputDecoration(labelText: tr('Formato')),
+                decoration: InputDecoration(
+                  labelText: tr('Formato'),
+                  // vindo de um deck, a sala é do formato dele (senão o deck não servia)
+                  helperText: widget.deck == null ? null : tr('O formato do deck {v}', {'v': widget.deck!.name}),
+                ),
                 items: [
                   for (final f in GameFormat.all) DropdownMenuItem(value: f.id, child: Text(f.label)),
                 ],
-                onChanged: _busy ? null : (v) => setState(() => _format = v ?? _format),
+                onChanged: _busy || widget.deck != null ? null : (v) => setState(() => _format = v ?? _format),
               ),
               const SizedBox(height: 20),
               Text(tr('Lugares: {seats}', {'seats': _seats}), style: theme.textTheme.titleSmall),

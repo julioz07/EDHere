@@ -165,6 +165,8 @@ class PlayerState {
     this.handCount = 0,
     this.libraryCount = 0,
     this.defeated = false,
+    this.mulligans = 0,
+    this.kept = false,
   })  : commanderDamage = commanderDamage ?? {},
         commanderCasts = commanderCasts ?? {},
         counters = counters ?? {};
@@ -183,6 +185,10 @@ class PlayerState {
   int libraryCount;
   bool defeated;
 
+  /// Mão inicial: quantos mulligans fez e se já ficou com ela.
+  int mulligans;
+  bool kept;
+
   int commanderTax(int commanderId) => 2 * (commanderCasts[commanderId] ?? 0);
 
   PlayerState clone() => PlayerState(
@@ -195,6 +201,8 @@ class PlayerState {
         handCount: handCount,
         libraryCount: libraryCount,
         defeated: defeated,
+        mulligans: mulligans,
+        kept: kept,
       );
 
   Map<String, dynamic> toJson() => {
@@ -207,6 +215,8 @@ class PlayerState {
         'hc': handCount,
         'lc': libraryCount,
         if (defeated) 'd': 1,
+        if (mulligans > 0) 'mu': mulligans,
+        if (kept) 'k': 1,
       };
 
   static PlayerState fromJson(Map<String, dynamic> j) => PlayerState(
@@ -219,6 +229,8 @@ class PlayerState {
         handCount: j['hc'] as int,
         libraryCount: j['lc'] as int,
         defeated: j['d'] == 1,
+        mulligans: (j['mu'] as num?)?.toInt() ?? 0,
+        kept: j['k'] == 1,
       );
 }
 

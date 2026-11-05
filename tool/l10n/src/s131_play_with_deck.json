@@ -1,0 +1,8 @@
+[
+  ["=Jogar com este deck", "Play with this deck", "Jugar con este mazo", "Gioca con questo mazzo"],
+  ["=Jogar com {v}", "Play with {v}", "Jugar con {v}", "Gioca con {v}"],
+  ["=Jogar o deck sozinho, sem adversário", "Play the deck on your own, with no opponent", "Juega el mazo solo, sin rival", "Gioca il mazzo da solo, senza avversario"],
+  ["=O formato do deck {v}", "The format of the deck {v}", "El formato del mazo {v}", "Il formato del mazzo {v}"],
+  ["=Esta sala é de {v} e o deck {deck} é de {v2}: escolhe um deck de {v}.", "This room is {v} and the deck {deck} is {v2}: choose a {v} deck.", "Esta sala es de {v} y el mazo {deck} es de {v2}: elige un mazo de {v}.", "Questa stanza è di {v} e il mazzo {deck} è di {v2}: scegli un mazzo di {v}."],
+  ["={v} contra o bot, com as regras completas, sem internet", "{v} against the bot, with the full rules, no internet needed", "{v} contra el bot, con las reglas completas, sin internet", "{v} contro il bot, con le regole complete, senza internet"]
+]

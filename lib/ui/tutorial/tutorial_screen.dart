@@ -119,8 +119,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(tr('Faltam cartas na base')),
-          content: Text(tr('Atualiza a base de cartas em Definições → Dados. Em falta: {v}.',
-              {'v': r.missing.join(', ')})),
+          content:
+              Text(tr('Atualiza a base de cartas em Definições → Dados. Em falta: {v}.', {'v': r.missing.join(', ')})),
           actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
         ),
       );
@@ -191,26 +191,23 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             icon: const Icon(Icons.emoji_events, size: 48, color: GameColors.gold),
             title: Text(tr('Tutorial concluído!')),
             content: SingleChildScrollView(
-              child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(tr('Aprendeste:')),
-                    const SizedBox(height: 6),
-                    for (final c in widget.chapters)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Icon(Icons.check_circle, size: 18, color: Colors.green),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(c.title, style: theme.textTheme.bodyMedium)),
-                        ]),
-                      ),
-                    const SizedBox(height: 8),
-                    Text(
-                        tr('Próximo passo: monta (ou importa) o teu deck e cria uma sala com os amigos. O glossário está sempre no ícone do livro.'),
-                        style: theme.textTheme.bodySmall),
-                  ]),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(tr('Aprendeste:')),
+                const SizedBox(height: 6),
+                for (final c in widget.chapters)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Icon(Icons.check_circle, size: 18, color: Colors.green),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(c.title, style: theme.textTheme.bodyMedium)),
+                    ]),
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                    tr('Próximo passo: monta (ou importa) o teu deck e cria uma sala com os amigos. O glossário está sempre no ícone do livro.'),
+                    style: theme.textTheme.bodySmall),
+              ]),
             ),
             actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Bons jogos!')))],
           );
@@ -242,6 +239,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         title: chapter.title,
         banner: CoachPanel(runner: r),
         confirmLeave: _confirmLeave,
+        tour: false,
       );
     }
     final theme = Theme.of(context);
@@ -292,8 +290,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                   _finish();
                 }
               },
-              icon: Icon(
-                  !last ? Icons.arrow_forward : (chapter.hasGame ? Icons.play_arrow_rounded : Icons.check)),
+              icon: Icon(!last ? Icons.arrow_forward : (chapter.hasGame ? Icons.play_arrow_rounded : Icons.check)),
               label: Text(!last ? tr('Seguinte') : (chapter.hasGame ? tr('Jogar') : tr('Concluir'))),
             ),
           ]),
@@ -345,8 +342,7 @@ class _LessonPage extends ConsumerWidget {
                     if (tc.caption != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: RichLesson(tc.caption!,
-                            textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
+                        child: RichLesson(tc.caption!, textAlign: TextAlign.center, style: theme.textTheme.bodySmall),
                       ),
                   ]),
                 ),
@@ -413,16 +409,15 @@ class _CoachPanelState extends State<CoachPanel> {
                           r.finished
                               ? tr('Capítulo concluído')
                               : tr('Passo {v} de {total}', {'v': r.step + 1, 'total': total}),
-                          style: theme.textTheme.labelLarge
-                              ?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                          style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer),
                         ),
                       ),
                       if (inlineNext && showNext) nextButton(),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: tr('Glossário'),
-                        onPressed: () => Navigator.of(context)
-                            .push(MaterialPageRoute<void>(builder: (_) => const GlossaryScreen())),
+                        onPressed: () =>
+                            Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const GlossaryScreen())),
                         icon: const Icon(Icons.menu_book_outlined, size: 20),
                       ),
                       IconButton(
@@ -445,9 +440,7 @@ class _CoachPanelState extends State<CoachPanel> {
                                   padding: const EdgeInsets.only(bottom: 4, right: 8),
                                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                     Icon(
-                                      i == r.narrated.length - 1
-                                          ? Icons.hourglass_top_rounded
-                                          : Icons.check_rounded,
+                                      i == r.narrated.length - 1 ? Icons.hourglass_top_rounded : Icons.check_rounded,
                                       size: 20,
                                       color: i == r.narrated.length - 1
                                           ? theme.colorScheme.primary
@@ -457,8 +450,7 @@ class _CoachPanelState extends State<CoachPanel> {
                                     Expanded(
                                       child: RichLesson(line,
                                           style: i == r.narrated.length - 1
-                                              ? theme.textTheme.bodyMedium
-                                                  ?.copyWith(fontWeight: FontWeight.w600)
+                                              ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)
                                               : theme.textTheme.bodyMedium
                                                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                                     ),
@@ -485,8 +477,8 @@ class _CoachPanelState extends State<CoachPanel> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: RichLesson(r.hint!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.w600)),
                             ),
                           ]),
                         ),

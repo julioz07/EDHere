@@ -42,7 +42,7 @@ class ImagePack {
 }
 
 /// Tamanho médio medido no Scryfall (outubro de 2026).
-const Map<String, int> avgImageBytes = {'small': 15 * 1024, 'normal': 108 * 1024};
+const Map<String, int> avgImageBytes = {'small': 15 * 1024, 'normal': 108 * 1024, 'art': 60 * 1024};
 
 class PackStatus {
   const PackStatus(this.total, this.missing);
@@ -68,7 +68,7 @@ class ImageService extends ChangeNotifier {
   }
 
   final AppPaths paths;
-  final Map<String, Set<String>> _have = {'small': {}, 'normal': {}};
+  final Map<String, Set<String>> _have = {'small': {}, 'normal': {}, 'art': {}};
   PackJob? job;
   String? lastError;
 
@@ -165,6 +165,26 @@ class ImageService extends ChangeNotifier {
 
   void cancel() => job?.cancelled = true;
 
+  /// Ilustrações já pedidas nesta sessão (descarregadas, a caminho ou que
+  /// falharam): sem rede, não se tenta outra vez a cada ecrã.
+  final Set<String> _artAsked = {};
+
+  /// A ilustração de uma carta, para capas e fundos; null enquanto não está.
+  /// Se faltar, descarrega-a em segundo plano (uma vez por sessão).
+  File? art(ImageRef ref) {
+    final f = file('art', ref.key);
+    if (f != null) return f;
+    final url = ref.art;
+    if (url != null && _artAsked.add(ref.key)) {
+      final client = newHttpClient();
+      _fetch(client, url, paths.image('art', ref.key)).then((_) {
+        _have['art']!.add(ref.key);
+        notifyListeners();
+      }).catchError((Object _) {}).whenComplete(() => client.close(force: true));
+    }
+    return null;
+  }
+
   Future<void> _fetch(HttpClient client, String url, String path) async {
     final req = await client.getUrl(Uri.parse(url));
     req.headers.set('User-Agent', scryfallHeaders['User-Agent']!);
@@ -225,7 +245,7 @@ class ImageService extends ChangeNotifier {
   /// Guarda uma imagem recebida de outro dispositivo.
   Future<void> writeBytes(String size, String key, List<int> bytes) async {
     // Só nomes simples: uma chave vinda da rede não pode sair da pasta.
-    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(key) || (size != 'small' && size != 'normal')) return;
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(key) || !_have.containsKey(size)) return;
     final f = File(paths.image(size, key));
     await f.writeAsBytes(bytes, flush: true);
     _have[size]!.add(key);

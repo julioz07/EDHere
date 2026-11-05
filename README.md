@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 2.0.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 2.1.0** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -113,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 2.1.0 | "Jogar com este deck" (▶ no deck: bot, criar/entrar numa sala ou goldfish, já escolhido e no formato dele). Mesa inspirada no Playgroup/EDHLab: capas com a arte do comandante, mão em leque e visão geral, grelha para mover cartas, mulligan com o estado de cada jogador, ecrã grande de vidas, etiqueta do desfazer e visita guiada. Tablet: jogadores grandes, zonas em grelha e registo ao lado, sala e decks base em colunas. Fora do Commander joga-se 1 contra 1 também contra o bot. Correções do QA da Play: mão vazia ao retomar como anfitrião, básicos em inglês, deck por defeito do bot, mulligan repetido ao retomar |
 | 2.0.0 | Formatos sem zona de comando (Modern, Limited, draft…) passam a encontros 1 contra 1: melhor de 3, todos contra todos, folga que conta como vitória, classificação e sideboard entre jogos; cada mesa só recebe os seus eventos e o anfitrião corre várias ao mesmo tempo. Correções do QA a 4 telemóveis: repositório de cartas trocado pela língua (deck não chegava ao anfitrião), ecrã preto ao sair de sala fechada, "pick 43" no draft, capas de decks sem comandante, cabeçalho e avisos em ecrãs pequenos, contadores direitos em cartas viradas, telemóvel sem rede, textos sem género, comandantes na língua de cada um, acessibilidade. Protocolo de rede mudou |
 | 1.11.1 | Terceiro QA a 4 telemóveis: "Voltar ao jogo" usava o que ficou guardado no início do jogo (o cartão só se atualizava no 1.º save) e dava outra mão; o ecrã do draft não mostrava o pack que chegou antes de abrir ("0 no pack"); os decks base e o deck escolhido na sala descarregam as imagens pequenas; aviso quando a base de cartas não tem o set de um sealed/draft; na sala os decks do formato vêm primeiro |
 | 1.11.0 | Decks base na app (Decks → Decks base): os 5 Foundations Commander e 2 decks Modern de 60 cartas (Burn e Stompy), listas conferidas no Scryfall. Segundo QA a 4 telemóveis: quem sai da mesa a meio só desliga e volta com o lugar e a mão (antes recebia outra mão); o anfitrião derrotado já não pode fechar o jogo dos outros e sair a meio avisa que acaba para todos; o jogador derrotado na sua vez passa a vez ao seguinte; quem é tirado da sala, ou fica sem sala, volta ao ecrã de jogar; revelar a mão traduz-se em cada dispositivo; o registo diz "Ronda" e de onde vem a carta procurada. Protocolo de rede 3: todos têm de atualizar |

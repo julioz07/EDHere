@@ -66,13 +66,9 @@ class SettingsTab extends ConsumerWidget {
             showSelectedIcon: false,
             segments: [
               ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: const Icon(Icons.brightness_auto),
-                  label: FitText(tr('Sistema'))),
-              ButtonSegment(
-                  value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: FitText(tr('Escuro'))),
-              ButtonSegment(
-                  value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: FitText(tr('Claro'))),
+                  value: ThemeMode.system, icon: const Icon(Icons.brightness_auto), label: FitText(tr('Sistema'))),
+              ButtonSegment(value: ThemeMode.dark, icon: const Icon(Icons.dark_mode), label: FitText(tr('Escuro'))),
+              ButtonSegment(value: ThemeMode.light, icon: const Icon(Icons.light_mode), label: FitText(tr('Claro'))),
             ],
             selected: {s.themeMode},
             onSelectionChanged: (v) => s.themeMode = v.first,
@@ -96,6 +92,21 @@ class SettingsTab extends ConsumerWidget {
                 onTap: () => s.background = 'none',
                 child: Container(color: theme.colorScheme.surfaceContainerHighest),
               ),
+              _BgOption(
+                label: tr('Comandante'),
+                selected: s.background == 'commander',
+                onTap: () => s.background = 'commander',
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF3A2A5C), Color(0xFF7A4B1E)],
+                    ),
+                  ),
+                  child: const Icon(Icons.auto_awesome, size: 32, color: Colors.white),
+                ),
+              ),
               for (final b in TableBackground.builtIn)
                 _BgOption(
                   label: b.label,
@@ -115,8 +126,7 @@ class SettingsTab extends ConsumerWidget {
                       )
                     : Container(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        child: Icon(Icons.add_photo_alternate_outlined,
-                            size: 32, color: theme.colorScheme.primary),
+                        child: Icon(Icons.add_photo_alternate_outlined, size: 32, color: theme.colorScheme.primary),
                       ),
               ),
             ],
@@ -191,8 +201,7 @@ class SettingsTab extends ConsumerWidget {
           leading: const Icon(Icons.bar_chart),
           title: Text(tr('Histórico e estatísticas')),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () =>
-              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StatsScreen())),
         ),
         ListTile(
           leading: const Icon(Icons.upload_file),
@@ -211,16 +220,15 @@ class SettingsTab extends ConsumerWidget {
           leading: const Icon(Icons.slideshow_outlined),
           title: Text(tr('Ver a introdução')),
           subtitle: Text(tr('O que a app faz e como funciona')),
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute<void>(builder: (_) => const OnboardingScreen(replay: true))),
+          onTap: () =>
+              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const OnboardingScreen(replay: true))),
         ),
         ListTile(
           leading: SvgPicture.asset(Brand.symbol(theme.brightness), width: 28, height: 28),
           title: Text(tr('Sobre o EDHere')),
           subtitle: Text(tr('Versão {appVersion}', {'appVersion': appVersion})),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () =>
-              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AboutScreen())),
         ),
         ListTile(
           leading: const Icon(Icons.description_outlined),

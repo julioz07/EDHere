@@ -85,6 +85,13 @@ class LobbyPlayer {
   /// Imagens (pequenas) das cartas do deck deste jogador, com as versões
   /// que ele escolheu.
   List<db.ImageRef> images = const [];
+
+  /// A capa do deck (a ilustração do comandante, ou da carta de destaque) e
+  /// as cores, para o cartão do jogador na sala. Campos opcionais: versões
+  /// antigas não os mandam nem os leem.
+  db.ImageRef? cover;
+  String? coverArtist;
+  int identity = 0;
 }
 
 /// Transferência de imagens de outro jogador pela rede local.
@@ -234,6 +241,12 @@ class NetworkGame extends ChangeNotifier {
             ..commanders = (p['commanders'] as List? ?? const []).cast<String>()
             ..gameChangers = (p['gc'] as num?)?.toInt()
             ..ready = false
+            ..cover = switch (p['cover']) {
+              final Map<String, dynamic> c => db.ImageRef(c['k'] as String, c['s'] as String?, c['n'] as String?),
+              _ => null,
+            }
+            ..coverArtist = (p['cover'] as Map?)?['a'] as String?
+            ..identity = (p['identity'] as num?)?.toInt() ?? 0
             ..images = [
               for (final r in (p['images'] as List? ?? const []).cast<Map<String, dynamic>>())
                 db.ImageRef(r['k'] as String, r['s'] as String?, r['n'] as String?),
@@ -275,7 +288,9 @@ class NetworkGame extends ChangeNotifier {
         game?.dispose();
         game = null;
         _pending.clear();
-        _restored = true;
+        // A mão guardada é de um jogo anterior a esta partida nova; se a
+        // partida nova veio antes do ponto guardado, ainda há mão a repor.
+        if (!_replaying(e)) _restored = true;
         for (final pl in players.values) {
           pl.ready = false;
         }
@@ -445,7 +460,13 @@ class NetworkGame extends ChangeNotifier {
     link.submit(LobbyEv.config, {'format': format, 'life': life, 'seats': seats ?? maxSeats});
   }
 
-  void selectDeck(db.Deck deck, {required bool legal, required List<String> commanderNames, int? gameChangers}) {
+  void selectDeck(db.Deck deck,
+      {required bool legal,
+      required List<String> commanderNames,
+      int? gameChangers,
+      db.ImageRef? cover,
+      String? coverArtist,
+      int identity = 0}) {
     myDeck = deck;
     // As versões e imagens do deck, para os outros saberem o que lhes falta.
     final usedPrints = <String, db.PrintInfo>{};
@@ -470,6 +491,14 @@ class NetworkGame extends ChangeNotifier {
       'commanders': commanderNames,
       if (gameChangers != null) 'gc': gameChangers,
       'prints': [for (final p in usedPrints.values) p.toJson()],
+      if (cover != null)
+        'cover': {
+          'k': cover.key,
+          if (cover.small != null) 's': cover.small,
+          if (cover.normal != null) 'n': cover.normal,
+          if (coverArtist != null) 'a': coverArtist,
+        },
+      if (identity != 0) 'identity': identity,
       'images': [
         for (final r in refs.values)
           {'k': r.key, if (r.small != null) 's': r.small, if (r.normal != null) 'n': r.normal},
@@ -672,15 +701,20 @@ class NetworkGame extends ChangeNotifier {
   }
 
   /// Anfitrião: senta os jogadores e começa.
-  void start({bool randomFirst = true}) {
+  /// [first]: quem começa, escolhido pelo anfitrião (senão, à sorte).
+  void start({bool randomFirst = true, int? first}) {
     if (!isHost || started) return;
     final host = link as HostServer;
     final seated = players.values.where((p) => p.connected && p.ready).toList();
     for (final p in seated) {
       host.submit(Ev.joinTable, {'seat': p.seat, 'name': p.name, 'life': startingLife});
     }
-    final first = randomFirst ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat : seated.first.seat;
-    host.submit(Ev.startGame, {'first': first});
+    final chosen = seated.any((p) => p.seat == first)
+        ? first!
+        : randomFirst
+            ? seated[DateTime.now().microsecondsSinceEpoch % seated.length].seat
+            : seated.first.seat;
+    host.submit(Ev.startGame, {'first': chosen});
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:card_db/card_db.dart' hide Card;
+import 'package:card_db/card_db.dart' as db show Card;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,8 @@ import '../../app/theme.dart';
 import '../../bot/forge_engine.dart';
 import '../../data/providers.dart';
 import '../../l10n/l10n.dart';
+import '../widgets/card_art.dart';
+import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'bot_table_screen.dart';
 
@@ -43,12 +46,13 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
   @override
   void initState() {
     super.initState();
-    final ids = [
-      for (final d in ref.read(decksProvider).decks)
-        if (d.playableCount > 0) d.id!,
-    ];
+    final playable = ref.read(decksProvider).decks.where((d) => d.playableCount > 0).toList();
+    final ids = [for (final d in playable) d.id!];
     if (ids.isNotEmpty) {
-      _myDeck = ids.contains(widget.deckId) ? widget.deckId : ids.first;
+      // sem deck escolhido, um de Commander (o bot é sobretudo para Commander;
+      // com os decks base, os de Modern vinham primeiro)
+      final commander = playable.where((d) => d.format == 'commander').firstOrNull?.id;
+      _myDeck = ids.contains(widget.deckId) ? widget.deckId : commander ?? ids.first;
       // o do bot: outro do mesmo formato, como ao mudar o número de adversários
       _botDecks = [];
       _setBots(1);
@@ -85,13 +89,22 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     final pool = others.isEmpty ? ids : others;
     setState(() {
       _botDecks = [
-        for (var i = 0; i < n; i++)
-          i < _botDecks.length ? _botDecks[i] : (pool.isEmpty ? null : pool[i % pool.length]),
+        for (var i = 0; i < n; i++) i < _botDecks.length ? _botDecks[i] : (pool.isEmpty ? null : pool[i % pool.length]),
       ];
     });
   }
 
   bool get _ok => _myDeck != null && _botDecks.every((d) => d != null);
+
+  /// O formato do meu deck. Só o Commander é multijogador: nos outros
+  /// (Modern, limitado…) joga-se 1 contra 1, como nas salas.
+  String? get _myFormat => ref.read(decksProvider).decks.where((d) => d.id == _myDeck).firstOrNull?.format;
+  bool get _multi => _myFormat == null || _myFormat == 'commander';
+
+  void _pickMyDeck(int? v) {
+    setState(() => _myDeck = v);
+    if (!_multi && _botDecks.length > 1) _setBots(1);
+  }
 
   /// No deck de um bot: um ao calhas, só se sabe qual na mesa.
   static const _random = -1;
@@ -121,6 +134,11 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     if (repo == null || mine == null || theirs.any((d) => d == null)) return;
     final all = [mine, ...theirs.whereType<Deck>()];
     final commander = all.every((d) => d.format == 'commander');
+    // só o Commander se joga com vários adversários
+    if (!commander && theirs.length > 1) {
+      _snack(tr('Com vários bots, todos os decks têm de ser de Commander. Nos outros formatos joga-se 1 contra 1.'));
+      return;
+    }
     if (commander && all.any((d) => d.count(Board.command) == 0)) {
       _snack(tr('Em Commander, todos os decks precisam de um comandante.'));
       return;
@@ -204,39 +222,117 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     final decks = ref.watch(decksProvider).decks.where((d) => d.playableCount > 0).toList();
     final bots = _botDecks.length;
     final theme = Theme.of(context);
-    DropdownButtonFormField<int> deckField(String label, int? value, ValueChanged<int?> onChanged,
-            {Color? color, bool random = false}) =>
-        DropdownButtonFormField<int>(
-          value: value,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: label,
-            // a cor do lugar na mesa: a mesma com que aparece lá
-            prefixIcon: color == null
-                ? null
-                : Icon(Icons.circle, size: 14, color: color),
+    final repo = ref.watch(cardRepoProvider);
+    final prints = ref.read(printsProvider);
+    ref.watch(imagesProvider);
+    final byId = {for (final d in decks) d.id!: d};
+    String subtitle(Deck d, List<db.Card> cmds) => [
+          GameFormat.byId(d.format).label,
+          if (cmds.isNotEmpty) cmds.map((c) => c.displayFrontName).join(' + '),
+        ].join(' · ');
+
+    /// A lista dos decks, com a capa de cada um, para um lugar.
+    Future<int?> pickDeck(String label, int? current, {bool random = false}) => showModalBottomSheet<int>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (ctx) => DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            builder: (ctx, scroll) => ListView(controller: scroll, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(label, style: theme.textTheme.titleMedium),
+              ),
+              if (random)
+                ListTile(
+                  leading: const SizedBox(width: 72, child: Icon(Icons.shuffle)),
+                  title: Text(tr('Deck aleatório')),
+                  subtitle: Text(tr('Só se sabe qual na mesa')),
+                  selected: current == _random,
+                  onTap: () => Navigator.pop(ctx, _random),
+                ),
+              for (final d in decks)
+                Builder(builder: (ctx) {
+                  final c = deckCover(d, repo, prints);
+                  return ListTile(
+                    selected: current == d.id,
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                          width: 72, height: 48, child: ArtBanner.card(c.cover, identity: c.identity, credit: false)),
+                    ),
+                    title: Text(d.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(subtitle(d, c.commanders), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: c.identity == 0 ? null : ColorIdentity(c.identity),
+                    onTap: () => Navigator.pop(ctx, d.id),
+                  );
+                }),
+            ]),
           ),
-          items: [
-            if (random)
-              DropdownMenuItem(
-                value: _random,
-                child: Row(children: [
-                  const Icon(Icons.shuffle, size: 18),
-                  const SizedBox(width: 8),
-                  Flexible(child: Text(tr('Deck aleatório'), overflow: TextOverflow.ellipsis)),
-                ]),
-              ),
-            for (final d in decks)
-              DropdownMenuItem(
-                value: d.id,
-                // o formato só quando não é Commander: no telemóvel cortava o nome, e
-                // assim salta à vista o deck que vai tirar o comandante à partida
-                child: Text(d.format == 'commander' ? d.name : '${d.name} · ${GameFormat.byId(d.format).label}',
-                    overflow: TextOverflow.ellipsis),
-              ),
-          ],
-          onChanged: onChanged,
         );
+
+    /// Um lugar da mesa: a cor (a mesma da mesa), quem é e a capa do deck.
+    Widget seatCard(String label, int? value, ValueChanged<int?> onChanged,
+        {required Color color, bool random = false}) {
+      final d = value == null ? null : byId[value];
+      final c = d == null ? null : deckCover(d, repo, prints);
+      return Semantics(
+        button: true,
+        label: '$label: ${value == _random ? tr('Deck aleatório') : d?.name ?? tr('Escolher deck')}',
+        excludeSemantics: true,
+        child: Material(
+          clipBehavior: Clip.antiAlias,
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 84,
+            child: ArtBanner.card(
+              c?.cover,
+              identity: c?.identity ?? 0,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () async {
+                    final v = await pickDeck(label, value, random: random);
+                    if (v != null) onChanged(v);
+                  },
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Container(width: 5, color: color),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label, style: theme.textTheme.labelMedium?.copyWith(color: Colors.white70)),
+                            Text(value == _random ? tr('Deck aleatório') : d?.name ?? tr('Escolher deck'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                            if (d != null && c != null)
+                              Text(subtitle(d, c.commanders),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                          ]),
+                    ),
+                    if (value == _random)
+                      const Padding(
+                          padding: EdgeInsets.only(right: 4), child: Icon(Icons.shuffle, color: Colors.white)),
+                    const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: Icon(Icons.unfold_more_rounded, color: Colors.white70),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: FitText(tr('Jogar contra o bot'), alignment: Alignment.centerLeft)),
       body: Column(children: [
@@ -245,8 +341,10 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
             child: ListView(padding: const EdgeInsets.all(16), children: [
               Text(
                 bots == 1
-                    ? tr('Uma partida 1 contra 1 com as regras completas: o bot é o motor do Forge, que aplica as regras e joga sozinho. Funciona sem internet.')
-                    : tr('Commander a {n}: tu contra {b} bots, com as regras completas. Cada bot pensa na sua vez, por isso a partida é mais longa, como numa mesa a sério.',
+                    ? tr(
+                        'Uma partida 1 contra 1 com as regras completas: o bot é o motor do Forge, que aplica as regras e joga sozinho. Funciona sem internet.')
+                    : tr(
+                        'Commander a {n}: tu contra {b} bots, com as regras completas. Cada bot pensa na sua vez, por isso a partida é mais longa, como numa mesa a sério.',
                         {'n': bots + 1, 'b': bots}),
                 style: theme.textTheme.bodyMedium,
               ),
@@ -255,10 +353,26 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
               const SizedBox(height: 8),
               SegmentedButton<int>(
                 showSelectedIcon: false,
-                segments: [for (var i = 1; i <= 4; i++) ButtonSegment(value: i, label: Text('$i'))],
+                segments: [
+                  for (var i = 1; i <= 4; i++) ButtonSegment(value: i, label: Text('$i'), enabled: i == 1 || _multi),
+                ],
                 selected: {bots},
                 onSelectionChanged: (s) => _setBots(s.first),
               ),
+              if (!_multi)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Icon(Icons.info_outline, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                          tr('Em {v} joga-se 1 contra 1. Mais bots só em Commander.',
+                              {'v': GameFormat.byId(_myFormat!).label}),
+                          style: theme.textTheme.bodySmall),
+                    ),
+                  ]),
+                ),
               if (bots >= 3 && _memoryMb != null && _memoryMb! < 6000)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -274,10 +388,12 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
                   ]),
                 ),
               const SizedBox(height: 16),
-              deckField(tr('O teu deck'), _myDeck, (v) => setState(() => _myDeck = v), color: GameColors.player(0)),
+              Text(tr('A mesa'), style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              seatCard(tr('O teu deck'), _myDeck, _pickMyDeck, color: GameColors.player(0)),
               for (var i = 0; i < bots; i++) ...[
                 const SizedBox(height: 12),
-                deckField(
+                seatCard(
                   bots == 1 ? tr('O deck do bot') : tr('O deck do bot {n}', {'n': i + 1}),
                   _botDecks[i],
                   (v) => setState(() => _botDecks[i] = v),
@@ -296,11 +412,14 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
                 onSelectionChanged: (s) => setState(() => _level = s.first),
               ),
               const SizedBox(height: 8),
-              Text(switch (_level) {
-                BotLevel.easy => tr('Comete erros de propósito: às vezes não joga o que podia, ataca com menos criaturas ou esquece-se de bloquear.'),
-                BotLevel.normal => tr('O bot do Forge tal como é: joga bem, sem batota.'),
-                BotLevel.hard => tr('Pensa mais em cada jogada e tem baralhamentos que lhe dão melhor mana.'),
-              }, style: theme.textTheme.bodySmall),
+              Text(
+                  switch (_level) {
+                    BotLevel.easy => tr(
+                        'Comete erros de propósito: às vezes não joga o que podia, ataca com menos criaturas ou esquece-se de bloquear.'),
+                    BotLevel.normal => tr('O bot do Forge tal como é: joga bem, sem batota.'),
+                    BotLevel.hard => tr('Pensa mais em cada jogada e tem baralhamentos que lhe dão melhor mana.'),
+                  },
+                  style: theme.textTheme.bodySmall),
               if (decks.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 16),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'play_with_deck.dart';
 import '../../bot/forge_engine.dart';
 import '../../data/providers.dart';
 import '../../data/settings.dart';
@@ -59,7 +60,7 @@ class _PlayTabState extends ConsumerState<PlayTab> {
   Future<void> _go(Widget Function(String name) screen, {bool needsName = false}) async {
     // Numa sala os outros veem o nome: sem ele, ficam todos "Jogador".
     if (needsName && _name.text.trim().isEmpty) {
-      final name = await _askName();
+      final name = await askPlayerName(context);
       if (name == null || !mounted) return;
       _name.text = name;
     }
@@ -68,31 +69,6 @@ class _PlayTabState extends ConsumerState<PlayTab> {
     if (!mounted) return;
     FocusScope.of(context).unfocus();
     await _push(screen(_playerName));
-  }
-
-  Future<String?> _askName() {
-    final c = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('Como te chamas?')),
-        content: TextField(
-          controller: c,
-          autofocus: true,
-          maxLength: 24,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(hintText: tr('O nome que os outros veem na mesa'), counterText: ''),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim().isEmpty ? null : v.trim()),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, c.text.trim().isEmpty ? null : c.text.trim()),
-            child: Text(tr('Continuar')),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -106,6 +82,10 @@ class _PlayTabState extends ConsumerState<PlayTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    // o nome também pode ser pedido noutro sítio ("Jogar com este deck")
+    ref.listen(playerNameProvider, (_, n) {
+      if (_name.text.trim() != n) _name.text = n;
+    });
     final hasDecks = ref.watch(decksProvider).decks.isNotEmpty;
     final hasData = ref.watch(cardDataProvider).hasData;
     // Em ecrãs baixos o cabeçalho encolhe, para as ações aparecerem logo.

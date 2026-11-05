@@ -63,8 +63,8 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
-### Notas da versão (2.0.0)
-Modern, Draft e outros formatos jogam-se agora 1 contra 1: encontros à melhor de 3, todos contra todos, com folga, classificação e sideboard entre jogos. O Commander continua com todos na mesma mesa. Correções: deck que não chegava ao anfitrião, ecrã preto ao sair de uma sala fechada, avisos em ecrãs pequenos, aviso de telemóvel sem rede, textos sem género. Todos na sala precisam desta versão.
+### Notas da versão (2.1.0)
+Joga direto a partir de um deck: o botão ▶ abre o jogo contra o bot, uma sala ou o goldfish com ele já escolhido. Mesa nova: arte dos comandantes, mão em leque, ecrã grande de vidas, mulligan com estado de cada um e uma visita guiada. No tablet, jogadores maiores e o registo ao lado. Modern e outros formatos jogam-se 1 contra 1, também contra o bot. Correções: mão vazia ao voltar ao jogo, terrenos básicos na tua língua.
 
 ---
 
@@ -127,8 +127,8 @@ You only need the internet to download the cards once (about 25 MB) and their im
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
 
-### Release notes (2.0.0)
-Modern, Draft and other formats are now played 1 vs 1: best-of-3 matches, everyone plays everyone, with byes, standings and sideboarding between games. Commander still seats everyone at one table. Fixes: a deck that never reached the host, a black screen after leaving a closed room, notices on small screens, a no-network warning, gender-neutral texts. Everyone in a room needs this version.
+### Release notes (2.1.0)
+Play straight from a deck: the ▶ button starts a bot game, a room or goldfish with it already chosen. New table: commander art, a fanned hand, a big life screen, mulligan status for everyone and a guided tour. On tablets, bigger players and the log on the side. Modern and other formats are played 1 vs 1, also against the bot. Fixes: empty hand when returning to a game, basic lands in your language.
 
 ---
 
@@ -191,8 +191,8 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
-### Notas de la versión (2.0.0)
-Modern, Draft y otros formatos se juegan ahora 1 contra 1: enfrentamientos al mejor de 3, todos contra todos, con descanso, clasificación y sideboard entre partidas. El Commander sigue con todos en la misma mesa. Correcciones: mazo que no llegaba al anfitrión, pantalla negra al salir de una sala cerrada, avisos en pantallas pequeñas, aviso de móvil sin red, textos sin género. Todos en la sala necesitan esta versión.
+### Notas de la versión (2.1.0)
+Juega directamente desde un mazo: el botón ▶ abre la partida contra el bot, una sala o el goldfish con él ya elegido. Mesa nueva: arte de los comandantes, mano en abanico, pantalla grande de vidas, mulligan con el estado de cada uno y una visita guiada. En tablet, jugadores más grandes y el registro al lado. Modern y otros formatos se juegan 1 contra 1, también contra el bot. Correcciones: mano vacía al volver a la partida, tierras básicas en tu idioma.
 
 ---
 
@@ -255,5 +255,5 @@ Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro imm
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
 
-### Note sulla versione (2.0.0)
-Modern, Draft e altri formati ora si giocano 1 contro 1: incontri al meglio di 3, tutti contro tutti, con riposo, classifica e sideboard tra le partite. Il Commander resta con tutti allo stesso tavolo. Correzioni: mazzo che non arrivava all'host, schermo nero uscendo da una stanza chiusa, avvisi su schermi piccoli, avviso di telefono senza rete, testi senza genere. Tutti nella stanza devono avere questa versione.
+### Note sulla versione (2.1.0)
+Gioca direttamente da un mazzo: il pulsante ▶ avvia la partita contro il bot, una stanza o il goldfish con il mazzo già scelto. Tavolo nuovo: arte dei comandanti, mano a ventaglio, schermata grande delle vite, mulligan con lo stato di ognuno e una visita guidata. Su tablet, giocatori più grandi e il registro a lato. Modern e gli altri formati si giocano 1 contro 1, anche contro il bot. Correzioni: mano vuota al ritorno in partita, terre base nella tua lingua.

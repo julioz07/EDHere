@@ -298,20 +298,34 @@ Future<void> showCardActions(BuildContext context, GameController ctrl, CardInst
                 () => done(() => ctrl.moveCard(c, Zone.battlefield, cast: true))),
         ],
         const Divider(),
-        for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
-          if (z != c.zone && (z != Zone.command || c.isCommander || ctrl.state.format == 'free'))
-            _tile(_zoneIcon(z), _moveTo(z), () {
+        _MoveGrid(items: [
+          for (final z in [Zone.battlefield, Zone.hand, Zone.graveyard, Zone.exile, Zone.command])
+            if (z != c.zone && (z != Zone.command || c.isCommander || ctrl.state.format == 'free'))
+              (
+                _zoneIcon(z),
+                _moveTo(z),
+                () {
+                  Navigator.pop(ctx);
+                  moveMaybeToCommand(context, ctrl, c, z);
+                }
+              ),
+          (
+            Icons.vertical_align_top,
+            tr('Para o topo do grimório'),
+            () {
               Navigator.pop(ctx);
-              moveMaybeToCommand(context, ctrl, c, z);
-            }),
-        _tile(Icons.vertical_align_top, tr('Para o topo do grimório'), () {
-          Navigator.pop(ctx);
-          moveMaybeToCommand(context, ctrl, c, Zone.library);
-        }),
-        _tile(Icons.vertical_align_bottom, tr('Para o fundo do grimório'), () {
-          Navigator.pop(ctx);
-          moveMaybeToCommand(context, ctrl, c, Zone.library, pos: 'bottom');
-        }),
+              moveMaybeToCommand(context, ctrl, c, Zone.library);
+            }
+          ),
+          (
+            Icons.vertical_align_bottom,
+            tr('Para o fundo do grimório'),
+            () {
+              Navigator.pop(ctx);
+              moveMaybeToCommand(context, ctrl, c, Zone.library, pos: 'bottom');
+            }
+          ),
+        ]),
       ],
     ]);
   });
@@ -362,6 +376,53 @@ String _goesTo(String name, Zone z) => switch (z) {
       Zone.command => tr('{name} vai para a zona de comando', {'name': name}),
       Zone.library => tr('{name} vai para o grimório', {'name': name}),
     };
+
+/// Os destinos de uma carta como botões grandes, três por linha: mais
+/// rápidos de acertar do que uma lista comprida.
+class _MoveGrid extends StatelessWidget {
+  const _MoveGrid({required this.items});
+  final List<(IconData, String, VoidCallback)> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: LayoutBuilder(builder: (context, box) {
+        final w = (box.maxWidth - 16) / 3;
+        return Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final (icon, label, onTap) in items)
+            SizedBox(
+              width: w,
+              child: Material(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onTap,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 76),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(icon, size: 26, color: theme.colorScheme.primary),
+                        const SizedBox(height: 6),
+                        Text(label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ]);
+      }),
+    );
+  }
+}
 
 IconData _zoneIcon(Zone z) => switch (z) {
       Zone.battlefield => Icons.dashboard_outlined,
@@ -714,22 +775,36 @@ Future<void> showHandCardActions(BuildContext context, GameController ctrl, Priv
         _tile(Icons.landscape_outlined, tr('Jogar como terreno ({name})', {'name': card.displayNameOf(1)}),
             () => done(() => ctrl.playFromHand(pc, face: 1))),
       _tile(Icons.flip_to_back, tr('Jogar virada para baixo'), () => done(() => ctrl.playFromHand(pc, faceDown: true))),
-      _tile(Icons.delete_outline, tr('Descartar'), () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard))),
-      _tile(Icons.block, tr('Exilar'), () => done(() => ctrl.playFromHand(pc, to: Zone.exile))),
-      _tile(Icons.vertical_align_top, tr('Pôr no topo do grimório'),
-          () => done(() => ctrl.playFromHand(pc, to: Zone.library))),
-      _tile(Icons.vertical_align_bottom, tr('Pôr no fundo do grimório'),
-          () => done(() => ctrl.playFromHand(pc, to: Zone.library, pos: 'bottom'))),
-      _tile(
+      const Divider(),
+      _MoveGrid(items: [
+        (Icons.delete_outline, tr('Descartar'), () => done(() => ctrl.playFromHand(pc, to: Zone.graveyard))),
+        (Icons.block, tr('Exilar'), () => done(() => ctrl.playFromHand(pc, to: Zone.exile))),
+        (
+          Icons.vertical_align_top,
+          tr('Pôr no topo do grimório'),
+          () => done(() => ctrl.playFromHand(pc, to: Zone.library))
+        ),
+        (
+          Icons.vertical_align_bottom,
+          tr('Pôr no fundo do grimório'),
+          () => done(() => ctrl.playFromHand(pc, to: Zone.library, pos: 'bottom'))
+        ),
+        (
           Icons.visibility,
           tr('Revelar a todos'),
-          () => done(
-              () => ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))),
-      if (card != null)
-        _tile(Icons.zoom_in, tr('Ver carta'), () {
-          Navigator.pop(ctx);
-          pushTablePage<void>(context, CardDetailScreen(card: card));
-        }),
+          () =>
+              done(() => ctrl.send(ctrl.table.revealHidden(ctrl.actor, Zone.hand, [pc.pid], what: 'uma carta da mão')))
+        ),
+        if (card != null)
+          (
+            Icons.zoom_in,
+            tr('Ver carta'),
+            () {
+              Navigator.pop(ctx);
+              pushTablePage<void>(context, CardDetailScreen(card: card));
+            }
+          ),
+      ]),
     ]);
   });
 }

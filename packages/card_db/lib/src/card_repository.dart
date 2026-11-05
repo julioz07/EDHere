@@ -249,6 +249,10 @@ class ImageRef {
   final String? small;
   final String? normal;
 
+  /// Só a ilustração (o "art crop" do Scryfall, feito para capas e fundos):
+  /// o mesmo endereço das outras, noutra pasta.
+  String? get art => (small ?? normal)?.replaceFirst(RegExp(r'/(small|normal)/'), '/art_crop/');
+
   static List<ImageRef> allOf(Card c) {
     if (c.printId.isEmpty) return const [];
     if (c.hasFaceImages) {

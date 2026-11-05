@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:card_db/card_db.dart' show Deck;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,9 +18,12 @@ import 'widgets/responsive.dart';
 import '../l10n/l10n.dart';
 
 class JoinScreen extends StatefulWidget {
-  const JoinScreen({super.key, required this.playerName});
+  const JoinScreen({super.key, required this.playerName, this.deck});
 
   final String playerName;
+
+  /// Vindo de um deck: fica escolhido ao entrar na sala.
+  final Deck? deck;
 
   @override
   State<JoinScreen> createState() => _JoinScreenState();
@@ -86,7 +90,7 @@ class _JoinScreenState extends State<JoinScreen> {
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
         settings: const RouteSettings(name: 'lobby'),
-        builder: (_) => LobbyScreen(session: session),
+        builder: (_) => LobbyScreen(session: session, deck: widget.deck),
       ));
     } on RoomJoinException catch (e) {
       if (!mounted) return;
@@ -129,8 +133,7 @@ class _JoinScreenState extends State<JoinScreen> {
   }
 
   Future<void> _scanQr() async {
-    final raw =
-        await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
+    final raw = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
     if (raw == null || !mounted) return;
     final code = JoinCode.tryParse(raw);
     if (code != null) {
@@ -242,8 +245,7 @@ class _JoinScreenState extends State<JoinScreen> {
                             ? tr('1 lugar livre')
                             : tr('{freeSeats} lugares livres', {'freeSeats': room.freeSeats}),
                         if (room.host != null) '${room.host}:${room.port}',
-                        if (room.appVersion != appVersion)
-                          tr('versão {appVersion}', {'appVersion': room.appVersion}),
+                        if (room.appVersion != appVersion) tr('versão {appVersion}', {'appVersion': room.appVersion}),
                         if (room.dbVersion != cardDbVersion) tr('base de cartas diferente'),
                       ].join(' · ')),
                       trailing: room.hasPin ? const Icon(Icons.lock_outline) : null,

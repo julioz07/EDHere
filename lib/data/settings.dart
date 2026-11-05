@@ -54,6 +54,7 @@ class Settings extends ChangeNotifier {
   static const _kSortHand = 'sort_hand';
   static const _kKeepOn = 'keep_screen_on';
   static const _kConfirmLeave = 'confirm_leave';
+  static const _kTableTour = 'table_tour_done';
 
   /// Língua da app (código), guardada quando o utilizador a escolhe.
   static const langKey = 'app_lang';
@@ -72,9 +73,13 @@ class Settings extends ChangeNotifier {
       };
   set themeMode(ThemeMode m) => _set(_kTheme, m.name);
 
-  /// `none`, `asset:<id>` ou `file` (imagem escolhida da galeria).
+  /// `none`, `asset:<id>`, `file` (imagem escolhida da galeria) ou
+  /// `commander` (a ilustração do comandante de quem está em vista).
   String get background => _prefs.getString(_kBg) ?? 'asset:eter';
   set background(String v) => _set(_kBg, v);
+
+  /// O fundo da mesa é a ilustração do comandante.
+  bool get commanderBackground => background == 'commander';
 
   /// Quanto se escurece o fundo para as cartas se lerem bem (0 a 0,8).
   double get backgroundDim => _prefs.getDouble(_kDim) ?? 0.35;
@@ -96,6 +101,10 @@ class Settings extends ChangeNotifier {
   bool get keepScreenOn => _prefs.getBool(_kKeepOn) ?? true;
   set keepScreenOn(bool v) => _setBool(_kKeepOn, v);
 
+  /// A visita à mesa já foi vista (só aparece no primeiro jogo).
+  bool get tableTourDone => _prefs.getBool(_kTableTour) ?? false;
+  set tableTourDone(bool v) => _setBool(_kTableTour, v);
+
   bool get confirmLeave => _prefs.getBool(_kConfirmLeave) ?? true;
   set confirmLeave(bool v) => _setBool(_kConfirmLeave, v);
 
@@ -106,6 +115,8 @@ class Settings extends ChangeNotifier {
   ImageProvider? get backgroundImage {
     final bg = background;
     if (bg == 'none') return null;
+    // sem comandante (ou sem a ilustração ainda), o fundo de sempre
+    if (bg == 'commander') return AssetImage(TableBackground.builtIn.first.asset);
     if (bg == 'file') {
       final f = File(customBackgroundPath);
       return f.existsSync() ? FileImage(f) : null;

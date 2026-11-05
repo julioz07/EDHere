@@ -8,11 +8,16 @@ import '../../data/providers.dart';
 import 'package:card_db/card_db.dart' show ImageRef;
 import '../../data/settings.dart';
 import '../../game/game_controller.dart';
+import '../widgets/card_art.dart';
 import '../widgets/card_view.dart';
 import '../widgets/life_delta.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
+import 'hand_overview.dart';
+import 'life_screen.dart';
+import 'table_tour.dart';
 import 'table_card.dart';
+import 'table_turns.dart';
 import 'table_sheets.dart';
 import '../../l10n/l10n.dart';
 
@@ -49,7 +54,8 @@ class TableScreen extends ConsumerStatefulWidget {
       this.matchStatus,
       this.afterGame,
       this.confirmLeave,
-      this.hostsRoom = false});
+      this.hostsRoom = false,
+      this.tour = true});
 
   final GameController ctrl;
   final String? title;
@@ -77,6 +83,9 @@ class TableScreen extends ConsumerStatefulWidget {
 
   /// Este dispositivo é o anfitrião: se sair, a sala fecha para todos.
   final bool hostsRoom;
+
+  /// Mostrar a visita à mesa no primeiro jogo (o tutorial tem a sua).
+  final bool tour;
 
   @override
   ConsumerState<TableScreen> createState() => _TableScreenState();
@@ -212,6 +221,16 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       ]));
     }
     if (!s.started || s.over || ctrl.scripted) return out;
+    final deciding = _deciding();
+    if (deciding.isNotEmpty && ctrl.mySeats.every((m) => s.players[m]?.kept ?? true)) {
+      out.add(notice(
+        Icons.hourglass_top_rounded,
+        deciding.length == 1
+            ? tr('{v} ainda está a decidir a mão inicial.', {'v': deciding.single})
+            : tr('Ainda a decidir a mão inicial: {v}.', {'v': deciding.join(', ')}),
+        const [],
+      ));
+    }
     final alive = s.players.values.where((p) => !p.defeated).toList();
     if (s.players.length > 1 && alive.length == 1 && !_dismissed.contains('last')) {
       final w = alive.single;
@@ -316,7 +335,10 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     final s = ctrl.state;
     if (!s.started || s.over || s.turn > 1 || ctrl.scripted) return;
     for (final seat in ctrl.mySeats) {
-      if (_mulliganAsked.contains(seat) || ctrl.openingDone.contains(seat)) continue;
+      // ao voltar a um jogo em rede, quem já ficou com a mão não volta a decidir
+      if (_mulliganAsked.contains(seat) || ctrl.openingDone.contains(seat) || (s.players[seat]?.kept ?? false)) {
+        continue;
+      }
       final hand = ctrl.zones(seat).hand;
       if (hand.length < 7 || (ctrl.mulligans[seat] ?? 0) > 0) continue;
       _mulliganAsked.add(seat);
@@ -328,6 +350,21 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     }
   }
 
+  /// Em rede, no primeiro turno: quem ainda não ficou com a mão inicial.
+  /// (Jogos de versões antigas não mandam o "fiquei": passado o primeiro
+  /// turno o aviso desaparece de qualquer forma.)
+  List<String> _deciding() {
+    final s = ctrl.state;
+    if (!ctrl.isNetwork || ctrl.round > 1 || s.players.length < 2) return const [];
+    return [
+      for (final p in s.players.values)
+        if (!p.kept && !p.defeated) p.name
+    ];
+  }
+
+  /// O campo em vista; com [all] (tablet), por cima, os campos dos outros
+  /// em tiras: vê-se a mesa toda sem trocar de vista. Tocar no nome de uma
+  /// tira troca-a com o campo grande.
   Future<void> _askMulligan(int seat) async {
     while (true) {
       if (!mounted) return;
@@ -341,64 +378,107 @@ class _TableScreenState extends ConsumerState<TableScreen> {
         builder: (ctx) => ListenableBuilder(
           listenable: ctrl,
           builder: (ctx, _) {
+            final theme = Theme.of(ctx);
             final hand = ctrl.zones(seat).hand;
             final next = free ? count : count + 1;
-            return AlertDialog(
-              title:
-                  Text(ctrl.mySeats.length > 1 ? tr('Mão inicial de {name}', {'name': name}) : tr('A tua mão inicial')),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  if (count > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(tr('Mulligan {count}{v}', {
-                        'count': count,
-                        'v': toBottom > 0
-                            ? tr(' · ao manter, pões {toBottom} no fundo', {'toBottom': toBottom})
-                            : tr(' (grátis)')
-                      })),
+            // Um momento só da mesa: ecrã inteiro, escuro, as cartas grandes.
+            return Dialog.fullscreen(
+              backgroundColor: const Color(0xFF0E1116),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: Column(children: [
+                    Text(
+                      count == 0
+                          ? tr('Mulligan').toUpperCase()
+                          : tr('Mulligan {count}', {'count': count}).toUpperCase(),
+                      style: theme.textTheme.labelLarge
+                          ?.copyWith(color: theme.colorScheme.primary, letterSpacing: 2, fontWeight: FontWeight.w800),
                     ),
-                  // Colunas suficientes para a mão caber na altura (tablet deitado).
-                  Builder(builder: (context) {
-                    final screen = MediaQuery.sizeOf(context);
-                    final maxH = screen.height * 0.55;
-                    // Largura do conteúdo do diálogo: o ecrã menos as margens (40 + 24 de cada lado).
-                    final width = screen.width - 128;
-                    var cols = 4;
-                    while (cols < hand.length) {
-                      final w = (width - (cols - 1) * 6) / cols;
-                      final rows = (hand.length / cols).ceil();
-                      if (rows * w / cardAspect + (rows - 1) * 6 <= maxH) break;
-                      cols++;
-                    }
-                    return ConstrainedBox(
-                      constraints: BoxConstraints(maxHeight: maxH),
-                      child: GridView.count(
-                        shrinkWrap: true,
-                        crossAxisCount: cols,
-                        childAspectRatio: cardAspect,
-                        mainAxisSpacing: 6,
-                        crossAxisSpacing: 6,
-                        children: [
-                          for (final pc in hand)
-                            if (ctrl.card(pc.oracleId, printId: pc.printId) case final c?)
-                              CardImage(c)
-                            else
-                              const CardBack(),
-                        ],
+                    const SizedBox(height: 4),
+                    Text(
+                      (ctrl.mySeats.length > 1 ? tr('Mão inicial de {name}', {'name': name}) : tr('A tua mão inicial'))
+                          .toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    ),
+                    if (ctrl.isNetwork && ctrl.state.players.length > 1) ...[
+                      const SizedBox(height: 10),
+                      Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: [
+                        for (final (i, p)
+                            in (ctrl.state.players.values.toList()..sort((a, b) => a.seat.compareTo(b.seat))).indexed)
+                          if (p.seat != seat) _MulliganChip(player: p, color: GameColors.player(i)),
+                      ]),
+                    ],
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: LayoutBuilder(builder: (context, box) {
+                        // As colunas que deixam as cartas maiores sem passar da altura.
+                        var best = (cols: hand.length, w: 0.0);
+                        for (var cols = 1; cols <= hand.length; cols++) {
+                          final rows = (hand.length / cols).ceil();
+                          final byW = (box.maxWidth - (cols - 1) * 8) / cols;
+                          final byH = ((box.maxHeight - (rows - 1) * 8) / rows) * cardAspect;
+                          final w = byW < byH ? byW : byH;
+                          if (w > best.w) best = (cols: cols, w: w);
+                        }
+                        return Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final pc in hand)
+                                SizedBox(
+                                  width: best.w,
+                                  child: switch (ctrl.card(pc.oracleId, printId: pc.printId)) {
+                                    final c? => CardImage(c, preferNormal: true),
+                                    null => const CardBack(),
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white38),
+                              minimumSize: const Size.fromHeight(52)),
+                          onPressed: hand.length <= 1 ? null : () => Navigator.pop(ctx, false),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: Text(next == 0 ? tr('Mulligan (grátis)') : tr('Mulligan')),
+                        ),
                       ),
-                    );
-                  }),
-                ]),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: hand.length <= 1 ? null : () => Navigator.pop(ctx, false),
-                  child: Text(next == 0 ? tr('Mulligan (grátis)') : tr('Mulligan')),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          icon: const Icon(Icons.check_rounded),
+                          label: Text(tr('Manter')),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 8),
+                    Text(
+                      toBottom > 0
+                          ? tr('Ao manter, pões {toBottom} no fundo do grimório.', {'toBottom': toBottom})
+                          : next == 0
+                              ? tr('O primeiro mulligan é grátis: voltas a comprar 7 e não pões nenhuma no fundo.')
+                              : tr('Com mulligan, baralhas a mão e compras 7 de novo; ao manter, pões {n} no fundo.',
+                                  {'n': next}),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.white70),
+                    ),
+                  ]),
                 ),
-                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Manter'))),
-              ],
+              ),
             );
           },
         ),
@@ -407,6 +487,9 @@ class _TableScreenState extends ConsumerState<TableScreen> {
       ctrl.actAs(seat);
       if (keep) {
         if (toBottom > 0) await showBottomPicker(context, ctrl, toBottom);
+        // os outros ficam a saber que já decidi
+        ctrl.actAs(seat);
+        ctrl.keepHand();
         break;
       }
       ctrl.mulligan();
@@ -557,6 +640,58 @@ class _TableScreenState extends ConsumerState<TableScreen> {
     ctrl.send(Intent(Ev.lifeEach, {'seats': foes, 'delta': delta}));
   }
 
+  // A visita à mesa: as partes do ecrã de que fala.
+  final _kPlayers = GlobalKey(),
+      _kField = GlobalKey(),
+      _kZones = GlobalKey(),
+      _kHand = GlobalKey(),
+      _kPass = GlobalKey();
+  bool _touring = false;
+
+  /// Primeiro jogo: depois da mão inicial, mostra a visita (uma vez).
+  void _maybeTour() {
+    if (_touring || !widget.tour || ref.read(settingsProvider).tableTourDone) return;
+    if (!ctrl.mySeats.every(ctrl.openingDone.contains)) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) setState(() => _touring = true);
+    });
+  }
+
+  List<TourStep> get _tourSteps => [
+        TourStep(
+            _kPlayers,
+            tr('Os jogadores'),
+            // o coração só está na barra quando há largura (senão vai para o menu)
+            MediaQuery.sizeOf(context).width < 480
+                ? tr(
+                    'A vida e as cartas na mão de cada um. Toca num jogador para ver o campo dele. As vidas em grande estão no menu ⋮.')
+                : tr(
+                    'A vida e as cartas na mão de cada um. Toca num jogador para ver o campo dele. O coração em cima abre as vidas em grande.')),
+        TourStep(_kField, tr('O campo'),
+            tr('Toca numa carta para ver o que podes fazer com ela. Toca duas vezes para a virar (tap). Arrasta para a mudar de sítio.')),
+        TourStep(_kZones, tr('As zonas'),
+            tr('Grimório, cemitério, exílio e comando. Toca no grimório para comprar, baralhar, fazer scry e mais.')),
+        TourStep(_kHand, tr('A tua mão'),
+            tr('Toca numa carta para a jogar, ou arrasta-a para o campo. O botão ao lado mostra a mão toda, por tipo.')),
+        TourStep(_kPass, tr('Passar o turno'),
+            tr('Quando acabares, passa o turno aqui. Enganaste-te? A seta em cima desfaz o teu último passo.')),
+      ];
+
+  /// Desfaz e diz o que desfez (o registo pode juntar vários passos numa linha).
+  void _undo() {
+    final what = ctrl.undoLabel;
+    ctrl.undo();
+    if (what == null || !mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(tr('Desfeito: {v}', {'v': what})),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ));
+  }
+
   void _menu() {
     showModalBottomSheet<void>(
       context: context,
@@ -572,6 +707,12 @@ class _TableScreenState extends ConsumerState<TableScreen> {
             listenable: ctrl,
             builder: (ctx, _) => SingleChildScrollView(
               child: Wrap(children: [
+                ListTile(
+                  leading: const Icon(Icons.favorite_border_rounded),
+                  title: Text(tr('Vidas')),
+                  subtitle: Text(tr('Jogo em curso há {n} min', {'n': ctrl.elapsed.inMinutes})),
+                  onTap: () => run(() => pushTablePage<void>(context, LifeScreen(ctrl: ctrl))),
+                ),
                 SwitchListTile(
                   title: Text(tr('Compra automática no início do turno')),
                   value: ctrl.autoDraw,
@@ -700,153 +841,204 @@ class _TableScreenState extends ConsumerState<TableScreen> {
           // A mesa é densa: com a letra do sistema muito grande, os cartões dos
           // jogadores e as zonas deixavam de caber. Os menus e diálogos (fora
           // deste MediaQuery) continuam com o tamanho escolhido.
+          _maybeTour();
           return MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.15,
-              child: Scaffold(
-                appBar: AppBar(
-                  toolbarHeight: layout.short ? 44 : 48,
-                  titleSpacing: 0,
-                  title: Text(
-                    // Em Commander conta-se por rondas ("o meu 3.º turno"), não pelo
-                    // turno de toda a gente.
-                    s.over
-                        ? tr('Jogo terminado')
-                        : widget.matchStatus != null
-                            ? tr('{m} · {v}',
-                                {'m': widget.matchStatus!(), 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
-                            : tr('Ronda {round} · {v}',
-                                {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''}),
-                    // Num telemóvel estreito o botão da fase tira espaço: duas linhas.
-                    style: narrowBar ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
-                    maxLines: narrowBar ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  actions: [
-                    if (s.storm > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Chip(
-                          visualDensity: VisualDensity.compact,
-                          avatar: const Icon(Icons.bolt, size: 16),
-                          label: Text('${s.storm}'),
+              child: Stack(children: [
+                Scaffold(
+                  appBar: AppBar(
+                    toolbarHeight: layout.short ? 44 : 48,
+                    titleSpacing: 0,
+                    title: Text(
+                      // Em Commander conta-se por rondas ("o meu 3.º turno"), não pelo
+                      // turno de toda a gente.
+                      s.over
+                          ? tr('Jogo terminado')
+                          : widget.matchStatus != null
+                              ? tr('{m} · {v}',
+                                  {'m': widget.matchStatus!(), 'v': myTurn ? tr('o teu turno') : active?.name ?? ''})
+                              : tr('Ronda {round} · {v}',
+                                  {'round': ctrl.round, 'v': myTurn ? tr('o teu turno') : active?.name ?? ''}),
+                      // Num telemóvel estreito o botão da fase tira espaço: duas linhas.
+                      style: narrowBar ? theme.textTheme.titleSmall : theme.textTheme.titleMedium,
+                      maxLines: narrowBar ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    actions: [
+                      if (s.storm > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Chip(
+                            visualDensity: VisualDensity.compact,
+                            avatar: const Icon(Icons.bolt, size: 16),
+                            label: Text('${s.storm}'),
+                          ),
                         ),
+                      if (s.dayNight != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
+                              color: s.dayNight == 'night' ? Colors.indigo.shade200 : GameColors.gold),
+                        ),
+                      ActionChip(
+                        label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          final i = _phases.indexWhere((p) => p.$1 == s.phase);
+                          ctrl.send(Intent(Ev.setPhase, {'phase': _phases[(i + 1) % _phases.length].$1}));
+                        },
                       ),
-                    if (s.dayNight != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Icon(s.dayNight == 'night' ? Icons.nightlight_round : Icons.wb_sunny,
-                            color: s.dayNight == 'night' ? Colors.indigo.shade200 : GameColors.gold),
+                      if (!narrowBar)
+                        IconButton(
+                          tooltip: tr('Vidas'),
+                          onPressed: () => pushTablePage<void>(context, LifeScreen(ctrl: ctrl)),
+                          icon: const Icon(Icons.favorite_border_rounded),
+                        ),
+                      IconButton(
+                        // diz o que vai desfazer (manter premido mostra)
+                        tooltip: ctrl.undoLabel == null ? tr('Desfazer') : tr('Desfazer: {v}', {'v': ctrl.undoLabel}),
+                        onPressed: ctrl.canUndo ? _undo : null,
+                        icon: const Icon(Icons.undo),
                       ),
-                    ActionChip(
-                      label: Text(phaseLabel, style: const TextStyle(fontSize: 12)),
-                      onPressed: () {
-                        final i = _phases.indexWhere((p) => p.$1 == s.phase);
-                        ctrl.send(Intent(Ev.setPhase, {'phase': _phases[(i + 1) % _phases.length].$1}));
-                      },
-                    ),
-                    IconButton(
-                      tooltip: tr('Desfazer'),
-                      onPressed: ctrl.canUndo ? ctrl.undo : null,
-                      icon: const Icon(Icons.undo),
-                    ),
-                    IconButton(
-                      tooltip: tr('Registo'),
-                      onPressed: () => showLogSheet(context, ctrl),
-                      icon: const Icon(Icons.receipt_long),
-                    ),
-                    IconButton(tooltip: tr('Mais'), onPressed: _menu, icon: const Icon(Icons.more_vert)),
-                  ],
-                ),
-                body: Stack(children: [
-                  LayoutBuilder(builder: (context, box) {
-                    final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
-                    if (!layout.wide) {
-                      // Em telemóveis pequenos a mão, as zonas e os jogadores
-                      // encolhem, para o campo não ficar reduzido a uma tira.
-                      final tight = box.maxHeight < 600;
+                      IconButton(
+                        tooltip: tr('Registo'),
+                        onPressed: () => showLogSheet(context, ctrl),
+                        icon: const Icon(Icons.receipt_long),
+                      ),
+                      IconButton(tooltip: tr('Mais'), onPressed: _menu, icon: const Icon(Icons.more_vert)),
+                    ],
+                  ),
+                  body: Stack(children: [
+                    LayoutBuilder(builder: (context, box) {
+                      final lastLog = s.log.isEmpty ? '' : ctrl.logText(s.log.last);
+                      if (!layout.wide) {
+                        // Em telemóveis pequenos a mão, as zonas e os jogadores
+                        // encolhem, para o campo não ficar reduzido a uma tira.
+                        final tight = box.maxHeight < 600;
+                        // tablet ao alto: os jogadores em cartões grandes
+                        final all = box.maxWidth >= 600 && box.maxHeight >= 900;
+                        return Column(children: [
+                          if (widget.banner != null) widget.banner!,
+                          ..._notices(theme),
+                          KeyedSubtree(key: _kPlayers, child: _PlayersStrip(ctrl: ctrl, compact: tight, big: all)),
+                          Expanded(child: KeyedSubtree(key: _kField, child: TableBattlefield(ctrl: ctrl))),
+                          KeyedSubtree(key: _kZones, child: TableZonesRow(ctrl: ctrl, pileWidth: tight ? 34 : 44)),
+                          KeyedSubtree(
+                              key: _kHand,
+                              child: TableHand(ctrl: ctrl, height: (box.maxHeight * 0.2).clamp(92.0, 136.0))),
+                          KeyedSubtree(key: _kPass, child: _BottomBar(ctrl: ctrl, lastLog: lastLog, onPass: _passTurn)),
+                        ]);
+                      }
+                      // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
+                      // turno" passam para uma coluna à direita. Num telemóvel deitado
+                      // (pouca altura) a mão e a coluna encolhem.
+                      // Tablet deitado (há altura): jogadores com
+                      // a arte do comandante, mão maior e o registo na coluna da direita.
+                      final roomy = !layout.short && box.maxHeight >= 640;
+                      final handH = (box.maxHeight * (roomy ? 0.26 : 0.24)).clamp(84.0, roomy ? 200.0 : 168.0);
+                      final panelW = layout.short
+                          ? 96.0
+                          : roomy
+                              ? 236.0
+                              : 128.0;
                       return Column(children: [
                         if (widget.banner != null) widget.banner!,
                         ..._notices(theme),
-                        _PlayersStrip(ctrl: ctrl, compact: tight),
-                        Expanded(child: TableBattlefield(ctrl: ctrl)),
-                        TableZonesRow(ctrl: ctrl, pileWidth: tight ? 34 : 44),
-                        TableHand(ctrl: ctrl, height: (box.maxHeight * 0.2).clamp(92.0, 136.0)),
-                        _BottomBar(ctrl: ctrl, lastLog: lastLog, onPass: _passTurn),
-                      ]);
-                    }
-                    // Ecrã largo: o campo fica com a altura toda; zonas e "Passar
-                    // turno" passam para uma coluna à direita. Num telemóvel deitado
-                    // (pouca altura) a mão e a coluna encolhem.
-                    final handH = (box.maxHeight * 0.24).clamp(84.0, 168.0);
-                    final panelW = layout.short ? 96.0 : 128.0;
-                    return Column(children: [
-                      if (widget.banner != null) widget.banner!,
-                      ..._notices(theme),
-                      Expanded(
-                        child: Row(children: [
-                          Expanded(
-                            child: Column(children: [
-                              _PlayersStrip(ctrl: ctrl, compact: layout.short),
-                              Expanded(child: TableBattlefield(ctrl: ctrl)),
-                              // Num dobrável aberto a mão ficava por baixo da barra de gestos.
-                              SafeArea(
-                                top: false,
-                                right: false,
-                                child: TableHand(ctrl: ctrl, height: handH),
-                              ),
-                            ]),
-                          ),
-                          Container(
-                            width: panelW,
-                            decoration: BoxDecoration(
-                              border: Border(left: BorderSide(color: theme.colorScheme.outline)),
-                            ),
-                            child: SafeArea(
-                              left: false,
+                        Expanded(
+                          child: Row(children: [
+                            Expanded(
                               child: Column(children: [
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    child: TableZonesRow(ctrl: ctrl, vertical: true, pileWidth: layout.short ? 42 : 72),
-                                  ),
-                                ),
-                                const Divider(height: 1),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
-                                  child: GestureDetector(
-                                    onTap: () => showLogSheet(context, ctrl),
-                                    child: Text(lastLog,
-                                        maxLines: layout.short ? 2 : 4,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(6),
-                                  child: FilledButton(
-                                    style: FilledButton.styleFrom(
-                                      minimumSize: Size.fromHeight(layout.short ? 44 : 64),
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    ),
-                                    onPressed:
-                                        ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork ? _passTurn : null,
-                                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                      const Icon(Icons.skip_next),
-                                      if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
-                                    ]),
-                                  ),
+                                KeyedSubtree(
+                                    key: _kPlayers,
+                                    child: _PlayersStrip(ctrl: ctrl, compact: layout.short, big: roomy)),
+                                Expanded(child: KeyedSubtree(key: _kField, child: TableBattlefield(ctrl: ctrl))),
+                                // Num dobrável aberto a mão ficava por baixo da barra de gestos.
+                                SafeArea(
+                                  top: false,
+                                  right: false,
+                                  child: KeyedSubtree(key: _kHand, child: TableHand(ctrl: ctrl, height: handH)),
                                 ),
                               ]),
                             ),
-                          ),
-                        ]),
-                      ),
-                    ]);
-                  }),
-                  if (_bigResult case final r?) BigResult(value: r.$1, label: r.$2),
-                ]),
-              ));
+                            Container(
+                              width: panelW,
+                              decoration: BoxDecoration(
+                                border: Border(left: BorderSide(color: theme.colorScheme.outline)),
+                              ),
+                              child: SafeArea(
+                                left: false,
+                                child: Column(children: [
+                                  if (roomy) ...[
+                                    // zonas em grelha (2 por linha) e, por baixo, as últimas jogadas
+                                    Flexible(
+                                      child: SingleChildScrollView(
+                                        child: KeyedSubtree(
+                                            key: _kZones,
+                                            child:
+                                                TableZonesRow(ctrl: ctrl, vertical: true, grid: true, pileWidth: 84)),
+                                      ),
+                                    ),
+                                    const Divider(height: 1),
+                                    Expanded(child: _LogPanel(ctrl: ctrl)),
+                                  ] else ...[
+                                    Expanded(
+                                      child: SingleChildScrollView(
+                                        child: KeyedSubtree(
+                                            key: _kZones,
+                                            child: TableZonesRow(
+                                                ctrl: ctrl, vertical: true, pileWidth: layout.short ? 42 : 72)),
+                                      ),
+                                    ),
+                                    const Divider(height: 1),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                                      child: GestureDetector(
+                                        onTap: () => showLogSheet(context, ctrl),
+                                        child: Text(lastLog,
+                                            maxLines: layout.short ? 2 : 4,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                      ),
+                                    ),
+                                  ],
+                                  Padding(
+                                    key: _kPass,
+                                    padding: const EdgeInsets.all(6),
+                                    child: FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        minimumSize: Size.fromHeight(layout.short ? 44 : 64),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      ),
+                                      onPressed:
+                                          ctrl.mySeats.contains(s.activeSeat) || !ctrl.isNetwork ? _passTurn : null,
+                                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                        const Icon(Icons.skip_next),
+                                        if (!layout.short) Text(tr('Passar turno'), textAlign: TextAlign.center),
+                                      ]),
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ]);
+                    }),
+                    if (_bigResult case final r?) BigResult(value: r.$1, label: r.$2),
+                  ]),
+                ),
+                if (_touring)
+                  Positioned.fill(
+                    child: TableTour(
+                      steps: _tourSteps,
+                      onDone: () {
+                        ref.read(settingsProvider).tableTourDone = true;
+                        setState(() => _touring = false);
+                      },
+                    ),
+                  ),
+              ]));
         },
       ),
     );
@@ -891,11 +1083,14 @@ class BigResult extends StatelessWidget {
 }
 
 class _PlayersStrip extends StatelessWidget {
-  const _PlayersStrip({required this.ctrl, this.compact = false});
+  const _PlayersStrip({required this.ctrl, this.compact = false, this.big = false});
   final GameController ctrl;
 
   /// Telemóvel deitado: menos altura.
   final bool compact;
+
+  /// Tablet: cartões grandes, com a arte do comandante e a vida em grande.
+  final bool big;
 
   @override
   Widget build(BuildContext context) {
@@ -906,6 +1101,23 @@ class _PlayersStrip extends StatelessWidget {
     // (antes era preciso deslizar para ver a vida do último).
     final width = MediaQuery.sizeOf(context).width;
     final split = seats.length >= 3 && width / seats.length < 150;
+    if (big && width / seats.length >= 170) {
+      return SizedBox(
+        height: 80,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 6, 2, 6),
+          child: Row(children: [
+            for (final seat in seats)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: _BigPlayerChip(ctrl: ctrl, seat: seat, color: GameColors.player(seats.indexOf(seat))),
+                ),
+              ),
+          ]),
+        ),
+      );
+    }
     final chips = [
       for (final seat in seats)
         Builder(builder: (context) {
@@ -1150,7 +1362,18 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
     final canAct = ctrl.mySeats.contains(seat) || !ctrl.isNetwork;
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
-    final bg = settings.backgroundImage;
+    var bg = settings.backgroundImage;
+    if (settings.commanderBackground) {
+      // a ilustração do comandante de quem está em vista (o primeiro, com dois)
+      final cmd = s.cards.values.where((c) => c.isCommander && c.owner == seat).firstOrNull;
+      final card = cmd == null ? null : ctrl.card(cmd.oracleId, printId: cmd.printId);
+      final ref0 = card == null ? null : ImageRef.allOf(card).firstOrNull;
+      final art = ref0 == null ? null : ref.watch(imagesProvider).art(ref0);
+      if (art != null) bg = FileImage(art);
+    }
+    // o campo de quem tem a vez fica com o contorno na cor desse lugar
+    final active = s.activeSeat == seat && s.players.length > 1;
+    final seatColor = GameColors.player((s.players.keys.toList()..sort()).indexOf(seat));
 
     return LayoutBuilder(builder: (context, box) {
       // Margem para as cartas nunca ficarem encostadas às extremidades.
@@ -1198,8 +1421,11 @@ class _BattlefieldState extends ConsumerState<TableBattlefield> {
               x: ((local.dx - pad) / spanX).clamp(0.0, 1.0), y: ((local.dy - pad) / spanY).clamp(0.0, 1.0));
         },
         builder: (context, candidates, _) => Container(
-          foregroundDecoration:
-              candidates.isEmpty ? null : BoxDecoration(border: Border.all(color: theme.colorScheme.primary, width: 3)),
+          foregroundDecoration: candidates.isNotEmpty
+              ? BoxDecoration(border: Border.all(color: theme.colorScheme.primary, width: 3))
+              : active
+                  ? BoxDecoration(border: Border.all(color: seatColor, width: 3))
+                  : null,
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.35),
             image: bg == null
@@ -1315,12 +1541,16 @@ class _ArrowPainter extends CustomPainter {
 
 /// Zona de comando, grimório, cemitério e exílio de um lugar.
 class TableZonesRow extends StatelessWidget {
-  const TableZonesRow({super.key, required this.ctrl, this.seat, this.vertical = false, this.pileWidth = 44});
+  const TableZonesRow(
+      {super.key, required this.ctrl, this.seat, this.vertical = false, this.grid = false, this.pileWidth = 44});
   final GameController ctrl;
   final int? seat;
 
   /// Em coluna (barra lateral da mesa no tablet).
   final bool vertical;
+
+  /// Em grelha, várias por linha (a coluna larga do tablet).
+  final bool grid;
   final double pileWidth;
 
   @override
@@ -1371,98 +1601,118 @@ class TableZonesRow extends StatelessWidget {
           ]),
         );
 
+    final commandCards = [
+      for (final c in command)
+        GestureDetector(
+          onTap: () {
+            ctrl.actAs(seat);
+            showCardActions(context, ctrl, c);
+          },
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TableCardView(
+                instance: c,
+                card: ctrl.card(c.oracleId, printId: c.printId),
+                width: w,
+                tax: p?.commanderTax(c.id),
+                highlighted: ctrl.coachFocus.contains(c.oracleId),
+                showTapped: false),
+            Text(tr('Comando'), style: const TextStyle(fontSize: 10)),
+          ]),
+        ),
+      // Comandante fora da zona de comando: o lugar fica marcado.
+      if (command.isEmpty && s.cards.values.any((c) => c.isCommander && c.owner == seat))
+        pile(tr('Comando'), 0, null, () {}),
+    ];
+    final libraryPile = pile(
+      tr('Grimório'),
+      p?.libraryCount ?? 0,
+      (p?.libraryCount ?? 0) > 0 ? const CardBack() : null,
+      mine
+          ? () {
+              ctrl.actAs(seat);
+              // Em rede uma compra por engano vê-se em todos os telemóveis:
+              // o toque abre o menu (Comprar 1 é a primeira opção).
+              if (ctrl.isNetwork) {
+                showLibraryMenu(context, ctrl);
+              } else {
+                ctrl.draw();
+              }
+            }
+          : () {},
+      onLong: mine
+          ? () {
+              ctrl.actAs(seat);
+              showLibraryMenu(context, ctrl);
+            }
+          : null,
+    );
+    final gravePile = pile(
+      tr('Cemitério'),
+      grave.length,
+      grave.isEmpty
+          ? null
+          : TableCardView(
+              instance: grave.last,
+              card: ctrl.card(grave.last.oracleId, printId: grave.last.printId),
+              width: w,
+              showTapped: false),
+      () => showZoneList(context, ctrl, seat, Zone.graveyard),
+    );
+    final exilePile = pile(
+      tr('Exílio'),
+      exile.length,
+      exile.isEmpty
+          ? null
+          : TableCardView(
+              instance: exile.last,
+              card: ctrl.card(exile.last.oracleId, printId: exile.last.printId),
+              width: w,
+              showTapped: false),
+      () => showZoneList(context, ctrl, seat, Zone.exile),
+    );
+    final more = !mine
+        ? null
+        : IconButton(
+            tooltip: tr('Grimório'),
+            onPressed: () {
+              ctrl.actAs(seat);
+              showLibraryMenu(context, ctrl);
+            },
+            icon: const Icon(Icons.more_horiz),
+          );
+
+    if (grid) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: [...commandCards, libraryPile, gravePile, exilePile, if (more != null) more],
+        ),
+      );
+    }
     return Padding(
       padding: vertical ? const EdgeInsets.fromLTRB(8, 10, 8, 4) : const EdgeInsets.fromLTRB(8, 6, 8, 2),
       child: Flex(
           direction: vertical ? Axis.vertical : Axis.horizontal,
           mainAxisSize: vertical ? MainAxisSize.min : MainAxisSize.max,
           children: [
-            for (final c in command)
+            for (final c in commandCards)
               Padding(
                 padding: vertical ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(right: 6),
-                child: GestureDetector(
-                  onTap: () {
-                    ctrl.actAs(seat);
-                    showCardActions(context, ctrl, c);
-                  },
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    TableCardView(
-                        instance: c,
-                        card: ctrl.card(c.oracleId, printId: c.printId),
-                        width: w,
-                        tax: p?.commanderTax(c.id),
-                        highlighted: ctrl.coachFocus.contains(c.oracleId),
-                        showTapped: false),
-                    Text(tr('Comando'), style: const TextStyle(fontSize: 10)),
-                  ]),
-                ),
-              ),
-            // Comandante fora da zona de comando: o lugar fica marcado.
-            if (command.isEmpty && s.cards.values.any((c) => c.isCommander && c.owner == seat))
-              Padding(
-                padding: vertical ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(right: 6),
-                child: pile(tr('Comando'), 0, null, () {}),
+                child: c,
               ),
             if (vertical) const SizedBox(height: 6) else const Spacer(),
-            pile(
-              tr('Grimório'),
-              p?.libraryCount ?? 0,
-              (p?.libraryCount ?? 0) > 0 ? const CardBack() : null,
-              mine
-                  ? () {
-                      ctrl.actAs(seat);
-                      // Em rede uma compra por engano vê-se em todos os telemóveis:
-                      // o toque abre o menu (Comprar 1 é a primeira opção).
-                      if (ctrl.isNetwork) {
-                        showLibraryMenu(context, ctrl);
-                      } else {
-                        ctrl.draw();
-                      }
-                    }
-                  : () {},
-              onLong: mine
-                  ? () {
-                      ctrl.actAs(seat);
-                      showLibraryMenu(context, ctrl);
-                    }
-                  : null,
-            ),
+            libraryPile,
             gap(),
-            pile(
-              tr('Cemitério'),
-              grave.length,
-              grave.isEmpty
-                  ? null
-                  : TableCardView(
-                      instance: grave.last,
-                      card: ctrl.card(grave.last.oracleId, printId: grave.last.printId),
-                      width: w,
-                      showTapped: false),
-              () => showZoneList(context, ctrl, seat, Zone.graveyard),
-            ),
+            gravePile,
             gap(),
-            pile(
-              tr('Exílio'),
-              exile.length,
-              exile.isEmpty
-                  ? null
-                  : TableCardView(
-                      instance: exile.last,
-                      card: ctrl.card(exile.last.oracleId, printId: exile.last.printId),
-                      width: w,
-                      showTapped: false),
-              () => showZoneList(context, ctrl, seat, Zone.exile),
-            ),
-            if (mine) ...[
+            exilePile,
+            if (more != null) ...[
               if (!vertical) const SizedBox(width: 4),
-              IconButton(
-                tooltip: tr('Grimório'),
-                onPressed: () {
-                  ctrl.actAs(seat);
-                  showLibraryMenu(context, ctrl);
-                },
-                icon: const Icon(Icons.more_horiz),
-              ),
+              more,
             ],
           ]),
     );
@@ -1519,88 +1769,136 @@ class _TableHandState extends ConsumerState<TableHand> {
     // Linha do custo de mana por cima de cada carta, sempre legível.
     final costH = (widget.height * 0.12).clamp(10.0, 17.0);
     final cardW = (widget.height - 10 - costH) * cardAspect;
+    Widget buildCard(BuildContext context, PrivateCard pc) {
+      final card = ctrl.card(pc.oracleId, printId: pc.printId);
+      final item = GestureDetector(
+        onTap: covered
+            ? () => setState(() => _peek = true)
+            : () {
+                ctrl.actAs(seat);
+                showHandCardActions(context, ctrl, pc);
+              },
+        onDoubleTap: covered
+            ? null
+            : () {
+                ctrl.actAs(seat);
+                ctrl.playFromHand(pc);
+              },
+        child: SizedBox(
+          width: cardW,
+          child: Column(children: [
+            SizedBox(
+              height: costH,
+              child: Builder(builder: (_) {
+                if (covered || card == null) return const SizedBox.shrink();
+                final cost = card.faces.isNotEmpty && card.faces.first.manaCost.isNotEmpty
+                    ? card.faces.first.manaCost
+                    : card.manaCost;
+                // Sem custo (terrenos): nada. Um FittedBox à volta de algo
+                // sem tamanho dá uma escala inválida e apaga a lista toda.
+                if (cost.isEmpty) return const SizedBox.shrink();
+                return FittedBox(child: ManaCost(cost, size: costH - 2));
+              }),
+            ),
+            const SizedBox(height: 2),
+            covered || card == null
+                ? const CardBack()
+                : ctrl.coachFocus.contains(pc.oracleId)
+                    ? DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
+                          ],
+                        ),
+                        child: CardImage(card),
+                      )
+                    : CardImage(card),
+          ]),
+        ),
+      );
+      if (covered) return item;
+      // Tocar e manter, e arrastar para o campo.
+      return Semantics(
+        button: true,
+        label: card?.displayName ?? tr('carta'),
+        child: LongPressDraggable<PrivateCard>(
+          data: pc,
+          delay: const Duration(milliseconds: 250),
+          onDragStarted: () => ctrl.actAs(seat),
+          feedback: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: cardW * 1.15,
+              child: card == null ? const CardBack() : CardImage(card),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.3, child: item),
+          child: item,
+        ),
+      );
+    }
+
     final list = hand.isEmpty
         ? Center(child: Text(tr('Mão vazia'), style: theme.textTheme.bodySmall))
-        : ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            itemCount: hand.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 4),
-            itemBuilder: (context, i) {
-              final pc = hand[i];
-              final card = ctrl.card(pc.oracleId, printId: pc.printId);
-              final item = GestureDetector(
-                onTap: covered
-                    ? () => setState(() => _peek = true)
-                    : () {
-                        ctrl.actAs(seat);
-                        showHandCardActions(context, ctrl, pc);
-                      },
-                onDoubleTap: covered
-                    ? null
-                    : () {
-                        ctrl.actAs(seat);
-                        ctrl.playFromHand(pc);
-                      },
-                child: SizedBox(
-                  width: cardW,
-                  child: Column(children: [
-                    SizedBox(
-                      height: costH,
-                      child: Builder(builder: (_) {
-                        if (covered || card == null) return const SizedBox.shrink();
-                        final cost = card.faces.isNotEmpty && card.faces.first.manaCost.isNotEmpty
-                            ? card.faces.first.manaCost
-                            : card.manaCost;
-                        // Sem custo (terrenos): nada. Um FittedBox à volta de algo
-                        // sem tamanho dá uma escala inválida e apaga a lista toda.
-                        if (cost.isEmpty) return const SizedBox.shrink();
-                        return FittedBox(child: ManaCost(cost, size: costH - 2));
-                      }),
-                    ),
-                    const SizedBox(height: 2),
-                    covered || card == null
-                        ? const CardBack()
-                        : ctrl.coachFocus.contains(pc.oracleId)
-                            ? DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(6),
-                                  boxShadow: [
-                                    BoxShadow(color: theme.colorScheme.primary, blurRadius: 10, spreadRadius: 3),
-                                  ],
-                                ),
-                                child: CardImage(card),
-                              )
-                            : CardImage(card),
-                  ]),
-                ),
+        : LayoutBuilder(builder: (context, box) {
+            final fits = hand.length * (cardW + 4) + 16 <= box.maxWidth;
+            // a rotação empurra as pontas para fora: fica uma margem de cada lado
+            final step = hand.length > 1 ? (box.maxWidth - 28 - cardW) / (hand.length - 1) : cardW;
+            // Não cabem: em leque, sobrepostas e um pouco rodadas, sem deslizar
+            // (com muitas, a sobreposição esconderia demasiado: volta a lista).
+            if (fits) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < hand.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 4),
+                        buildCard(context, hand[i]),
+                      ],
+                    ]),
               );
-              if (covered) return item;
-              // Tocar e manter, e arrastar para o campo.
-              return Semantics(
-                button: true,
-                label: card?.displayName ?? tr('carta'),
-                child: LongPressDraggable<PrivateCard>(
-                  data: pc,
-                  delay: const Duration(milliseconds: 250),
-                  onDragStarted: () => ctrl.actAs(seat),
-                  feedback: Material(
-                    color: Colors.transparent,
-                    child: SizedBox(
-                      width: cardW * 1.15,
-                      child: card == null ? const CardBack() : CardImage(card),
-                    ),
+            }
+            if (covered || step < cardW * 0.4) {
+              return ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                itemCount: hand.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 4),
+                itemBuilder: (context, i) => buildCard(context, hand[i]),
+              );
+            }
+            final mid = (hand.length - 1) / 2;
+            return Stack(clipBehavior: Clip.hardEdge, children: [
+              for (var i = 0; i < hand.length; i++)
+                Positioned(
+                  left: 14 + i * step,
+                  // em arco: as das pontas um pouco mais abaixo
+                  top: 2 + 4 * ((i - mid) / (mid == 0 ? 1 : mid)) * ((i - mid) / (mid == 0 ? 1 : mid)),
+                  child: Transform.rotate(
+                    angle: (i - mid) * 0.03,
+                    alignment: Alignment.bottomCenter,
+                    child: buildCard(context, hand[i]),
                   ),
-                  childWhenDragging: Opacity(opacity: 0.3, child: item),
-                  child: item,
                 ),
-              );
-            },
-          );
+            ]);
+          });
     return SizedBox(
       height: widget.height,
       child: !widget.hidden
-          ? list
+          ? Row(children: [
+              Expanded(child: list),
+              // a mão toda num ecrã, agrupada por tipo
+              if (hand.length > 1)
+                IconButton(
+                  // o tooltip também é o nome para o leitor de ecrã
+                  tooltip: tr('Ver a mão toda'),
+                  onPressed: () => pushTablePage<void>(context, HandOverviewScreen(ctrl: ctrl, seat: seat)),
+                  icon: const Icon(Icons.grid_view_rounded),
+                ),
+            ])
           : Row(children: [
               Expanded(child: list),
               IconButton(
@@ -1647,6 +1945,226 @@ class _BottomBar extends StatelessWidget {
           ),
         ]),
       ),
+    );
+  }
+}
+
+/// No ecrã do mulligan: um adversário e o que fez com a mão inicial.
+class _MulliganChip extends StatelessWidget {
+  const _MulliganChip({required this.player, required this.color});
+  final PlayerState player;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = player;
+    final (text, icon) = p.kept
+        ? (tr('ficou com {n}', {'n': p.handCount}), Icons.check_rounded)
+        : p.mulligans > 0
+            ? (tr('mulligan {n}', {'n': p.mulligans}), Icons.refresh_rounded)
+            : (tr('a decidir'), Icons.hourglass_top_rounded);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(p.kept ? 0.14 : 0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.8)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 14, color: p.kept ? EdhColors.ok : Colors.white70),
+        const SizedBox(width: 4),
+        Text('${p.name} · $text', style: const TextStyle(color: Colors.white, fontSize: 12)),
+      ]),
+    );
+  }
+}
+
+/// Tablet: um jogador na faixa de cima, com a arte do comandante por trás e a
+/// vida em grande.
+class _BigPlayerChip extends StatelessWidget {
+  const _BigPlayerChip({required this.ctrl, required this.seat, required this.color});
+  final GameController ctrl;
+  final int seat;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ctrl.state;
+    final p = s.players[seat]!;
+    final theme = Theme.of(context);
+    final isActive = s.activeSeat == seat;
+    final viewing = ctrl.viewSeat == seat;
+    final maxCmd = p.commanderDamage.values.fold(0, (m, v) => v > m ? v : m);
+    final poison = p.counters[PlayerCounter.poison] ?? 0;
+    final targeted = s.targets.any((t) => t.seat == seat);
+    final cmd = s.cards.values.where((c) => c.isCommander && c.owner == seat).firstOrNull;
+    final card = cmd == null ? null : ctrl.card(cmd.oracleId, printId: cmd.printId);
+    const shadow = [Shadow(blurRadius: 4)];
+    const dim = TextStyle(color: Colors.white70, fontSize: 12, shadows: shadow);
+    return Semantics(
+      button: true,
+      label: tr('{v}: {life} de vida', {'v': p.name, 'life': p.life}),
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          if (!viewing) ctrl.setView(seat);
+          if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
+        },
+        onLongPress: () => showPlayerSheet(context, ctrl, seat),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: targeted
+                  ? targetGlow
+                  : isActive
+                      ? color
+                      : viewing
+                          ? Colors.white70
+                          : theme.colorScheme.outline,
+              width: isActive || targeted ? 3 : (viewing ? 2 : 1),
+            ),
+            boxShadow:
+                targeted ? [BoxShadow(color: targetGlow.withOpacity(0.8), blurRadius: 12, spreadRadius: 1)] : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: ArtBanner.card(
+              card,
+              credit: false,
+              alignment: const Alignment(0, -0.4),
+              child: Stack(fit: StackFit.expand, children: [
+                // a cor do lugar, numa faixa à esquerda
+                Positioned(left: 0, top: 0, bottom: 0, width: 5, child: ColoredBox(color: color)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            if (targeted) const Icon(Icons.gps_fixed, color: targetGlow, size: 16),
+                            if (s.monarch == seat)
+                              const Icon(Icons.workspace_premium, size: 15, color: GameColors.gold),
+                            if (s.initiative == seat) const Icon(Icons.flag, size: 15, color: Colors.teal),
+                            if (ctrl.offline.contains(seat))
+                              Tooltip(
+                                  message: tr('Sem ligação'),
+                                  child: const Icon(Icons.wifi_off, size: 15, color: EdhColors.bad)),
+                            if (viewing) const Icon(Icons.visibility_outlined, size: 15, color: Colors.white70),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      shadows: shadow,
+                                      decoration: p.defeated ? TextDecoration.lineThrough : null)),
+                            ),
+                          ]),
+                          const SizedBox(height: 2),
+                          // com 4 num tablet ao alto há pouca largura: encolhe
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              const Icon(Icons.back_hand_outlined, size: 13, color: Colors.white70),
+                              Text(' ${p.handCount}   ', style: dim),
+                              const Icon(Icons.layers_outlined, size: 13, color: Colors.white70),
+                              Text(' ${p.libraryCount}', style: dim),
+                            ]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (poison > 0 || maxCmd > 0) ...[
+                      Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        if (poison > 0)
+                          Text('☠$poison',
+                              style: const TextStyle(fontSize: 13, color: Colors.lightGreenAccent, shadows: shadow)),
+                        if (maxCmd > 0)
+                          Text('★$maxCmd',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: maxCmd >= 21 ? EdhColors.bad : GameColors.gold,
+                                  shadows: shadow)),
+                      ]),
+                      const SizedBox(width: 8),
+                    ],
+                    Text('${p.life}',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            shadows: shadow,
+                            color: p.life <= 0 || p.defeated ? EdhColors.bad : Colors.white)),
+                    LifeDelta(life: p.life, fontSize: 12),
+                  ]),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tablet: as últimas jogadas na coluna da direita (tocar abre o registo todo).
+class _LogPanel extends StatelessWidget {
+  const _LogPanel({required this.ctrl});
+  final GameController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ctrl.state;
+    final theme = Theme.of(context);
+    final seats = s.players.keys.toList()..sort();
+    final entries = s.log.reversed.take(30).toList();
+    return InkWell(
+      onTap: () => showLogSheet(context, ctrl),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+          child: Row(children: [
+            Icon(Icons.receipt_long, size: 14, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(tr('Registo'), style: theme.textTheme.labelMedium),
+          ]),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(10, 0, 8, 8),
+            itemCount: entries.length,
+            itemBuilder: (context, i) {
+              final e = entries[i];
+              final idx = seats.indexOf(e.actor);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 5, right: 6),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: idx < 0 ? theme.colorScheme.outline : GameColors.player(idx),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(ctrl.logText(e),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: i == 0 ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant)),
+                  ),
+                ]),
+              );
+            },
+          ),
+        ),
+      ]),
     );
   }
 }

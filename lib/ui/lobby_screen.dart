@@ -22,13 +22,15 @@ import 'limited/draft_screen.dart';
 import 'room_screen.dart';
 import 'table/sideboard_sheet.dart';
 import 'table/table_screen.dart';
+import 'widgets/card_art.dart';
+import 'widgets/mana.dart';
 import 'widgets/responsive.dart';
 import '../l10n/l10n.dart';
 
 /// Lobby de uma sala: cada jogador escolhe o deck e fica pronto; o
 /// anfitrião começa o jogo. Depois mostra a mesa.
 class LobbyScreen extends ConsumerStatefulWidget {
-  const LobbyScreen({super.key, required this.session, this.format, this.life, this.resume});
+  const LobbyScreen({super.key, required this.session, this.format, this.life, this.resume, this.deck});
 
   final RoomSession session;
 
@@ -38,6 +40,10 @@ class LobbyScreen extends ConsumerStatefulWidget {
   /// Valores iniciais escolhidos pelo anfitrião ao criar a sala.
   final String? format;
   final int? life;
+
+  /// Vindo de um deck ("Jogar com este deck"): fica escolhido logo que a
+  /// sala estiver pronta.
+  final Deck? deck;
 
   @override
   ConsumerState<LobbyScreen> createState() => _LobbyScreenState();
@@ -91,8 +97,38 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     _game.addListener(_maybeShowDraft);
     _game.addListener(_maybeClosed);
     _game.addListener(_watchNetwork);
+    _game.addListener(_maybeUseStartDeck);
     // A voltar a um jogo: a mesa já existe (o registo foi repetido) e abre logo.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTable());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeUseStartDeck());
+  }
+
+  late Deck? _startDeck = widget.deck;
+
+  /// O deck com que se veio para a sala: escolhe-o quando já estou sentado
+  /// (e, no anfitrião, depois de a sala ter o formato do deck).
+  void _maybeUseStartDeck() {
+    final deck = _startDeck;
+    if (deck == null || !mounted) return;
+    final me = _game.me;
+    if (me == null || me.deckName != null || me.ready) return;
+    if (widget.session.isHost && widget.format != null && _game.format != widget.format) return;
+    _startDeck = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // numa sala de outro formato o deck não serve: fica por escolher
+      if (deck.format != _game.format) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr('Esta sala é de {v} e o deck {deck} é de {v2}: escolhe um deck de {v}.', {
+            'v': GameFormat.byId(_game.format).label,
+            'deck': deck.name,
+            'v2': GameFormat.byId(deck.format).label,
+          })),
+        ));
+        return;
+      }
+      _useDeck(deck);
+    });
   }
 
   void _maybeShowTable() {
@@ -298,8 +334,41 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     if (g.oneVsOne) {
       g.startMatches();
     } else {
-      g.start();
+      g.start(first: _first);
     }
+  }
+
+  /// Anfitrião (Commander): quem começa. Null = à sorte, no início.
+  int? _first;
+
+  /// Anfitrião: sorteia já quem começa (fica marcado no cartão).
+  /// Os lugares da sala: num tablet, dois por linha (com 4 jogadores
+  /// cabem todos sem deslizar).
+  List<Widget> _seatRows(BuildContext context, List<Widget> cards, {required double gap}) {
+    if (!isWide(context) || cards.length < 2) {
+      return [for (final c in cards) Padding(padding: EdgeInsets.only(bottom: gap), child: c)];
+    }
+    return [
+      for (var i = 0; i < cards.length; i += 2)
+        Padding(
+          padding: EdgeInsets.only(bottom: gap),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: cards[i]),
+            SizedBox(width: gap + 4),
+            Expanded(child: i + 1 < cards.length ? cards[i + 1] : const SizedBox.shrink()),
+          ]),
+        ),
+    ];
+  }
+
+  void _drawFirst() {
+    final ready = [
+      for (final p in _game.players.values)
+        if (p.connected && p.ready) p.seat
+    ];
+    final pool = ready.isEmpty ? _game.players.keys.toList() : ready;
+    if (pool.isEmpty) return;
+    setState(() => _first = pool[DateTime.now().microsecondsSinceEpoch % pool.length]);
   }
 
   /// Anfitrião: tirar um jogador da sala (quem saiu e deixou o lugar preso).
@@ -387,6 +456,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     ref
         .read(imagesProvider)
         .ensureRefs(cards.values.expand((c) => ImageRef.allOf(prints.resolve(c))), sizes: const ['small']).ignore();
+    final cover = deckCover(chosen, repo, prints);
+    final art = cover.cover;
     _game.selectDeck(
       chosen,
       legal: legal,
@@ -395,6 +466,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           cards[e.oracleId]?.name ?? '?', // Oracle: cada um mostra na sua língua
       ],
       gameChangers: format.hasCommandZone ? BracketEstimate.of(chosen, cards).count : null,
+      cover: art == null ? null : ImageRef.allOf(art).firstOrNull,
+      coverArtist: art == null ? null : (art.faces.isNotEmpty ? art.faces.first.artist : null) ?? art.artist,
+      identity: cover.identity,
     );
     if (!legal && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -549,6 +623,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
             bottomNavigationBar: me == null && !g.isHost
                 ? null
                 : BottomActions(children: [
+                    if (g.tournament == null && g.players.length > 1) _ReadyDots(players: g.players.values.toList()),
                     if (g.tournament case final t? when g.isHost)
                       if (t.finished)
                         FilledButton.icon(
@@ -600,151 +675,146 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       ),
                     ],
                   ]),
+            // no tablet os lugares ficam em duas colunas: mais largura
             body: MaxWidth(
+                max: isWide(context) ? 1100 : 760,
                 child: ListView(padding: const EdgeInsets.all(16), children: [
-              if (status == LinkStatus.reconnecting)
-                Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(leading: const CircularProgressIndicator(), title: Text(_lostText))),
-              if (status == LinkStatus.closed && !_closing)
-                Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
-              if (g.tournament case final t?) ...[
-                _TournamentCard(game: g, tournament: t),
-                const SizedBox(height: 8),
-              ],
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.rule, color: theme.colorScheme.primary),
-                  title: Text(tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
-                  subtitle: Text([
-                    g.players.length == 1
-                        ? tr('1 jogador na sala')
-                        : tr('{n} jogadores na sala', {'n': g.players.length}),
-                    // Só o Commander junta todos na mesma mesa.
-                    if (g.oneVsOne) tr('1 contra 1, à melhor de 3; todos jogam com todos'),
-                  ].join('\n')),
-                  trailing: g.isHost && g.tournament == null ? const Icon(Icons.edit) : null,
-                  // a meio dos encontros o formato e a vida não mudam
-                  onTap: g.isHost && g.tournament == null ? _configure : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(tr('Jogadores'), style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              for (final p in g.players.values)
-                Card(
-                  margin: EdgeInsets.only(bottom: dense ? 6 : 8),
-                  child: ListTile(
-                    dense: dense,
-                    visualDensity: dense ? VisualDensity.compact : null,
-                    onLongPress: g.isHost && p.seat != g.mySeat ? () => _kick(p) : null,
-                    leading: Icon(
-                      p.isHost ? Icons.star_rounded : Icons.person,
-                      color: p.connected ? EdhColors.ok : EdhColors.bad,
-                    ),
-                    title: Text(p.seat == g.mySeat ? tr('{v} (tu)', {'v': p.name}) : p.name),
-                    subtitle: Text(p.deckName == null
-                        ? tr('Ainda sem deck')
-                        : tr('{deckName} · {deckSize} cartas{v}{v2}{v3}', {
-                            'deckName': p.deckName,
-                            'deckSize': p.deckSize,
-                            'v': p.commanders.isEmpty ? '' : ' · ${p.commanders.map(_localName).join(' + ')}',
-                            'v2': p.gameChangers == null
-                                ? ''
-                                : ' · ${BracketEstimate(List.filled(p.gameChangers!, '')).short}',
-                            'v3': p.deckLegal ? '' : tr(' · com avisos')
-                          })),
-                    // Ecrã estreito: a palavra fica por baixo do ícone (só o ícone não se percebe).
-                    trailing: narrow
-                        ? Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
-                                size: 20, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
-                            Text(p.ready ? tr('Pronto') : tr('A escolher'),
-                                style: theme.textTheme.labelSmall
-                                    ?.copyWith(color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
-                          ])
-                        : Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
-                                size: 18, color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant),
-                            const SizedBox(width: 4),
-                            Text(p.ready ? tr('Pronto') : tr('A escolher'),
-                                style: theme.textTheme.labelMedium
-                                    ?.copyWith(color: p.ready ? EdhColors.ok : theme.colorScheme.onSurfaceVariant)),
-                          ]),
-                  ),
-                ),
-              if (missingSeats.length > 1 && g.downloadingFrom == null && g.transfer == null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: FilledButton.icon(
-                    onPressed: () async {
-                      for (final seat in missingSeats) {
-                        await g.downloadMissing(seat);
-                      }
-                    },
-                    icon: const Icon(Icons.download),
-                    label: Text(tr('Descarregar todas as imagens (~{v} MB)', {
-                      'v': (g.missingTotal * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
-                    })),
-                  ),
-                ),
-              for (final p in g.players.values)
-                if (g.missingFrom(p.seat) case final missing when missing.isNotEmpty)
+                  if (status == LinkStatus.reconnecting)
+                    Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(leading: const CircularProgressIndicator(), title: Text(_lostText))),
+                  if (status == LinkStatus.closed && !_closing)
+                    Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(leading: const Icon(Icons.link_off), title: Text(_closedReason))),
+                  if (g.tournament case final t?) ...[
+                    _TournamentCard(game: g, tournament: t),
+                    const SizedBox(height: 8),
+                  ],
                   Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    color: theme.colorScheme.primaryContainer,
                     child: ListTile(
-                      leading: const Icon(Icons.image_outlined),
-                      title: Text(missing.length == 1
-                          ? tr('{v} tem 1 imagem que não tens', {'v': p.name})
-                          : tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
-                      subtitle: Text(g.transfer?.seat == p.seat
-                          ? tr('A receber do dispositivo de {v}… {received}/{expected}',
-                              {'v': p.name, 'received': g.transfer!.received, 'expected': g.transfer!.expected})
-                          : tr('~{v} MB · da internet ou, sem rede, do telemóvel de {v2}', {
-                              'v': (missing.length * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
-                              'v2': p.name
-                            })),
-                      trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
-                          ? SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  value: g.transfer?.seat == p.seat && g.transfer!.expected > 0
-                                      ? g.transfer!.received / g.transfer!.expected
-                                      : null))
-                          : FilledButton(
-                              style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
-                              onPressed: () => g.downloadMissing(p.seat),
-                              child: Text(tr('Descarregar')),
-                            ),
+                      leading: Icon(Icons.rule, color: theme.colorScheme.primary),
+                      title: Text(tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
+                      subtitle: Text([
+                        g.players.length == 1
+                            ? tr('1 jogador na sala')
+                            : tr('{n} jogadores na sala', {'n': g.players.length}),
+                        // Só o Commander junta todos na mesma mesa.
+                        if (g.oneVsOne) tr('1 contra 1, à melhor de 3; todos jogam com todos'),
+                      ].join('\n')),
+                      trailing: g.isHost && g.tournament == null ? const Icon(Icons.edit) : null,
+                      // a meio dos encontros o formato e a vida não mudam
+                      onTap: g.isHost && g.tournament == null ? _configure : null,
                     ),
                   ),
-              if (g.draftClient != null) ...[
-                const SizedBox(height: 8),
-                FilledButton.tonalIcon(
-                  onPressed: _openDraft,
-                  icon: const Icon(Icons.style),
-                  label: Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
-                ),
-              ],
-              // a meio dos encontros não se começa outro draft
-              if (g.isHost && (g.tournament?.finished ?? true)) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => showDraftSetup(context, ref, g),
-                  icon: const Icon(Icons.card_giftcard),
-                  label: Text(g.draft == null ? tr('Fazer um draft') : tr('Novo draft')),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                tr('Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem do telemóvel dele.'),
-                style: theme.textTheme.bodySmall,
-              ),
-            ])),
+                  const SizedBox(height: 16),
+                  Text(tr('Jogadores'), style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  // quem começa: só no Commander (nos encontros cada mesa sorteia)
+                  if (g.isHost && !g.oneVsOne && g.tournament == null && g.players.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(children: [
+                        Expanded(
+                          child: Text(
+                            _first == null || !g.players.containsKey(_first)
+                                ? tr('Quem começa é sorteado no início. Toca num jogador para o escolher.')
+                                : tr('Começa {v}. Toca noutro jogador para mudar.', {'v': g.players[_first]!.name}),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                        TextButton.icon(
+                            onPressed: _drawFirst, icon: const Icon(Icons.casino_outlined), label: Text(tr('Sortear'))),
+                      ]),
+                    ),
+                  ..._seatRows(
+                      context,
+                      [
+                        for (final (i, p) in g.players.values.indexed)
+                          _SeatCard(
+                            player: p,
+                            index: i,
+                            me: p.seat == g.mySeat,
+                            dense: dense,
+                            first: _first == p.seat,
+                            commanders: p.commanders.map(_localName).join(' + '),
+                            onTap: g.isHost && !g.oneVsOne && g.tournament == null
+                                ? () => setState(() => _first = _first == p.seat ? null : p.seat)
+                                : null,
+                            onLongPress: g.isHost && p.seat != g.mySeat ? () => _kick(p) : null,
+                          ),
+                      ],
+                      gap: dense ? 6 : 8),
+                  if (missingSeats.length > 1 && g.downloadingFrom == null && g.transfer == null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          for (final seat in missingSeats) {
+                            await g.downloadMissing(seat);
+                          }
+                        },
+                        icon: const Icon(Icons.download),
+                        label: Text(tr('Descarregar todas as imagens (~{v} MB)', {
+                          'v': (g.missingTotal * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
+                        })),
+                      ),
+                    ),
+                  for (final p in g.players.values)
+                    if (g.missingFrom(p.seat) case final missing when missing.isNotEmpty)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        color: theme.colorScheme.primaryContainer,
+                        child: ListTile(
+                          leading: const Icon(Icons.image_outlined),
+                          title: Text(missing.length == 1
+                              ? tr('{v} tem 1 imagem que não tens', {'v': p.name})
+                              : tr('{v} tem {n} imagens que não tens', {'v': p.name, 'n': missing.length})),
+                          subtitle: Text(g.transfer?.seat == p.seat
+                              ? tr('A receber do dispositivo de {v}… {received}/{expected}',
+                                  {'v': p.name, 'received': g.transfer!.received, 'expected': g.transfer!.expected})
+                              : tr('~{v} MB · da internet ou, sem rede, do telemóvel de {v2}', {
+                                  'v': (missing.length * smallImageBytes / 1024 / 1024).toStringAsFixed(1),
+                                  'v2': p.name
+                                })),
+                          trailing: g.downloadingFrom == p.seat || g.transfer?.seat == p.seat
+                              ? SizedBox.square(
+                                  dimension: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      value: g.transfer?.seat == p.seat && g.transfer!.expected > 0
+                                          ? g.transfer!.received / g.transfer!.expected
+                                          : null))
+                              : FilledButton(
+                                  style: FilledButton.styleFrom(minimumSize: const Size(0, EdhSize.buttonCompact)),
+                                  onPressed: () => g.downloadMissing(p.seat),
+                                  child: Text(tr('Descarregar')),
+                                ),
+                        ),
+                      ),
+                  if (g.draftClient != null) ...[
+                    const SizedBox(height: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: _openDraft,
+                      icon: const Icon(Icons.style),
+                      label: Text(g.draftClient!.finished ? tr('Ver o draft (terminado)') : tr('Voltar ao draft')),
+                    ),
+                  ],
+                  // a meio dos encontros não se começa outro draft
+                  if (g.isHost && (g.tournament?.finished ?? true)) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => showDraftSetup(context, ref, g),
+                      icon: const Icon(Icons.card_giftcard),
+                      label: Text(g.draft == null ? tr('Fazer um draft') : tr('Novo draft')),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    tr('Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem do telemóvel dele.'),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ])),
           );
         },
       ),
@@ -817,6 +887,200 @@ class _TournamentCard extends StatelessWidget {
             })),
         ]),
       ),
+    );
+  }
+}
+
+/// Um jogador na sala: a ilustração do deck por trás, o lugar com a sua cor
+/// (a mesma da mesa), o deck e se já está pronto.
+class _SeatCard extends StatelessWidget {
+  const _SeatCard({
+    required this.player,
+    required this.index,
+    required this.me,
+    required this.dense,
+    required this.first,
+    required this.commanders,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  final LobbyPlayer player;
+  final int index;
+  final bool me;
+  final bool dense;
+  final bool first;
+  final String commanders;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = player;
+    final color = GameColors.player(index);
+    const muted = Colors.white70;
+    final status = !p.connected
+        ? (tr('Sem ligação'), EdhColors.bad)
+        : p.ready
+            ? (tr('Pronto'), EdhColors.ok)
+            : (tr('A escolher'), muted);
+    final deckLine = p.deckName == null
+        ? ''
+        : [
+            if (commanders.isNotEmpty) commanders,
+            tr('{n} cartas', {'n': p.deckSize}),
+            if (p.gameChangers != null) BracketEstimate(List.filled(p.gameChangers!, '')).short,
+            if (!p.deckLegal) tr('com avisos'),
+          ].join(' · ');
+    final name = me ? tr('{v} (tu)', {'v': p.name}) : p.name;
+    return Semantics(
+      button: onTap != null,
+      label: [name, p.deckName ?? tr('Ainda sem deck'), status.$1, if (first) tr('Começa')].join(', '),
+      excludeSemantics: true,
+      child: Material(
+        clipBehavior: Clip.antiAlias,
+        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Container(
+          height: dense ? 92 : 108,
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: first ? GameColors.gold : Colors.transparent, width: 2),
+          ),
+          child: ArtBanner(
+            art: p.cover,
+            identity: p.identity,
+            artist: p.coverArtist,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onTap,
+                onLongPress: onLongPress,
+                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  // a cor do lugar, a mesma da mesa
+                  Container(width: 5, color: color),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(12, dense ? 8 : 10, 12, dense ? 8 : 10),
+                      child: Row(children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          child: p.isHost
+                              ? const Icon(Icons.star_rounded, size: 18, color: Colors.white)
+                              : Text('${index + 1}',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Flexible(
+                                    child: Text(name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelLarge?.copyWith(color: muted)),
+                                  ),
+                                  if (first) ...[const SizedBox(width: 8), _Pill(tr('Começa'))],
+                                ]),
+                                Text(p.deckName ?? tr('Ainda sem deck'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                                if (deckLine.isNotEmpty)
+                                  Text(deckLine,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+                              ]),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          if (p.identity != 0) ...[ColorIdentity(p.identity), const SizedBox(height: 6)],
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(p.ready ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
+                                size: 16, color: status.$2),
+                            const SizedBox(width: 4),
+                            Text(status.$1, style: theme.textTheme.labelSmall?.copyWith(color: status.$2)),
+                          ]),
+                        ]),
+                      ]),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Etiqueta dourada ("Começa").
+class _Pill extends StatelessWidget {
+  const _Pill(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+        decoration: BoxDecoration(color: GameColors.gold, borderRadius: BorderRadius.circular(20)),
+        child: Text(text, style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w800)),
+      );
+}
+
+/// Um ponto por jogador, cheio quando está pronto: vê-se logo de quem se espera.
+class _ReadyDots extends StatelessWidget {
+  const _ReadyDots({required this.players});
+  final List<LobbyPlayer> players;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final here = players.where((p) => p.connected).toList();
+    final ready = here.where((p) => p.ready).length;
+    final waiting = [
+      for (final p in here)
+        if (!p.ready) p.name
+    ];
+    return Semantics(
+      liveRegion: true,
+      child: Row(children: [
+        for (final (i, p) in players.indexed)
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.ready ? GameColors.player(i) : Colors.transparent,
+                border: Border.all(color: p.connected ? GameColors.player(i) : EdhColors.bad, width: 2),
+              ),
+            ),
+          ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            ready == here.length
+                ? tr('Todos prontos')
+                : waiting.length == 1
+                    ? tr('{r} de {n} prontos · falta {v}', {'r': ready, 'n': here.length, 'v': waiting.single})
+                    : tr('{r} de {n} prontos', {'r': ready, 'n': here.length}),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium,
+          ),
+        ),
+      ]),
     );
   }
 }

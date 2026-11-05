@@ -11,7 +11,7 @@ class AppPaths {
     final docs = await getApplicationSupportDirectory();
     final cache = await getTemporaryDirectory();
     final paths = AppPaths._(docs.path, cache.path);
-    for (final d in [paths.imagesDir('small'), paths.imagesDir('normal')]) {
+    for (final d in [paths.imagesDir('small'), paths.imagesDir('normal'), paths.imagesDir('art')]) {
       Directory(d).createSync(recursive: true);
     }
     return paths;
@@ -20,7 +20,7 @@ class AppPaths {
   /// Para testes: tudo dentro de [root].
   factory AppPaths.forTest(String root) {
     final p = AppPaths._(root, root);
-    for (final d in [p.imagesDir('small'), p.imagesDir('normal')]) {
+    for (final d in [p.imagesDir('small'), p.imagesDir('normal'), p.imagesDir('art')]) {
       Directory(d).createSync(recursive: true);
     }
     return p;

@@ -129,8 +129,15 @@ class LocalizedImporter {
     bool has(String k) =>
         (c[k] as String?)?.trim().isNotEmpty == true ||
         faces.any((f) => (f[k] as String?)?.trim().isNotEmpty == true);
+    // O Scryfall tem impressões marcadas noutra língua com o texto inglês (três
+    // Mountain de Commander Masters "em espanhol"): o nome igual ao inglês não
+    // conta como tradução, e um nome traduzido vale mais do que tudo o resto.
+    bool translated(Map<String, dynamic> m) {
+      final p = (m['printed_name'] as String?)?.trim() ?? '';
+      return p.isNotEmpty && p != (m['name'] as String?)?.trim();
+    }
     final status = c['image_status'] as String?;
-    return (has('printed_name') ? 1 : 0) +
+    return (translated(c) || faces.any(translated) ? 16 : has('printed_name') ? 1 : 0) +
         (has('printed_type_line') ? 4 : 0) +
         (has('printed_text') ? 4 : 0) +
         (status == 'placeholder' || status == 'missing' ? 0 : 2);

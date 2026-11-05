@@ -436,4 +436,95 @@ void main() {
     }
     await server.close();
   });
+
+  test('o anfitrião que fecha a meio de um encontro volta com a mão certa', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ResumeStore(await SharedPreferences.getInstance());
+    final journal = '${Directory.systemTemp.createTempSync('hostj').path}/host.jsonl';
+    final server = HostServer(roomName: 'Mesa', hostName: 'Ana', preferredPort: 0, journalPath: journal);
+    await server.start();
+    final host = NetworkGame(
+      session: RoomSession.host(server: server, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+      resumeStore: store,
+    );
+    final clients = <RoomClient>[];
+    final all = [host];
+    for (final name in ['Rui', 'Eva', 'Leo']) {
+      final c = RoomClient(hosts: ['127.0.0.1'], port: server.port, playerName: name);
+      await c.connect();
+      clients.add(c);
+      all.add(NetworkGame(session: RoomSession.client(client: c, roomName: 'Mesa'), repo: repo));
+    }
+    // Antes houve outra partida na sala ("Nova partida" fica no histórico).
+    host.newGame();
+    host.configure(format: 'modern', life: 20);
+    await _until(() => all.every((g) => g.players.length == 4 && g.format == 'modern'), 'lobby');
+    var d = const Deck(name: 'M', format: 'modern');
+    for (var i = 0; i < 20; i++) {
+      d = d.add('o-Card$i');
+    }
+    d = d.add('o-Mountain', qty: 40);
+    for (final g in all) {
+      g.selectDeck(d, legal: true, commanderNames: const []);
+    }
+    await _until(() => host.players.values.every((p) => p.deckName != null), 'decks');
+    for (final g in all) {
+      g.setReady(true);
+    }
+    await _until(() => host.allReady, 'prontos');
+    host.startMatches();
+    await _until(
+        () => all.every((g) => g.game != null && g.game!.state.players[g.mySeat]?.handCount == 7), 'mãos iniciais');
+
+    // Ronda 1 acaba nas duas mesas (2-0); o anfitrião volta à sala.
+    for (final g in [host, all.firstWhere((g) => !host.myMatch!.has(g.mySeat))]) {
+      final m = g.myMatch!;
+      for (var n = 0; n < 2; n++) {
+        final before = g.myTable;
+        g.game!.gameOver(m.a);
+        await _until(() => host.tournament!.matchOf(0, m.a)!.games.length == n + 1, 'jogo');
+        if (n == 0) {
+          g.requestNextGame();
+          await _until(() => g.myTable != before && g.game?.state.players[g.mySeat]?.handCount == 7, 'jogo 2');
+        }
+      }
+    }
+    await _until(() => host.tournament!.roundDone(0), 'ronda 1');
+    host.backToRoom();
+    host.startNextRound();
+    await _until(
+        () => all.every((g) => g.myTableInfo?.round == 1 && g.game?.state.players[g.mySeat]?.handCount == 7),
+        'ronda 2');
+    // A outra mesa joga depois do último evento da mesa do anfitrião.
+    final other = all.firstWhere((g) => !host.myMatch!.has(g.mySeat));
+    other.game!.life(other.myMatch!.other(other.mySeat), -1);
+    await _until(() => host.link.history.last.actor == other.mySeat, 'evento da outra mesa');
+    final hand = host.game!.zones(0).hand.map((c) => c.oracleId).toList();
+    expect(hand.length, 7);
+
+    final info = store.current!;
+    host.dispose();
+    await server.crashForTest();
+    final again = HostServer.restore(info.journal!)!;
+    await again.start();
+    final back = NetworkGame(
+      session: RoomSession.host(server: again, roomName: 'Mesa', hostAddresses: const ['127.0.0.1']),
+      repo: repo,
+      resume: info,
+      resumeStore: store,
+      resumeDeck: d,
+    );
+    expect(back.myTableInfo?.round, 1);
+    expect(back.game!.zones(0).hand.map((c) => c.oracleId).toList(), hand, reason: 'a mão volta igual');
+
+    for (final g in all.skip(1)) {
+      g.dispose();
+    }
+    back.dispose();
+    for (final c in clients) {
+      await c.close();
+    }
+    await again.close();
+  });
 }

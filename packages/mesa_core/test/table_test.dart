@@ -98,6 +98,33 @@ void main() {
     expect(pod.b.state.cards[id]!.counters[CounterKind.loyalty], 4);
   });
 
+  test('mão inicial: os outros veem os mulligans e quem já ficou com a mão', () {
+    pod.send(0, pod.a.draw(0, 7));
+    pod.send(1, pod.b.draw(1, 7));
+    pod.send(1, pod.b.mulligan(1));
+    pod.send(0, const Intent(Ev.keepHand, {'seat': 0}));
+    pod.expectInSync();
+    expect(pod.b.state.players[0]!.kept, isTrue);
+    expect(pod.a.state.players[1]!.kept, isFalse);
+    expect(pod.a.state.players[1]!.mulligans, 1);
+    expect(pod.a.state.log.last.text, contains('ficou com a mão (7 cartas)'));
+    // o estado guardado (voltar ao jogo) mantém-no
+    final back = GameState.fromJson(pod.a.state.toJson());
+    expect(back.players[0]!.kept, isTrue);
+    expect(back.players[1]!.mulligans, 1);
+  });
+
+  test('o texto do desfazer é o do passo que se desfaz, não o último do registo', () {
+    pod.send(0, pod.a.draw(0, 1));
+    final pid = pod.a.private[0]!.hand.single.pid;
+    pod.send(0, pod.a.moveHidden(0, Zone.hand, pid, Zone.battlefield));
+    expect(pod.a.undoText, isNotNull);
+    // mudar de fase desfaz-se, mas não escreve no registo
+    pod.send(0, const Intent(Ev.setPhase, {'phase': 'combat'}));
+    expect(pod.a.canUndo(0), isTrue);
+    expect(pod.a.undoText, isNull, reason: 'a jogada anterior não é o que se desfaz');
+  });
+
   test('carta pública que volta para a mão deixa de ser visível aos outros', () {
     pod.send(0, pod.a.draw(0, 1));
     final pid = pod.a.private[0]!.hand.single.pid;

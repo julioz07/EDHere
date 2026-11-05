@@ -12,11 +12,11 @@ import '../../bot/forge_engine.dart';
 import '../../data/bracket.dart';
 import '../../data/collection.dart';
 import '../../data/providers.dart';
-import '../bot/bot_setup_screen.dart';
 import '../cards/card_detail_screen.dart';
 import '../cards/card_search.dart';
 import '../cards/versions.dart';
-import '../playtest/playtest_screen.dart';
+import '../play/play_with_deck.dart';
+import '../widgets/card_art.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
@@ -36,6 +36,7 @@ class DeckEditorScreen extends ConsumerStatefulWidget {
 
 class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
   late Deck _deck = ref.read(deckStoreProvider).getDeck(widget.deckId)!;
+
   /// list (com miniaturas), compact (só texto: cabe o deck inteiro) ou grid.
   late String _view = switch (ref.read(deckStoreProvider).setting('deck_view')) {
     'grid' => 'grid',
@@ -601,16 +602,16 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                         style: Theme.of(context).textTheme.bodySmall),
                   ]),
                   actions: [
+                    // jogar já com este deck (bot, sala, sala de outro ou sozinho),
+                    // sem ir ao separador Jogar e voltar a escolhê-lo
+                    IconButton(
+                      tooltip: tr('Jogar com este deck'),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      onPressed: _deck.playableCount == 0 || _deck.id == null
+                          ? null
+                          : () => showPlayWithDeck(context, ref, _deck, botSupported: _botSupported == true),
+                    ),
                     if (!narrow) ...[
-                      IconButton(
-                        tooltip: tr('Testar (goldfish)'),
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        onPressed: _deck.playableCount == 0
-                            ? null
-                            : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                                  builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
-                                )),
-                      ),
                       IconButton(
                         tooltip: _nextViewLabel,
                         icon: Icon(_nextViewIcon),
@@ -618,7 +619,8 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                       ),
                     ],
                     // no telemóvel vai para o menu: o nome do deck precisa do espaço
-                    if (!narrow) IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
+                    if (!narrow)
+                      IconButton(tooltip: tr('Exportar'), icon: const Icon(Icons.ios_share), onPressed: _export),
                     PopupMenuButton<String>(
                       onSelected: (v) => switch (v) {
                         'edit' => _editSettings(),
@@ -627,14 +629,6 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                             builder: (_) => HandSimulatorScreen(deck: _deck, cards: _cards()),
                           )),
                         'delete' => _delete(),
-                        'test' => _deck.playableCount == 0
-                            ? null
-                            : Navigator.of(context).push(MaterialPageRoute<void>(
-                                builder: (_) => PlaytestScreen(deckIds: [_deck.id!]),
-                              )),
-                        'bot' => Navigator.of(context).push(MaterialPageRoute<void>(
-                            builder: (_) => BotSetupScreen(deckId: _deck.id),
-                          )),
                         'view' => _toggleView(),
                         'import' => _importInto(),
                         'export' => _export(),
@@ -642,13 +636,9 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
                       },
                       itemBuilder: (_) => [
                         if (narrow) ...[
-                          PopupMenuItem(value: 'test', child: Text(tr('Testar (goldfish)'))),
                           PopupMenuItem(value: 'view', child: Text(_nextViewLabel)),
                           PopupMenuItem(value: 'export', child: Text(tr('Exportar'))),
                         ],
-                        // jogar já com este deck, sem voltar ao separador Jogar
-                        if (_deck.playableCount > 0 && _botSupported == true)
-                          PopupMenuItem(value: 'bot', child: Text(tr('Jogar contra o bot'))),
                         PopupMenuItem(value: 'import', child: Text(tr('Importar lista para este deck'))),
                         PopupMenuItem(value: 'hands', child: Text(tr('Simular mãos iniciais'))),
                         PopupMenuItem(value: 'own', child: Text(tr('Tenho este deck (juntar às minhas cartas)'))),
@@ -710,7 +700,11 @@ class _DeckEditorScreenState extends ConsumerState<DeckEditorScreen> {
               owned: ref.watch(collectionProvider).owned,
               onChooseCommander: () => _addCards(commander: true),
             ),
-            _StatsView(deck: _deck, cards: cards, format: f),
+            _StatsView(
+                deck: _deck,
+                cards: cards,
+                format: f,
+                cover: deckCover(_deck, ref.read(cardRepoProvider), ref.read(printsProvider))),
             _IssuesView(issues: issues, format: f, cards: cards),
           ]),
         ),
@@ -1039,11 +1033,12 @@ class _CardListState extends State<_CardList> {
 }
 
 class _StatsView extends StatelessWidget {
-  const _StatsView({required this.deck, required this.cards, required this.format});
+  const _StatsView({required this.deck, required this.cards, required this.format, required this.cover});
 
   final Deck deck;
   final Map<String, db.Card> cards;
   final GameFormat format;
+  final ({db.Card? cover, List<db.Card> commanders, int identity}) cover;
 
   @override
   Widget build(BuildContext context) {
@@ -1067,7 +1062,45 @@ class _StatsView extends StatelessWidget {
         );
 
     final bracket = BracketEstimate.of(deck, cards);
+    final white = theme.textTheme.bodySmall?.copyWith(color: Colors.white70);
+    final hero = Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: isWide(context) ? 200 : 150,
+          child: ArtBanner.card(
+            cover.cover,
+            identity: cover.identity,
+            scrim: ArtScrim.bottom,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Spacer(),
+                Text(deck.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: Colors.white)),
+                if (cover.commanders.isNotEmpty)
+                  Text(cover.commanders.map((c) => c.displayFrontName).join(' + '),
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: white),
+                const SizedBox(height: 6),
+                Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  if (cover.identity != 0) ColorIdentity(cover.identity),
+                  _HeroChip(format.label),
+                  if (format.hasCommandZone) _HeroChip(bracket.short, icon: Icons.bar_chart_rounded),
+                ]),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+    final typeTotal = DeckStats.typeOrder.fold(0, (n, t) => n + (s.types[t] ?? 0));
+    final wide = isWide(context);
     final curve = <Widget>[
+      // no tablet a capa vai por cima das duas colunas
+      if (!wide) hero,
       title(tr('Curva de mana')),
       Text(tr('Valor de mana médio: {v} · {nonLands} não-terrenos, {lands} terrenos',
           {'v': s.averageMv.toStringAsFixed(2), 'nonLands': s.nonLands, 'lands': s.lands})),
@@ -1099,15 +1132,38 @@ class _StatsView extends StatelessWidget {
         ]),
       ),
       title(tr('Tipos')),
-      for (final t in DeckStats.typeOrder)
-        if ((s.types[t] ?? 0) > 0)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(children: [
-              Expanded(child: Text(typeNames[t] ?? t)),
-              Text('${s.types[t]}', style: theme.textTheme.titleSmall),
-            ]),
+      Row(children: [
+        if (typeTotal > 0)
+          SizedBox.square(
+            dimension: 112,
+            child: CustomPaint(
+              painter: _DonutPainter([
+                for (final t in DeckStats.typeOrder)
+                  if ((s.types[t] ?? 0) > 0) (s.types[t]!, _typeColor(t)),
+              ]),
+              child: Center(
+                child: Text('$typeTotal', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              ),
+            ),
           ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(children: [
+            for (final t in DeckStats.typeOrder)
+              if ((s.types[t] ?? 0) > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(children: [
+                    Container(
+                        width: 10, height: 10, decoration: BoxDecoration(color: _typeColor(t), shape: BoxShape.circle)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(typeNames[t] ?? t)),
+                    Text('${s.types[t]}', style: theme.textTheme.titleSmall),
+                  ]),
+                ),
+          ]),
+        ),
+      ]),
     ];
     String plural(int n, String one, String many) => n == 1 ? '1 $one' : '$n $many';
     // Funções: rampa, compra, remoção... com o que se recomenda num deck de 100
@@ -1237,13 +1293,16 @@ class _StatsView extends StatelessWidget {
     ];
 
     // Tablet: duas colunas lado a lado.
-    if (isWide(context)) {
+    if (wide) {
       return SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 96),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [...curve, ...roleTiles])),
-          const SizedBox(width: 32),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: colors)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          hero,
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [...curve, ...roleTiles])),
+            const SizedBox(width: 32),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: colors)),
+          ]),
         ]),
       );
     }
@@ -1491,4 +1550,71 @@ class _GridCard extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Cor de cada tipo no gráfico (a mesma na legenda).
+Color _typeColor(String type) => switch (type) {
+      'Creature' => const Color(0xFF2BB58F),
+      'Instant' => const Color(0xFF3B7BF0),
+      'Sorcery' => const Color(0xFFE5534B),
+      'Artifact' => const Color(0xFF8B95A5),
+      'Enchantment' => const Color(0xFFCC79A7),
+      'Planeswalker' => const Color(0xFFE69F00),
+      'Battle' => const Color(0xFFB0703C),
+      'Land' => const Color(0xFFD9A441),
+      _ => const Color(0xFF777777),
+    };
+
+/// Gráfico em anel: as fatias pela ordem dada.
+class _DonutPainter extends CustomPainter {
+  _DonutPainter(this.slices);
+  final List<(int, Color)> slices;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final total = slices.fold(0, (n, s) => n + s.$1);
+    if (total == 0) return;
+    const stroke = 16.0;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    var start = -1.5708; // em cima
+    for (final (n, color) in slices) {
+      final sweep = 6.2832 * n / total;
+      canvas.drawArc(
+          arc,
+          start,
+          // um fio entre fatias, para se distinguirem cores parecidas
+          slices.length > 1 ? sweep - 0.03 : sweep,
+          false,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = stroke);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DonutPainter old) => old.slices != slices;
+}
+
+/// Etiqueta por cima da ilustração do deck (formato, bracket).
+class _HeroChip extends StatelessWidget {
+  const _HeroChip(this.text, {this.icon});
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white30),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[Icon(icon, size: 14, color: Colors.white), const SizedBox(width: 4)],
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+      );
 }

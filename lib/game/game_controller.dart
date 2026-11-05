@@ -408,10 +408,22 @@ class GameController extends ChangeNotifier {
 
   bool get canUndo => table.canUndo(actor);
 
+  /// O que o "Desfazer" vai desfazer, já com os nomes das cartas.
+  String? get undoLabel {
+    final t = canUndo ? table.undoText : null;
+    return t == null ? null : logText(LogEntry(0, actor, '', t));
+  }
+
+  /// Tempo de jogo (com o de antes, num jogo retomado).
+  Duration get elapsed => elapsedBefore + DateTime.now().difference(startedAt);
+
   void mulligan() {
     mulligans[actor] = (mulligans[actor] ?? 0) + 1;
     send(table.mulligan(actor));
   }
+
+  /// Fiquei com a mão inicial (depois de pôr as do mulligan no fundo).
+  void keepHand() => send(Intent(Ev.keepHand, {'seat': actor}));
 
   void rollDie(int sides) => send(Intent(Ev.rollDie, {'sides': sides, 'value': 1 + Random().nextInt(sides)}));
 

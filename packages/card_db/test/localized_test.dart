@@ -138,6 +138,34 @@ void main() {
     repo.close();
   });
 
+  test('uma impressão "em espanhol" com o texto inglês não tira a tradução', () async {
+    final p = await buildFixtureDb();
+    final imp = LocalizedImporter(p)..begin('es');
+    imp.add({
+      'id': 'es-1',
+      'oracle_id': 'oid-Lightning Bolt',
+      'name': 'Lightning Bolt',
+      'printed_name': 'Relámpago',
+      'set': 'tle',
+    });
+    // Como as três Mountain de Commander Masters: marcada "es", mas em inglês.
+    imp.add({
+      'id': 'es-2',
+      'oracle_id': 'oid-Lightning Bolt',
+      'name': 'Lightning Bolt',
+      'printed_name': 'Lightning Bolt',
+      'printed_type_line': 'Instant',
+      'printed_text': 'Lightning Bolt deals 3 damage to any target.',
+      'set': 'cmm',
+    });
+    imp.finish();
+    final repo = CardRepository.open(p)!;
+    final bolt = repo.findByName('Lightning Bolt')!;
+    expect(bolt.displayName, 'Relámpago');
+    expect(bolt.printId, 'es-1');
+    repo.close();
+  });
+
   test('voltar ao inglês apaga a língua', () async {
     final p = await buildFixtureDb();
     final imp = LocalizedImporter(p)..begin('es');
