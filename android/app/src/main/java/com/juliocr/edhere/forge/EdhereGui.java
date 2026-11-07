@@ -20,6 +20,7 @@ import forge.game.player.IHasIcon;
 import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbilityView;
 import forge.game.spellability.StackItemView;
+import forge.game.zone.ZoneType;
 import forge.gamemodes.match.AbstractGuiGame;
 import forge.gamemodes.match.input.InputPassPriority;
 import forge.gamemodes.match.Selection;
@@ -123,6 +124,16 @@ final class EdhereGui extends AbstractGuiGame {
                 else if (t instanceof CardView) cards.add(t.getId());
             }
             for (TrackableObject t : sel.chosen()) chosen.add(t.getId());
+            List<Object> unseen = new ArrayList<>();
+            for (CardView c : sel.cards()) {
+                if (!onTable(c)) {
+                    Map<String, Object> o = new HashMap<>();
+                    o.put("id", c.getId());
+                    o.put("n", c.getName());
+                    unseen.add(o);
+                }
+            }
+            if (!unseen.isEmpty()) m.put("selOut", unseen);
             m.put("sel", cards);
             m.put("selP", players);
             m.put("chosen", chosen);
@@ -139,6 +150,16 @@ final class EdhereGui extends AbstractGuiGame {
         else if (cancelLabel.equals(loc.getMessage("lblEndTurn"))) m.put("cancelKind", "endTurn");
         sink.emit(m);
         observer.markDirty();
+    }
+
+    /**
+     * Se a mesa mostra esta carta. As outras (biblioteca, mão de outro jogador...)
+     * vão com o nome no prompt: uma escolha obrigatória fora da mesa prendia o jogo.
+     */
+    private boolean onTable(CardView c) {
+        ZoneType z = c.getZone();
+        if (z == ZoneType.Battlefield || z == ZoneType.Graveyard || z == ZoneType.Exile || z == ZoneType.Command) return true;
+        return z == ZoneType.Hand && getLocalPlayers().contains(c.getController());
     }
 
     /** priority, mulligan, attack, block, pay, select, wait (o bot a jogar) ou other. */

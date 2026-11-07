@@ -1,3 +1,5 @@
+import 'dart:math' show max, min;
+
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
 
@@ -27,7 +29,12 @@ Future<Object?> showForgeAsk(BuildContext context, ForgeAsk ask, ForgeCardLookup
     'distribute' => _DistributeDialog(ask: ask, cardOf: cardOf),
     _ => _ChooseDialog(ask: ask, cardOf: cardOf, source: source),
   };
-  return showDialog<Object?>(context: context, barrierDismissible: false, builder: (_) => dialog);
+  // A tecla de voltar também não fecha: respondia à pergunta sem a pessoa escolher.
+  return showDialog<Object?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => PopScope(canPop: false, child: dialog),
+  );
 }
 
 String _title(ForgeAsk ask, String fallback) {
@@ -36,6 +43,13 @@ String _title(ForgeAsk ask, String fallback) {
   final m = ask.message?.trim() ?? '';
   return m.isNotEmpty ? m : fallback;
 }
+
+/// Um título comprido desliza dentro da sua altura: sem isto, em ecrãs pequenos
+/// empurrava os botões do diálogo para fora, e o jogo fica à espera deles.
+Widget _titleBox(BuildContext context, String text) => ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.25),
+      child: SingleChildScrollView(child: OracleText(text)),
+    );
 
 /// A mensagem por baixo do título, se o título não for já a mensagem.
 Widget? _subtitle(BuildContext context, ForgeAsk ask) {
@@ -114,21 +128,24 @@ class _ChooseDialogState extends State<_ChooseDialog> {
   /// Só para ver (o Forge mostra assim cartas reveladas e avisos): nada a escolher.
   bool get _readOnly => widget.ask.max <= 0;
 
+  /// Nunca se exige mais do que há para escolher: o Confirmar nunca ligava.
+  int get _min => min(widget.ask.min, widget.ask.options.length);
+
   @override
   Widget build(BuildContext context) {
     final ask = widget.ask;
-    final ok = _picked.length >= ask.min && _picked.length <= ask.max;
+    final ok = _picked.length >= _min && _picked.length <= max(ask.max, _min);
     return AlertDialog(
-      title: OracleText(_title(ask, tr('Escolhe'))),
+      title: _titleBox(context, _title(ask, tr('Escolhe'))),
       content: SizedBox(
         width: 420,
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (_subtitle(context, ask) case final sub?) sub,
           if (!_single && !_readOnly)
             Text(
-              ask.min == ask.max
-                  ? tr('Escolhe {n}.', {'n': ask.min})
-                  : tr('Escolhe de {a} a {b}.', {'a': ask.min, 'b': ask.max}),
+              _min == ask.max
+                  ? tr('Escolhe {n}.', {'n': _min})
+                  : tr('Escolhe de {a} a {b}.', {'a': _min, 'b': ask.max}),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           Flexible(
@@ -153,7 +170,7 @@ class _ChooseDialogState extends State<_ChooseDialog> {
       actions: [
         if (_readOnly)
           FilledButton(onPressed: () => Navigator.pop(context, <int>[]), child: Text(tr('OK')))
-        else if (ask.min == 0)
+        else if (_min == 0)
           TextButton(onPressed: () => Navigator.pop(context, <int>[]), child: Text(tr('Nenhuma'))),
         if (!_single && !_readOnly)
           FilledButton(
@@ -182,11 +199,13 @@ class _ConfirmDialog extends StatelessWidget {
     final yes = ask.labels.isNotEmpty ? ask.labels[0] : tr('Sim');
     final no = ask.labels.length > 1 ? ask.labels[1] : tr('Não');
     return AlertDialog(
-      title: ask.title == null ? null : OracleText(ask.title!),
-      content: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (source != null) ...[SizedBox(width: 70, child: CardImage(source!)), const SizedBox(width: 12)],
-        Expanded(child: OracleText(ask.message ?? '')),
-      ]),
+      title: ask.title == null ? null : _titleBox(context, ask.title!),
+      content: SingleChildScrollView(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (source != null) ...[SizedBox(width: 70, child: CardImage(source!)), const SizedBox(width: 12)],
+          Expanded(child: OracleText(ask.message ?? '')),
+        ]),
+      ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: OracleText(no)),
         FilledButton(onPressed: () => Navigator.pop(context, true), child: OracleText(yes)),
@@ -213,7 +232,7 @@ class _OrderDialogState extends State<_OrderDialog> {
   Widget build(BuildContext context) {
     final ask = widget.ask;
     return AlertDialog(
-      title: Text(_title(ask, tr('Ordenar'))),
+      title: _titleBox(context, _title(ask, tr('Ordenar'))),
       content: SizedBox(
         width: 420,
         height: 360,
@@ -263,16 +282,25 @@ class _InputDialogState extends State<_InputDialog> {
     super.dispose();
   }
 
+  /// Um número que não é número rebentava o jogo no lado do Forge.
+  bool get _valid => !widget.ask.numeric || int.tryParse(_text.text.trim()) != null;
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: OracleText(_title(widget.ask, '')),
+      title: _titleBox(context, _title(widget.ask, '')),
       content: TextField(
         controller: _text,
         autofocus: true,
         keyboardType: widget.ask.numeric ? TextInputType.number : TextInputType.text,
+        onChanged: (_) => setState(() {}),
       ),
-      actions: [FilledButton(onPressed: () => Navigator.pop(context, _text.text), child: Text(tr('Confirmar')))],
+      actions: [
+        FilledButton(
+          onPressed: _valid ? () => Navigator.pop(context, _text.text.trim()) : null,
+          child: Text(tr('Confirmar')),
+        ),
+      ],
     );
   }
 }
@@ -291,9 +319,11 @@ class _DistributeDialog extends StatefulWidget {
 class _DistributeDialogState extends State<_DistributeDialog> {
   late final List<int> _split = () {
     final n = widget.ask.options.length;
-    final base = widget.ask.atLeastOne ? 1 : 0;
+    // menos para dividir do que alvos: só os primeiros levam 1, nunca fica negativo
+    final amount = widget.ask.amount;
+    final base = widget.ask.atLeastOne && amount >= n ? 1 : 0;
     final split = List.filled(n, base);
-    if (n > 0) split[0] += widget.ask.amount - base * n;
+    if (n > 0) split[0] += amount - base * n;
     return split;
   }();
 
@@ -302,9 +332,9 @@ class _DistributeDialogState extends State<_DistributeDialog> {
   @override
   Widget build(BuildContext context) {
     final ask = widget.ask;
-    final min = ask.atLeastOne ? 1 : 0;
+    final min = ask.atLeastOne && ask.amount >= ask.options.length ? 1 : 0;
     return AlertDialog(
-      title: Text(_title(ask, tr('Dividir'))),
+      title: _titleBox(context, _title(ask, tr('Dividir'))),
       content: SizedBox(
         width: 420,
         child: Column(mainAxisSize: MainAxisSize.min, children: [

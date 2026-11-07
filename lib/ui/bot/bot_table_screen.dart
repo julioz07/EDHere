@@ -22,6 +22,7 @@ import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
 import 'bot_dialogs.dart';
 import 'bot_effects.dart';
+import 'bot_monkey.dart';
 import 'bot_motion.dart';
 
 /// A mesa de uma partida no motor do Forge. As regras e as jogadas do bot são
@@ -48,6 +49,14 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   /// Depois de um toque, até chegar o prompt seguinte: os botões ficam parados.
   bool _waiting = false;
   String? _error;
+
+  /// A saída de emergência: os botões estão desligados há tempo a mais e pode
+  /// não haver nada válido em que tocar (ver [_watchSkip]).
+  bool _showSkip = false;
+  Timer? _skipTimer;
+
+  /// Só em builds de QA.
+  late final BotMonkey? _monkey = kQaMonkey ? BotMonkey(_act) : null;
 
   /// Cartas cujas imagens já foram pedidas.
   final _requested = <String>{};
@@ -124,7 +133,8 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   void initState() {
     super.initState();
     // As imagens dos dois decks, para não aparecerem cartas de texto a meio.
-    final ids = {for (final s in widget.seats) ...s.deck.entries.map((e) => e.oracleId)};
+    final seats = kQaMonkey ? BotMonkey.randomSeats(widget.seats, _repo) : widget.seats;
+    final ids = {for (final s in seats) ...s.deck.entries.map((e) => e.oracleId)};
     _requested.addAll(ids);
     ref.read(imagesProvider).ensure(_repo.getMany(ids).values);
     _sub = ForgeEngine.events.listen(_onEvent);
@@ -132,7 +142,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     WakelockPlus.enable();
     Sfx.enabled = ref.read(prefsProvider).getBool(Sfx.prefKey) ?? true;
     Sfx.warm();
-    ForgeEngine.start(seats: widget.seats, repo: _repo, commander: widget.commander, paceMs: _speed.paceMs)
+    ForgeEngine.start(seats: seats, repo: _repo, commander: kQaMonkey || widget.commander, paceMs: kQaMonkey ? 0 : _speed.paceMs)
         .then((_) => ForgeEngine.setStops(_stops))
         .catchError((Object e) {
       if (mounted) setState(() => _error = '$e');
@@ -144,6 +154,8 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     _spotTimer?.cancel();
     _bannerTimer?.cancel();
     _waitTimer?.cancel();
+    _skipTimer?.cancel();
+    _monkey?.dispose();
     _thinkTimer?.cancel();
     _focusTimer?.cancel();
     _sub?.cancel();
@@ -167,6 +179,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     if (!mounted) return;
     switch (e['type']) {
       case 'error':
+        _monkey?.error(e['error'] as String?);
         setState(() => _error = e['error'] as String?);
         return;
       case 'ask':
@@ -262,6 +275,8 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       }
       if (s.over) _prompt = null;
     });
+    if (e['type'] == 'prompt') _watchSkip();
+    _monkey?.onState(_prompt, s);
     if (s.over && !_overShown) {
       _overShown = true;
       // deixa ver o último golpe antes do ecrã do fim
@@ -405,8 +420,34 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   }
 
   Future<void> _ask(ForgeAsk ask) async {
-    final answer = await showForgeAsk(context, ask, _lookup, _state);
+    final monkey = _monkey;
+    final answer = monkey != null ? monkey.answer(ask) : await showForgeAsk(context, ask, _lookup, _state);
     await ForgeEngine.answer(ask.id, answer);
+  }
+
+  /// O Forge desliga os dois botões à espera de uma escolha obrigatória. Se não
+  /// houver nada em que tocar, ou a escolha se arrastar (pode ser impossível: um
+  /// pagamento obrigatório sem mana), a mesa oferece saltar o passo: o jogo nunca
+  /// fica preso. O relógio não recomeça enquanto os botões continuarem desligados.
+  void _watchSkip() {
+    final p = _prompt;
+    if (p == null || !p.canSkip) {
+      _skipTimer?.cancel();
+      _skipTimer = null;
+      if (_showSkip) setState(() => _showSkip = false);
+      return;
+    }
+    if (_skipTimer != null) return;
+    var seconds = 0;
+    // conta de segundo a segundo: a seleção pode chegar depois dos botões
+    _skipTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      final now = _prompt;
+      if (!mounted || now == null || !now.canSkip) return;
+      if (++seconds >= (now.hasOptions ? 20 : 3)) {
+        t.cancel();
+        setState(() => _showSkip = true);
+      }
+    });
   }
 
   void _act(String kind, [int? id]) {
@@ -825,6 +866,9 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                 onButton: _act,
                 state: s,
                 meId: me.id,
+                act: act,
+                showSkip: _showSkip,
+                onPickId: (id) => _act('card', id),
                 lookup: _lookup,
                 onPlayer: (id) => _act('player', id)),
           Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
@@ -1310,8 +1354,19 @@ class _PromptBar extends StatelessWidget {
       required this.onButton,
       required this.state,
       required this.meId,
+      required this.act,
+      this.showSkip = false,
+      this.onPickId,
       this.lookup,
       this.onPlayer});
+
+  final _Interaction act;
+
+  /// Ver [_BotTableScreenState._watchSkip].
+  final bool showSkip;
+
+  /// Escolher uma carta que não está na mesa, pelo id.
+  final void Function(int id)? onPickId;
 
   /// Para achar a carta que se está a pagar pelo nome.
   final ForgeCardLookup? lookup;
@@ -1368,6 +1423,56 @@ class _PromptBar extends StatelessWidget {
     );
   }
 
+  /// Quando o que o Forge pede está fora da mesa (um alvo no cemitério), um botão
+  /// para cada zona: o contador na barra do jogador não chega para se perceber.
+  Widget? _zoneChoices(BuildContext context, ForgePrompt p) {
+    if (p.selectableCards.isEmpty) return null;
+    final buttons = <Widget>[];
+    if (p.unseen.isNotEmpty && onPickId != null) {
+      buttons.add(Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, EdhSize.buttonCompact),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            side: const BorderSide(color: GameColors.target, width: 1.5),
+          ),
+          onPressed: () => _unseenSheet(context, p.unseen, p.chosen, lookup, onPickId!),
+          icon: const Icon(Icons.style_outlined, size: 18),
+          label: Text('${tr('Outras cartas')} (${p.unseen.length})'),
+        ),
+      ));
+    }
+    for (final pl in state.players) {
+      for (final (zone, title, icon) in [
+        (Zone.graveyard, tr('Cemitério'), Icons.delete_outline),
+        (Zone.exile, tr('Exílio'), Icons.block),
+      ]) {
+        final cards = state.zone(pl.id, zone).toList();
+        final n = cards.where((c) => p.selectableCards.contains(c.instance.id)).length;
+        if (n == 0) continue;
+        buttons.add(Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, EdhSize.buttonCompact),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              side: const BorderSide(color: GameColors.target, width: 1.5),
+            ),
+            onPressed: () => _zoneSheet(context, title, cards, act),
+            icon: Icon(icon, size: 18),
+            label: Text('${pl.id == meId ? '' : '${pl.name}: '}$title ($n)'),
+          ),
+        ));
+      }
+    }
+    if (buttons.isEmpty) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: buttons)),
+    );
+  }
+
   /// A pagar: a carta que se está a lançar ao lado do custo, como no Arena (já
   /// saiu da mão e ainda não está na pilha, e sem isto não se via em lado nenhum).
   static Widget _withCard(db.Card? card, Widget message, bool narrow) => card == null
@@ -1380,8 +1485,14 @@ class _PromptBar extends StatelessWidget {
 
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
     // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
-    final forge =
+    var forge =
         forgeText(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim());
+    // tocou numa carta que não serve: o Forge escreve as regras internas do alvo
+    // ("The selected card is not an Instant.YouCtrl+cmcLE3...")
+    final notValid = RegExp(r'^(.+?) - The selected card is not ').firstMatch(forge);
+    if (notValid != null) {
+      forge = tr('{v}: essa carta não serve. Escolhe uma das cartas assinaladas.', {'v': notValid[1]!});
+    }
     // quando dá para desfazer, o Desfazer tem botão próprio (ver build) e este
     // continua a ser o Terminar o turno: o botão não muda de função debaixo do dedo
     String cancel() => switch (p.cancelKind) {
@@ -1521,6 +1632,28 @@ class _PromptBar extends StatelessWidget {
         ? state.priority ?? state.players.firstWhere((p) => p.id != meId, orElse: () => state.players.first).id
         : meId;
     final choices = busy ? null : _playerChoices(context, p);
+    final zones = busy ? null : _zoneChoices(context, p);
+    final skip = busy || !showSkip
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  p.hasOptions
+                      ? tr('Se não conseguires fazer isto, podes saltar este passo.')
+                      : tr('Não há nada válido para escolher aqui.'),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(width: 6),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(72, EdhSize.buttonCompact)),
+                onPressed: () => onButton('cancel'),
+                child: Text(tr('Saltar')),
+              ),
+            ]),
+          );
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1532,14 +1665,18 @@ class _PromptBar extends StatelessWidget {
           ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
               message,
               if (choices != null) choices,
+              if (zones != null) zones,
               if (buttons.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
               ],
+              if (skip != null) skip,
             ])
           : Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
               Row(children: [Expanded(child: message), ...buttons]),
               if (choices != null) choices,
+              if (zones != null) zones,
+              if (skip != null) skip,
             ]),
     );
   }
@@ -1571,13 +1708,21 @@ class _PlayerBar extends StatelessWidget {
     final graveyard = state.zone(player.id, Zone.graveyard).toList();
     final exile = state.zone(player.id, Zone.exile).toList();
     final narrow = MediaQuery.sizeOf(context).width < 560;
-    Widget chip(IconData icon, String text, {VoidCallback? onTap, String? anchor}) => KeyedSubtree(
+    // [pick]: há aí uma carta que se pode escolher ou jogar agora (alvo no
+    // cemitério, flashback): fica assinalado como as cartas da mesa
+    Widget chip(IconData icon, String text, {VoidCallback? onTap, String? anchor, bool pick = false}) => KeyedSubtree(
         key: anchor == null ? null : act.geo.key(anchor),
         child: narrow
             ? InkWell(
                 onTap: onTap,
-                child: Padding(
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  decoration: pick
+                      ? BoxDecoration(
+                          border: Border.all(color: GameColors.target, width: 2),
+                          borderRadius: BorderRadius.circular(6),
+                        )
+                      : null,
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(icon, size: 14, color: onTap == null ? null : theme.colorScheme.primary),
                     const SizedBox(width: 2),
@@ -1591,6 +1736,7 @@ class _PlayerBar extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   avatar: Icon(icon, size: 16),
                   label: Text(text),
+                  side: pick ? const BorderSide(color: GameColors.target, width: 2) : null,
                   onPressed: onTap,
                 ),
               ));
@@ -1676,10 +1822,13 @@ class _PlayerBar extends StatelessWidget {
         chip(Icons.layers_outlined, '${player.libraryCount}', anchor: 'lib:${player.id}'),
         chip(Icons.delete_outline, '${graveyard.length}',
             anchor: 'grave:${player.id}',
-            onTap: graveyard.isEmpty ? null : () => _zoneSheet(context, tr('Cemitério'), graveyard)),
+            pick: graveyard.any((c) => act.selectable(c.instance.id)),
+            onTap: graveyard.isEmpty ? null : () => _zoneSheet(context, tr('Cemitério'), graveyard, act)),
         if (exile.isNotEmpty)
           chip(Icons.block, '${exile.length}',
-              anchor: 'exile:${player.id}', onTap: () => _zoneSheet(context, tr('Exílio'), exile)),
+              anchor: 'exile:${player.id}',
+              pick: exile.any((c) => act.selectable(c.instance.id)),
+              onTap: () => _zoneSheet(context, tr('Exílio'), exile, act)),
       ]),
     );
     if (!act.attacking || act.onAttack == null || player.id == act.meId) return bar;
@@ -1703,36 +1852,86 @@ class _PlayerBar extends StatelessWidget {
     if (onTable != null && onTable.instance.zone != Zone.hand) return null;
     return host % min(player.handCount, _HandBacks.maxShown);
   }
+}
 
-  void _zoneSheet(BuildContext context, String title, List<ForgeCardView> cards) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: Theme.of(ctx).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 150,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: cards.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              // o topo (o mais recente) primeiro; aqui tocar abre a ficha
-              itemBuilder: (_, i) {
-                final c = cards[cards.length - 1 - i];
-                return GestureDetector(
-                  onTap: () => act.onDetails(c),
-                  child: TableCardView(instance: c.instance, card: c.card, width: 105, showDetails: false),
-                );
+/// As cartas a escolher que a mesa não mostra (biblioteca, mão de outro jogador).
+void _unseenSheet(
+  BuildContext context,
+  Map<int, String> cards,
+  Set<int> chosen,
+  ForgeCardLookup? lookup,
+  void Function(int id) onPick,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => ListView(
+      shrinkWrap: true,
+      children: [
+        for (final e in cards.entries)
+          () {
+            final card = lookup?.byName(e.value);
+            return ListTile(
+              leading: card == null ? null : SizedBox(width: 40, child: CardImage(card)),
+              title: OracleText(card?.displayName ?? e.value),
+              trailing: chosen.contains(e.key) ? const Icon(Icons.check_circle, color: GameColors.target) : null,
+              onTap: () {
+                Navigator.of(ctx).pop();
+                onPick(e.key);
               },
-            ),
+            );
+          }(),
+      ],
+    ),
+  );
+}
+
+/// As cartas de uma zona fora da mesa (cemitério, exílio). As que o Forge deixa
+/// escolher ou jogar agora vêm assinaladas e tocar nelas é a jogada; nas outras, e
+/// a tocar sem largar, abre a ficha. Sem isto, um alvo no cemitério não se podia
+/// escolher e, como o Forge desliga os botões até haver alvo, o jogo ficava preso.
+void _zoneSheet(BuildContext context, String title, List<ForgeCardView> cards, _Interaction act) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: Theme.of(ctx).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: cards.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            // o topo (o mais recente) primeiro
+            itemBuilder: (_, i) {
+              final c = cards[cards.length - 1 - i];
+              final pick = act.selectable(c.instance.id);
+              return GestureDetector(
+                onTap: pick
+                    ? () {
+                        Navigator.of(ctx).pop();
+                        act.onCard(c);
+                      }
+                    : () => act.onDetails(c),
+                onLongPress: () => act.onDetails(c),
+                child: TableCardView(
+                  instance: c.instance,
+                  card: c.card,
+                  width: 105,
+                  showDetails: false,
+                  highlighted: pick,
+                  targeted: act.chosen(c.instance.id),
+                ),
+              );
+            },
           ),
-        ]),
-      ),
-    );
-  }
+        ),
+      ]),
+    ),
+  );
 }
 
 /// O campo de um jogador: os terrenos numa fila, o resto noutra. O do

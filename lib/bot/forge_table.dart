@@ -42,7 +42,24 @@ class ForgePrompt {
         playable = {for (final id in (m['play'] as List? ?? const [])) id as int},
         autoTap = {for (final id in (m['auto'] as List? ?? const [])) id as int},
         input = m['input'] as String? ?? 'other',
-        cancelKind = m['cancelKind'] as String?;
+        cancelKind = m['cancelKind'] as String?,
+        unseen = {
+          for (final o in (m['selOut'] as List? ?? const [])) (o as Map)['id'] as int: o['n'] as String? ?? '',
+        };
+
+  /// As cartas a escolher que a mesa não mostra (biblioteca, mão de outro jogador): id e nome.
+  final Map<int, String> unseen;
+
+  /// Os dois botões desligados: só se sai escolhendo. Se não der, é o [canSkip].
+  bool get noButtons => !ok.enabled && !cancel.enabled;
+
+  /// Há alguma coisa em que tocar.
+  bool get hasOptions =>
+      selectableCards.isNotEmpty || selectablePlayers.isNotEmpty || playable.isNotEmpty || unseen.isNotEmpty;
+
+  /// Pode precisar da saída de emergência: pergunta à pessoa, sem botões, e não é o
+  /// mulligan (aí os botões voltam ao escolher as cartas, que estão sempre à vista).
+  bool get canSkip => noButtons && input != 'wait' && input != 'mulligan' && input != 'bottom';
 
   final String message;
   final int? cardId;

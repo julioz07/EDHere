@@ -116,6 +116,22 @@ public final class ForgeEngine {
     }
 
     public static synchronized void init(Context ctx, String language, Reply reply) {
+        if ("ready".equals(state) && language != null
+                && !language.equals(FModel.getPreferences().getPref(FPref.UI_LANGUAGE))) {
+            // mudou a língua da app desde o arranque do motor (o Forge só a lê ao iniciar)
+            worker.execute(() -> {
+                try {
+                    FModel.getPreferences().setPref(FPref.UI_LANGUAGE, language);
+                    forge.util.Lang.createInstance(language);
+                    forge.util.Localizer.getInstance().setLanguage(language, forge.localinstance.properties.ForgeConstants.LANG_DIR);
+                    forge.util.CardTranslation.preloadTranslation(language, forge.localinstance.properties.ForgeConstants.LANG_DIR);
+                } catch (Throwable e) {
+                    Log.e(TAG, "language", e);
+                }
+                reply.ok(status());
+            });
+            return;
+        }
         if ("ready".equals(state) || "loading".equals(state)) {
             worker.execute(() -> reply.ok(status())); // em "loading", responde depois de acabar
             return;

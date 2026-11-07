@@ -63,6 +63,9 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
+### Notas da versão (2.1.1)
+Contra o bot, nunca mais ficas preso numa decisão. Corrigimos cartas que pediam uma escolha impossível de fazer: alvos no cemitério (Goblin Dark-Dwellers) e cartas da biblioteca ou da mão do adversário (Anticipate, procuras). Se algum passo ficar mesmo sem saída, aparece o botão Saltar. A tecla de voltar já não responde às perguntas por ti e, ao mudar a língua da app, os textos do jogo mudam também.
+
 ### Notas da versão (2.1.0)
 Joga direto a partir de um deck: o botão ▶ abre o jogo contra o bot, uma sala ou o goldfish com ele já escolhido. Mesa nova: arte dos comandantes, mão em leque, ecrã grande de vidas, mulligan com estado de cada um e uma visita guiada. No tablet, jogadores maiores e o registo ao lado. Modern e outros formatos jogam-se 1 contra 1, também contra o bot. Correções: mão vazia ao voltar ao jogo, terrenos básicos na tua língua.
 
@@ -126,6 +129,9 @@ Goldfish to test a deck, or 1 vs 1 on the same phone or tablet.
 You only need the internet to download the cards once (about 25 MB) and their images. After that, it works in airplane mode.
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
+
+### Release notes (2.1.1)
+Against the bot, you can no longer get stuck on a decision. We fixed cards that asked for a choice you couldn't make: targets in the graveyard (Goblin Dark-Dwellers) and cards in your library or an opponent's hand (Anticipate, searches). If a step ever has no way out, a Skip button appears. The back key no longer answers questions for you, and changing the app language now updates the game texts too.
 
 ### Release notes (2.1.0)
 Play straight from a deck: the ▶ button starts a bot game, a room or goldfish with it already chosen. New table: commander art, a fanned hand, a big life screen, mulligan status for everyone and a guided tour. On tablets, bigger players and the log on the side. Modern and other formats are played 1 vs 1, also against the bot. Fixes: empty hand when returning to a game, basic lands in your language.
@@ -191,6 +197,9 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
+### Notas de la versión (2.1.1)
+Contra el bot, ya no te quedarás atascado en una decisión. Corregimos cartas que pedían una elección imposible: objetivos en el cementerio (Goblin Dark-Dwellers) y cartas de la biblioteca o de la mano del rival (Anticipate, búsquedas). Si un paso se queda sin salida, aparece el botón Saltar. La tecla de volver ya no responde por ti y, al cambiar el idioma de la app, también cambian los textos de la partida.
+
 ### Notas de la versión (2.1.0)
 Juega directamente desde un mazo: el botón ▶ abre la partida contra el bot, una sala o el goldfish con él ya elegido. Mesa nueva: arte de los comandantes, mano en abanico, pantalla grande de vidas, mulligan con el estado de cada uno y una visita guiada. En tablet, jugadores más grandes y el registro al lado. Modern y otros formatos se juegan 1 contra 1, también contra el bot. Correcciones: mano vacía al volver a la partida, tierras básicas en tu idioma.
 
@@ -254,6 +263,9 @@ Goldfish per provare un mazzo, oppure 1 contro 1 sullo stesso telefono o tablet.
 Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro immagini. Dopo funziona in modalità aereo.
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
+
+### Note sulla versione (2.1.1)
+Contro il bot non resti più bloccato su una decisione. Abbiamo corretto le carte che chiedevano una scelta impossibile: bersagli nel cimitero (Goblin Dark-Dwellers) e carte nel grimorio o nella mano dell'avversario (Anticipate, ricerche). Se un passaggio resta senza uscita, compare il pulsante Salta. Il tasto indietro non risponde più al posto tuo e, cambiando la lingua dell'app, cambiano anche i testi della partita.
 
 ### Note sulla versione (2.1.0)
 Gioca direttamente da un mazzo: il pulsante ▶ avvia la partita contro il bot, una stanza o il goldfish con il mazzo già scelto. Tavolo nuovo: arte dei comandanti, mano a ventaglio, schermata grande delle vite, mulligan con lo stato di ognuno e una visita guidata. Su tablet, giocatori più grandi e il registro a lato. Modern e gli altri formati si giocano 1 contro 1, anche contro il bot. Correzioni: mano vuota al ritorno in partita, terre base nella tua lingua.
