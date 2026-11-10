@@ -328,16 +328,30 @@ public final class ForgeEngine {
             CardPool pool = "command".equals(board) ? deck.getOrCreate(DeckSection.Commander)
                     : "side".equals(board) ? deck.getOrCreate(DeckSection.Sideboard)
                     : deck.getMain();
-            int before = pool.countAll();
-            pool.add(name, qty);
+            CardPool found = lookup(name, qty);
             // "A // B": o Forge só usa o nome completo nas cartas divididas; nas
             // de duas faces (transformar, MDFC, aventura) usa o da frente
-            if (pool.countAll() == before && name.contains(" // ")) {
-                pool.add(name.substring(0, name.indexOf(" // ")), qty);
+            if (found == null && name.contains(" // ")) {
+                found = lookup(name.substring(0, name.indexOf(" // ")), qty);
             }
-            if (pool.countAll() == before) missing.add(name);
+            if (found == null) missing.add(name);
+            else pool.addAll(found);
         }
         return deck;
+    }
+
+    /**
+     * A carta tal como o Forge a conhece, ou null. O CardPool.add nunca falha:
+     * com um nome que não conhece mete uma carta "não suportada", que o Forge
+     * depois tira do deck com um aviso em inglês.
+     */
+    private static CardPool lookup(String name, int qty) {
+        CardPool tmp = new CardPool();
+        tmp.add(name, qty);
+        for (Map.Entry<forge.item.PaperCard, Integer> e : tmp) {
+            if (e.getKey().getRules() == null || e.getKey().getRules().isUnsupported()) return null;
+        }
+        return tmp.isEmpty() ? null : tmp;
     }
 
     /** Um toque da pessoa: {kind: card|player|ok|cancel|stack|concede, id}. */

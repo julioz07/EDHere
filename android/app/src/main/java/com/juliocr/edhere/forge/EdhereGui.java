@@ -266,6 +266,10 @@ final class EdhereGui extends AbstractGuiGame {
         } else if (t instanceof PlayerView) {
             o.put("player", ((PlayerView) t).getId());
             if (display == null) label = ((PlayerView) t).getName();
+        } else if (t instanceof forge.card.MagicColor.Color && display == null) {
+            // escolher uma cor: o símbolo de mana e o nome traduzido, não "WHITE"
+            forge.card.MagicColor.Color col = (forge.card.MagicColor.Color) t;
+            label = "{" + col.getShortName() + "} " + col.getTranslatedName();
         }
         o.put("label", label);
         return o;
@@ -328,16 +332,41 @@ final class EdhereGui extends AbstractGuiGame {
     @Override
     public List<CardView> manipulateCardList(String title, Iterable<CardView> cards, Iterable<CardView> manipulable,
                                              boolean toTop, boolean toBottom, boolean toAnywhere) {
+        // Só o scry chega aqui: "cards" é a biblioteca inteira e "manipulable"
+        // as de cima. Pergunta-se só por essas (topo ou fundo, e a ordem das que
+        // ficam em cima), como o Forge faz sem as listas de cartas do desktop.
         List<CardView> all = new ArrayList<>();
         for (CardView c : cards) all.add(c);
-        if (all.size() <= 1) return all;
-        Map<String, Object> q = question("order", title, null);
-        q.put("options", options(all, null));
-        List<CardView> out = new ArrayList<>();
-        for (int i : indices(ask(q))) {
-            if (i >= 0 && i < all.size() && !out.contains(all.get(i))) out.add(all.get(i));
+        List<CardView> manip = new ArrayList<>();
+        for (CardView c : manipulable) if (all.contains(c)) manip.add(c);
+        if (all.size() <= 1 || manip.isEmpty()) return all;
+        forge.util.Localizer loc = forge.util.Localizer.getInstance();
+        List<CardView> bottom = new ArrayList<>();
+        if (toTop && toBottom) {
+            if (manip.size() == 1) {
+                CardView c = manip.get(0);
+                String msg = loc.getMessage("lblPutCardOnTopOrBottomLibrary",
+                        forge.util.CardTranslation.getTranslatedName(c.getName()));
+                List<String> labels = new ArrayList<>();
+                labels.add(loc.getMessage("lblTop"));
+                labels.add(loc.getMessage("lblBottom"));
+                if (!confirm(c, msg, true, labels)) bottom.add(c);
+            } else {
+                bottom.addAll(getChoices(loc.getMessage("lblSelectCardsToBePutOnTheBottomOfYourLibrary"),
+                        0, manip.size(), manip, null, null));
+            }
+        } else if (toBottom) {
+            bottom.addAll(manip);
         }
-        for (CardView c : all) if (!out.contains(c)) out.add(c);
+        List<CardView> top = new ArrayList<>(manip);
+        top.removeAll(bottom);
+        if (top.size() > 1) {
+            top = new ArrayList<>(order(loc.getMessage("lblArrangeCardsToBePutOnTopOfYourLibrary"),
+                    loc.getMessage("lblTopOfLibrary"), -1, -1, top, null, null, false, false).ordered());
+        }
+        List<CardView> out = new ArrayList<>(top);
+        for (CardView c : all) if (!manip.contains(c)) out.add(c);
+        out.addAll(bottom);
         return out;
     }
 
@@ -483,9 +512,37 @@ final class EdhereGui extends AbstractGuiGame {
 
     @Override
     public void message(String message, String title) {
+        if (isManaPick(message)) return;
+        // o título costuma ser a carta como o Forge a escreve: "Vexing Puzzlebox (92)"
+        if (title != null) title = title.replaceAll(" \\(\\d+\\)$", "");
         Map<String, Object> m = question("message", title, message);
         m.put("type", "info");
         sink.emit(m);
+    }
+
+    private static volatile java.util.regex.Pattern manaPick;
+
+    /**
+     * "Bot escolheu {B}": a cor que um jogador escolheu para a mana. Aparece a
+     * cada terreno de qualquer cor e não diz nada a quem joga (é só ruído).
+     */
+    static boolean isManaPick(String msg) {
+        if (msg == null) return false;
+        java.util.regex.Pattern p = manaPick;
+        if (p == null) {
+            StringBuilder colors = new StringBuilder("(?:\\s*\\{[^}]+\\})+");
+            for (forge.card.MagicColor.Color c : forge.card.MagicColor.Color.values()) {
+                colors.append('|').append(java.util.regex.Pattern.quote(c.getName()))
+                        .append('|').append(java.util.regex.Pattern.quote(c.getTranslatedName()));
+            }
+            String tpl = forge.util.Localizer.getInstance().getMessage("lblPlayerPickedChosen", "\u0001", "\u0002");
+            String re = java.util.regex.Pattern.quote(tpl)
+                    .replace("\u0001", "\\E.+?\\Q")
+                    .replace("\u0002", "\\E(?:" + colors + ")\\Q");
+            p = manaPick = java.util.regex.Pattern.compile("^" + re + "\\s*$",
+                    java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL);
+        }
+        return p.matcher(msg.trim()).matches();
     }
 
     @Override

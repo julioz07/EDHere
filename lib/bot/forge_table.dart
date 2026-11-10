@@ -284,6 +284,11 @@ class ForgeTableState {
       };
 }
 
+/// Texto do Forge sem os ids internos ("Lightning Bolt (2)") nem a causa que o
+/// Forge junta aos gatilhos ("[Cambia de zona: X]", "[Player: Ana, Lost Amount: 2]").
+String forgeStrip(String t) =>
+    t.replaceAll(RegExp(r'\s*\(\d+\)'), '').replaceAll(RegExp(r'\s*\[[^\[\]\n]*:[^\[\]\n]*\]'), '').trim();
+
 /// Procura as cartas do Forge na base da app (pelo nome Oracle), com cache.
 class ForgeCardLookup {
   ForgeCardLookup(this.repo);
@@ -296,6 +301,30 @@ class ForgeCardLookup {
         if (hit != null || !name.contains(' // ')) return hit;
         return repo.findByName(name.substring(0, name.indexOf(' // ')));
       });
+
+  Map<String, String> _local = const {};
+  RegExp? _localRe;
+  int _localSeen = -1;
+
+  /// O texto do Forge com os nomes das cartas na língua das cartas da app
+  /// (o Forge escreve-os sempre em inglês). Só as cartas que já passaram pela mesa.
+  String localize(String text) {
+    if (_localSeen != _byName.length) {
+      _localSeen = _byName.length;
+      final m = <String, String>{};
+      for (final e in _byName.entries) {
+        final c = e.value;
+        if (c == null || c.printed == null || e.key.startsWith('token:')) continue;
+        final shown = e.key == c.name ? c.displayName : c.displayFrontName;
+        if (shown != e.key && shown.isNotEmpty) m[e.key] = shown;
+      }
+      final keys = m.keys.toList()..sort((a, b) => b.length.compareTo(a.length));
+      _local = m;
+      _localRe = keys.isEmpty ? null : RegExp(keys.map(RegExp.escape).join('|'));
+    }
+    final re = _localRe;
+    return re == null ? text : text.replaceAllMapped(re, (m) => _local[m[0]] ?? m[0]!);
+  }
 
   db.Card? token(String name, int? pow, int? tou) => _byName.putIfAbsent('token:$name:$pow/$tou', () {
         // "Goblin Token" no Forge, "Goblin" na base

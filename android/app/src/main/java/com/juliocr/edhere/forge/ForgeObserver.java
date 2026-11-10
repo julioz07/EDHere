@@ -331,6 +331,9 @@ final class ForgeObserver implements ForgeBots.Thinker {
         List<Object> log = new ArrayList<>();
         for (GameLogEntry e : game.getGameLog().getLogEntriesForVerbosity(GameLogVerbosity.MEDIUM)) {
             if (log.size() >= 20) break;
+            // o placar do encontro ("Bot 1: 1 Bot 2: 0") ficava na mesa no fim
+            if (e.type() == forge.game.GameLogEntryType.MATCH_RESULTS) continue;
+            if (EdhereGui.isManaPick(e.message())) continue;
             log.add(e.message());
         }
         m.put("log", log);

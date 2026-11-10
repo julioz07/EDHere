@@ -1,0 +1,9 @@
+[
+  ["=Ronda {v}", "Round {v}", "Ronda {v}", "Giro {v}"],
+  ["={n} rondas", "{n} rounds", "{n} rondas", "{n} giri"],
+  ["=Um campo de cada vez", "One board at a time", "Un campo cada vez", "Un campo alla volta"],
+  ["=A mesa está cheia. Ver um campo de cada vez? Também se muda no menu da velocidade.", "The table is crowded. Show one board at a time? You can also change this in the speed menu.", "La mesa está llena. ¿Ver un campo cada vez? También se cambia en el menú de velocidad.", "Il tavolo è pieno. Vuoi vedere un campo alla volta? Si cambia anche dal menu della velocità."],
+  ["=Ver", "Show", "Ver", "Mostra"],
+  ["=Campo de {v}", "{v}'s board", "Campo de {v}", "Campo di {v}"],
+  ["=O meu campo", "My board", "Mi campo", "Il mio campo"]
+]

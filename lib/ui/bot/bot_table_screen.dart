@@ -123,15 +123,49 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
   bool get _shakeOn => ref.read(prefsProvider).getBool(_shakeKey) ?? true;
   bool get _hapticsOn => ref.read(prefsProvider).getBool(_hapticsKey) ?? true;
 
+  /// Um campo de cada vez: com muitas cartas, os dois campos lado a lado ficavam
+  /// ilegíveis. A mesa propõe-no uma vez, quando enche; muda-se no menu.
+  static const _singleKey = 'bot_single_board';
+  static const _singleAskedKey = 'bot_single_asked';
+  bool get _singleOn => ref.read(prefsProvider).getBool(_singleKey) ?? false;
+
+  /// Com um campo de cada vez: se se vê o meu (senão o do adversário). Segue o
+  /// turno; o botão por cima do campo troca.
+  bool _showMine = false;
+  bool _singleOffered = false;
+
+  void _maybeOfferSingle(ForgeTableState s) {
+    if (_singleOffered || _singleOn || !mounted) return;
+    final prefs = ref.read(prefsProvider);
+    if (prefs.getBool(_singleAskedKey) ?? false) return;
+    final limit = MediaQuery.sizeOf(context).width < 560 ? 14 : 24;
+    if (!s.players.any((p) => s.zone(p.id, Zone.battlefield).length > limit)) return;
+    _singleOffered = true;
+    prefs.setBool(_singleAskedKey, true);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(seconds: 10),
+      content: Text(tr('A mesa está cheia. Ver um campo de cada vez? Também se muda no menu da velocidade.')),
+      action: SnackBarAction(label: tr('Ver'), onPressed: () => _option('single')),
+    ));
+  }
+
   Duration get _flightTime => switch (_speed) {
         BotSpeed.slow => const Duration(milliseconds: 560),
         BotSpeed.normal => const Duration(milliseconds: 400),
         BotSpeed.fast => const Duration(milliseconds: 260),
       };
 
+  /// A ronda (uma volta à mesa) e o lugar de quem jogou o último turno.
+  int _round = 0;
+  int _roundSeat = -1;
+
+  /// A mesa dona da partida que está a correr no motor.
+  static Object? _current;
+
   @override
   void initState() {
     super.initState();
+    _current = this;
     // As imagens dos dois decks, para não aparecerem cartas de texto a meio.
     final seats = kQaMonkey ? BotMonkey.randomSeats(widget.seats, _repo) : widget.seats;
     final ids = {for (final s in seats) ...s.deck.entries.map((e) => e.oracleId)};
@@ -161,8 +195,13 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     _sub?.cancel();
     _shake.dispose();
     _pulse.dispose();
-    WakelockPlus.disable();
-    ForgeEngine.stop();
+    // Na revanche, o ecrã novo arranca a partida dele antes de este sair:
+    // parar aqui matava-a (ficava presa em "Mão inicial").
+    if (identical(_current, this)) {
+      _current = null;
+      WakelockPlus.disable();
+      ForgeEngine.stop();
+    }
     super.dispose();
   }
 
@@ -239,6 +278,13 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     // faixa no início de cada turno, a dizer de quem é
     if (s.players.isNotEmpty && s.turn > 0 && s.turn != _lastTurn && !s.over) {
       _lastTurn = s.turn;
+      // a ronda: volta a começar quando a vez regressa a um lugar anterior da mesa
+      final seat = s.players.indexWhere((p) => p.id == s.active);
+      if (_round == 0 || seat <= _roundSeat) _round++;
+      _roundSeat = seat;
+      // um campo de cada vez: vê-se o de quem joga
+      _showMine = s.active == s.players.first.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeOfferSingle(s));
       Sfx.turn();
       final active = s.player(s.active ?? -1);
       final mine = _live && s.active == s.players.first.id;
@@ -509,7 +555,11 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
         ? (_live ? tr('Contra o bot') : tr('Bot contra bot'))
         : s.turn < 1
             ? tr('Preparar a mão')
-            : tr('Turno {v}', {'v': s.turn});
+            // a 3 ou mais, o Forge conta os turnos de todos ("Turno 36" eram 9
+            // voltas à mesa): conta-se a ronda, como numa mesa de Commander
+            : s.players.length > 2 && _round > 0
+                ? tr('Ronda {v}', {'v': _round})
+                : tr('Turno {v}', {'v': s.turn});
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -534,6 +584,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                   CheckedPopupMenuItem(value: 'shake', checked: _shakeOn, child: Text(tr('Abanar a mesa com o dano'))),
                   CheckedPopupMenuItem(value: 'haptics', checked: _hapticsOn, child: Text(tr('Vibração'))),
                   CheckedPopupMenuItem(value: 'sound', checked: Sfx.enabled, child: Text(tr('Som'))),
+                  CheckedPopupMenuItem(value: 'single', checked: _singleOn, child: Text(tr('Um campo de cada vez'))),
                   if (_live) ...[
                     const PopupMenuDivider(),
                     PopupMenuItem(value: 'stops', child: Text(tr('Paragens…'))),
@@ -616,6 +667,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                             state: s,
                             meId: _live ? s.players.first.id : null,
                             history: _lifeHistory,
+                            rounds: _round,
                             onRematch: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
                               builder: (_) => BotTableScreen(seats: widget.seats, commander: widget.commander),
                             )),
@@ -655,6 +707,11 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     } else if (v == 'sound') {
       setState(() => Sfx.enabled = !Sfx.enabled);
       prefs.setBool(Sfx.prefKey, Sfx.enabled);
+    } else if (v == 'single') {
+      setState(() {
+        prefs.setBool(_singleKey, !_singleOn);
+        _showMine = _state?.active == _state?.players.firstOrNull?.id;
+      });
     } else if (v == 'stops') {
       _editStops();
     }
@@ -788,6 +845,31 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
             }
           : null,
     );
+    // um campo de cada vez (ver _singleOn); a bloquear arrasta-se de um campo
+    // para o outro, por isso aí vêem-se os dois
+    final single = _singleOn && !act.blocking;
+    final theirBoard = multi
+        ? ClipRect(
+            // a mesa do adversário desliza para o lado do lugar dele, sem piscar
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: _flightTime.inMilliseconds * 3 ~/ 4),
+              switchInCurve: Curves.easeInOut,
+              switchOutCurve: Curves.easeInOut,
+              transitionBuilder: (child, anim) {
+                final incoming = child.key == ValueKey(them.id);
+                final dx = (incoming ? 1.0 : -1.0) * _slide;
+                return SlideTransition(
+                  position: Tween(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
+                  child: child,
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey(them.id),
+                child: _Battlefield(state: s, player: them.id, flipped: true, act: act),
+              ),
+            ),
+          )
+        : _Battlefield(state: s, player: them.id, flipped: true, act: act);
     // o fundo da mesa escolhido nas Definições, como na mesa normal
     return Container(
       decoration: BoxDecoration(
@@ -810,6 +892,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
               thinking: _live && !s.over && _prompt?.input == 'wait' ? s.priority : null,
               onPick: (id) {
                 _focusTimer?.cancel();
+                if (_singleOn && _showMine) setState(() => _showMine = false);
                 _setFocus(id);
                 // a atacar: tocar num adversário escolhe-o como defensor; a escolher
                 // um alvo, tocar no separador escolhe esse jogador
@@ -826,39 +909,28 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
               act: act,
               anchored: !multi,
               thinking: _live && !s.over && (_waiting || _prompt?.input == 'wait') && (!multi || s.priority == them.id)),
-          Expanded(
-            child: !multi
-                ? _Battlefield(state: s, player: them.id, flipped: true, act: act)
-                : ClipRect(
-                    // a mesa do adversário desliza para o lado do lugar dele, sem piscar
-                    child: AnimatedSwitcher(
-                      duration: Duration(milliseconds: _flightTime.inMilliseconds * 3 ~/ 4),
-                      switchInCurve: Curves.easeInOut,
-                      switchOutCurve: Curves.easeInOut,
-                      transitionBuilder: (child, anim) {
-                        final incoming = child.key == ValueKey(them.id);
-                        final dx = (incoming ? 1.0 : -1.0) * _slide;
-                        return SlideTransition(
-                          position: Tween(begin: Offset(dx, 0), end: Offset.zero).animate(anim),
-                          child: child,
-                        );
-                      },
-                      child: KeyedSubtree(
-                        key: ValueKey(them.id),
-                        child: _Battlefield(state: s, player: them.id, flipped: true, act: act),
-                      ),
-                    ),
-                  ),
+          if (!single || !_showMine)
+            Expanded(
+                child: single ? _boardSwitch(s, them, mine: false, child: theirBoard) : theirBoard),
+          // Altura limitada: numa partida a 4 uma destas faixas chegou a medir um
+          // valor absurdo e empurrava o meu campo, a minha barra e a mão para
+          // y = infinito (centenas de "TransformLayer ... invalid matrix" por segundo)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 56),
+            child: PhaseBar(
+              phase: s.phase,
+              mine: _live && s.active == me.id,
+              compact: narrow,
+              stops: !_live ? const {} : (s.active == me.id ? _stops.mine : _stops.theirs),
+              onTap: _live ? _editStops : null,
+              color: s.active == null ? null : seatColor(s, s.active!),
+            ),
           ),
-          PhaseBar(
-            phase: s.phase,
-            mine: _live && s.active == me.id,
-            compact: narrow,
-            stops: !_live ? const {} : (s.active == me.id ? _stops.mine : _stops.theirs),
-            onTap: _live ? _editStops : null,
-            color: s.active == null ? null : seatColor(s, s.active!),
-          ),
-          if (!narrow || s.stack.isNotEmpty || !_live) _CenterStrip(state: s, act: act, lookup: _lookup),
+          if (!narrow || s.stack.isNotEmpty || !_live)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 120),
+              child: _CenterStrip(state: s, act: act, lookup: _lookup),
+            ),
           if (_live && !s.over)
             _PromptBar(
                 prompt: _prompt,
@@ -871,7 +943,11 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
                 onPickId: (id) => _act('card', id),
                 lookup: _lookup,
                 onPlayer: (id) => _act('player', id)),
-          Expanded(child: _Battlefield(state: s, player: me.id, act: act)),
+          if (!single || _showMine)
+            Expanded(
+                child: single
+                    ? _boardSwitch(s, them, mine: true, child: _Battlefield(state: s, player: me.id, act: act))
+                    : _Battlefield(state: s, player: me.id, act: act)),
           _PlayerBar(state: s, player: me, act: act),
           _Hand(
             cards: s.zone(me.id, Zone.hand).toList(),
@@ -884,6 +960,36 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
     );
   }
 
+  /// Um campo de cada vez: o campo que se vê, com um botão por cima para ver o outro.
+  Widget _boardSwitch(ForgeTableState s, ForgePlayer them, {required bool mine, required Widget child}) {
+    final me = s.players.first;
+    final other = mine ? them : me;
+    final label = mine || !_live
+        ? tr('Campo de {v}', {'v': other.name})
+        : tr('O meu campo');
+    return Stack(children: [
+      Positioned.fill(child: child),
+      Align(
+        alignment: mine ? Alignment.topRight : Alignment.bottomRight,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              // o tema dá a largura toda aos FilledButton
+              minimumSize: const Size(0, EdhSize.buttonCompact),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.92),
+            ),
+            onPressed: () => setState(() => _showMine = !mine),
+            icon: Icon(mine ? Icons.arrow_upward : Icons.arrow_downward, size: 18),
+            label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ),
+      ),
+    ]);
+  }
+
   void _showLog(ForgeTableState s) {
     showModalBottomSheet<void>(
       context: context,
@@ -891,7 +997,7 @@ class _BotTableScreenState extends ConsumerState<BotTableScreen> with TickerProv
       builder: (ctx) => ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
-          for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: OracleText(logLine(l)))
+          for (final l in s.log) Padding(padding: const EdgeInsets.only(bottom: 6), child: OracleText(logLine(l, _lookup)))
         ],
       ),
     );
@@ -1318,14 +1424,15 @@ Color seatColor(ForgeTableState s, int playerId) {
 
 /// Uma linha do registo do Forge sem os ids internos ("Lightning Bolt (2)"). As
 /// mudanças de vida vêm sempre em inglês ("Life: Bot 40 > 38"): essas são nossas.
-String logLine(String t) {
-  t = t.replaceAll(RegExp(r' \(\d+\)'), '');
+String logLine(String t, [ForgeCardLookup? names]) {
+  t = forgeStrip(t);
+  String local(String s) => names == null ? s : names.localize(s);
   // o Forge regista a carta que resolveu como "Goblin Lackey - Criatura 1 / 1"
-  final resolved = RegExp(r'^(.+?) - [^-\n]+ \d+ / \d+$').firstMatch(t.trim());
-  if (resolved != null) return tr('{v} resolveu', {'v': resolved[1]!});
+  final resolved = RegExp(r'^(.+?) - [^-\n]+ \d+ / \d+$').firstMatch(t);
+  if (resolved != null) return tr('{v} resolveu', {'v': local(resolved[1]!)});
   t = forgeText(t);
-  final life = RegExp(r'^Life: (.+) (\d+) > (\d+)$').firstMatch(t.trim());
-  if (life == null) return t;
+  final life = RegExp(r'^Life: (.+) (-?\d+) > (-?\d+)$').firstMatch(t.trim());
+  if (life == null) return local(t);
   return tr('{p}: vida {a} → {b}', {'p': life[1]!, 'a': life[2]!, 'b': life[3]!});
 }
 
@@ -1485,8 +1592,8 @@ class _PromptBar extends StatelessWidget {
 
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
     // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
-    var forge =
-        forgeText(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n').replaceAll(RegExp(r' \(\d+\)'), '').trim());
+    var forge = forgeText(forgeStrip(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n')));
+    if (lookup case final names?) forge = names.localize(forge);
     // tocou numa carta que não serve: o Forge escreve as regras internas do alvo
     // ("The selected card is not an Instant.YouCtrl+cmcLE3...")
     final notValid = RegExp(r'^(.+?) - The selected card is not ').firstMatch(forge);
@@ -2020,7 +2127,8 @@ class _CardRow extends StatelessWidget {
         final w = (box.maxHeight * cardAspect * 0.92).clamp(24.0, 150.0);
         // centradas, como numa mesa; com muitas, a fila desliza
         return Center(
-            child: ListView.separated(
+            child: _ScrollHint(
+                child: ListView.separated(
           shrinkWrap: true,
           scrollDirection: Axis.horizontal,
           // quem ataca sai um pouco da fila
@@ -2066,10 +2174,91 @@ class _CardRow extends StatelessWidget {
               ),
             );
           },
-        ));
+        )));
       }),
     );
   }
+}
+
+/// Numa fila que desliza para o lado (muitos terrenos num telemóvel), uma
+/// seta no lado onde há mais cartas: sem ela parecia que a fila acabava ali.
+class _ScrollHint extends StatefulWidget {
+  const _ScrollHint({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_ScrollHint> createState() => _ScrollHintState();
+}
+
+class _ScrollHintState extends State<_ScrollHint> {
+  bool _before = false;
+  bool _after = false;
+
+  bool _onMetrics(ScrollMetrics m) {
+    final before = m.extentBefore > 4;
+    final after = m.extentAfter > 4;
+    if (before != _before || after != _after) {
+      // a notificação chega durante o layout: muda-se no frame seguinte
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _before = before;
+            _after = after;
+          });
+        }
+      });
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget arrow(bool left) => Positioned(
+          left: left ? 0 : null,
+          right: left ? null : 0,
+          top: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Container(
+              width: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: left ? Alignment.centerLeft : Alignment.centerRight,
+                  end: left ? Alignment.centerRight : Alignment.centerLeft,
+                  colors: [Colors.black.withOpacity(0.55), Colors.transparent],
+                ),
+              ),
+              child: Icon(left ? Icons.chevron_left : Icons.chevron_right, color: Colors.white, size: 26),
+            ),
+          ),
+        );
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (n) => _onMetrics(n.metrics),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) => _onMetrics(n.metrics),
+        child: Stack(children: [
+          // a fila não recorta (quem ataca sai um pouco para cima ou para baixo),
+          // mas para os lados sim: senão as cartas apareciam para lá da seta
+          ClipRect(clipper: const _SidesClip(), child: widget.child),
+          if (_before) arrow(true),
+          if (_after) arrow(false),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Recorta só à esquerda e à direita (em cima e em baixo deixa sair).
+class _SidesClip extends CustomClipper<Rect> {
+  const _SidesClip();
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(0, -200, size.width, size.height + 200);
+
+  @override
+  bool shouldReclip(_SidesClip oldClipper) => false;
 }
 
 /// A pilha (o que está à espera de resolver) como mini-cartas, a de cima
@@ -2081,7 +2270,7 @@ class _CenterStrip extends StatelessWidget {
   final _Interaction act;
   final ForgeCardLookup lookup;
 
-  static String _clean(String t) => logLine(t);
+  String _clean(String t) => logLine(t, lookup);
 
   @override
   Widget build(BuildContext context) {
@@ -2156,7 +2345,7 @@ class _StackCard extends StatelessWidget {
   }
 }
 
-class _Hand extends StatelessWidget {
+class _Hand extends StatefulWidget {
   const _Hand({required this.cards, required this.act, this.big = false, this.mulligan = false});
 
   final List<ForgeCardView> cards;
@@ -2169,7 +2358,52 @@ class _Hand extends StatelessWidget {
   final bool mulligan;
 
   @override
+  State<_Hand> createState() => _HandState();
+}
+
+/// Onde cada carta da mão foi desenhada (esquerda, rotação, descida).
+typedef _HandSlot = ({double left, double angle, double drop});
+
+class _HandState extends State<_Hand> {
+  /// As posições do último desenho "assente".
+  Map<int, _HandSlot> _slots = {};
+
+  /// Logo depois de sair uma carta, as outras ficam onde estavam um instante:
+  /// a mão voltava a centrar-se de imediato e um segundo toque rápido
+  /// acertava na carta do lado.
+  bool _holding = false;
+  Timer? _hold;
+
+  @override
+  void didUpdateWidget(_Hand old) {
+    super.didUpdateWidget(old);
+    final now = {for (final c in widget.cards) c.instance.id};
+    final before = {for (final c in old.cards) c.instance.id};
+    if (now.length < before.length && before.containsAll(now)) {
+      _holding = true;
+      _hold?.cancel();
+      _hold = Timer(const Duration(milliseconds: 700), () {
+        if (mounted) setState(() => _holding = false);
+      });
+    } else if (!before.containsAll(now)) {
+      // entrou uma carta: arruma-se já
+      _hold?.cancel();
+      _holding = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _hold?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cards = widget.cards;
+    final act = widget.act;
+    final big = widget.big;
+    final mulligan = widget.mulligan;
     final size = MediaQuery.sizeOf(context);
     final narrow = size.width < 560;
     final w = mulligan
@@ -2190,21 +2424,30 @@ class _Hand extends StatelessWidget {
         final fan = narrow && step < w + 4;
         final total = step * (n - 1) + w;
         final left0 = (box.maxWidth - total) / 2;
-        return Stack(clipBehavior: Clip.none, children: [
+        final target = <int, _HandSlot>{
           for (var i = 0; i < n; i++)
-            Builder(builder: (context) {
+            cards[i].instance.id: () {
               // no leque, as das pontas descem e rodam um pouco
               final t = n == 1 ? 0.0 : (i / (n - 1)) * 2 - 1;
-              final angle = fan ? t * 0.12 : 0.0;
-              final drop = fan ? t * t * 12 : 0.0;
-              return Positioned(
-                left: left0 + i * step,
-                top: 4 + drop,
+              return (left: left0 + i * step, angle: fan ? t * 0.12 : 0.0, drop: fan ? t * t * 12 : 0.0);
+            }(),
+        };
+        if (!_holding) _slots = target;
+        return Stack(clipBehavior: Clip.none, children: [
+          for (final c in cards)
+            Builder(builder: (context) {
+              final slot = (_holding ? _slots[c.instance.id] : null) ?? target[c.instance.id]!;
+              return AnimatedPositioned(
+                key: ValueKey(c.instance.id),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                left: slot.left,
+                top: 4 + slot.drop,
                 width: w,
                 child: Transform.rotate(
-                  angle: angle,
+                  angle: slot.angle,
                   alignment: Alignment.bottomCenter,
-                  child: act.card(cards[i], w, details: false),
+                  child: act.card(c, w, details: false),
                 ),
               );
             }),

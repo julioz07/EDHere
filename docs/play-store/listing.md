@@ -63,6 +63,9 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
+### Notas da versão (2.2.0)
+Contra 2 a 4 bots, a mesa ficou mais clara: a opção «Um campo de cada vez» mostra um campo de cada vez, com um botão para trocar, e o título conta as rondas. A mão já não salta quando jogas uma carta e as filas que deslizam têm setas. Correções: cartas de duas faces voltam aos decks importados, a vidência só mostra as cartas de cima, a revanche já não fica presa e a escolha de cor mostra os símbolos. O registo vem limpo e na tua língua.
+
 ### Notas da versão (2.1.1)
 Contra o bot, nunca mais ficas preso numa decisão. Corrigimos cartas que pediam uma escolha impossível de fazer: alvos no cemitério (Goblin Dark-Dwellers) e cartas da biblioteca ou da mão do adversário (Anticipate, procuras). Se algum passo ficar mesmo sem saída, aparece o botão Saltar. A tecla de voltar já não responde às perguntas por ti e, ao mudar a língua da app, os textos do jogo mudam também.
 
@@ -129,6 +132,9 @@ Goldfish to test a deck, or 1 vs 1 on the same phone or tablet.
 You only need the internet to download the cards once (about 25 MB) and their images. After that, it works in airplane mode.
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
+
+### Release notes (2.2.0)
+Against 2 to 4 bots, the table is clearer: the "One board at a time" option shows one board at a time, with a button to switch, and the title counts rounds. Your hand no longer jumps when you play a card, and scrolling rows show arrows. Fixes: double-faced cards are back in imported decks, scry only shows the top cards, rematch no longer hangs, and the color choice shows mana symbols. The log is clean and in your language.
 
 ### Release notes (2.1.1)
 Against the bot, you can no longer get stuck on a decision. We fixed cards that asked for a choice you couldn't make: targets in the graveyard (Goblin Dark-Dwellers) and cards in your library or an opponent's hand (Anticipate, searches). If a step ever has no way out, a Skip button appears. The back key no longer answers questions for you, and changing the app language now updates the game texts too.
@@ -197,6 +203,9 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
+### Notas de la versión (2.2.0)
+Contra 2 a 4 bots, la mesa es más clara: la opción «Un campo cada vez» muestra un solo campo, con un botón para cambiar, y el título cuenta las rondas. La mano ya no salta al jugar una carta y las filas que se deslizan tienen flechas. Correcciones: las cartas de dos caras vuelven a los mazos importados, la adivinación solo muestra las cartas de arriba, la revancha ya no se queda colgada y la elección de color muestra los símbolos. El registro sale limpio y en tu idioma.
+
 ### Notas de la versión (2.1.1)
 Contra el bot, ya no te quedarás atascado en una decisión. Corregimos cartas que pedían una elección imposible: objetivos en el cementerio (Goblin Dark-Dwellers) y cartas de la biblioteca o de la mano del rival (Anticipate, búsquedas). Si un paso se queda sin salida, aparece el botón Saltar. La tecla de volver ya no responde por ti y, al cambiar el idioma de la app, también cambian los textos de la partida.
 
@@ -263,6 +272,9 @@ Goldfish per provare un mazzo, oppure 1 contro 1 sullo stesso telefono o tablet.
 Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro immagini. Dopo funziona in modalità aereo.
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
+
+### Note sulla versione (2.2.0)
+Contro 2-4 bot il tavolo è più chiaro: l'opzione «Un campo alla volta» mostra un campo per volta, con un pulsante per cambiare, e il titolo conta i giri. La mano non salta più quando giochi una carta e le file scorrevoli hanno le frecce. Correzioni: le carte bifronte tornano nei mazzi importati, profetizzare mostra solo le carte in cima, la rivincita non si blocca più e la scelta del colore mostra i simboli. Il registro è pulito e nella tua lingua.
 
 ### Note sulla versione (2.1.1)
 Contro il bot non resti più bloccato su una decisione. Abbiamo corretto le carte che chiedevano una scelta impossibile: bersagli nel cimitero (Goblin Dark-Dwellers) e carte nel grimorio o nella mano dell'avversario (Anticipate, ricerche). Se un passaggio resta senza uscita, compare il pulsante Salta. Il tasto indietro non risponde più al posto tuo e, cambiando la lingua dell'app, cambiano anche i testi della partita.

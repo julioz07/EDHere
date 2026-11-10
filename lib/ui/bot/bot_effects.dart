@@ -62,7 +62,16 @@ class BotSpotlight extends StatelessWidget {
           card: _card(spot.cardId, spot.name), name: spot.name ?? '', width: big, glow: theme.colorScheme.primary);
     }
     // o texto da pilha do Forge traz o nome da carta e um id entre parênteses: fica só o efeito
-    final effect = spot.kind == 'land' || attack ? null : _effect(spot.text, spot.name);
+    final raw = spot.kind == 'land' || attack ? null : _effect(spot.text, spot.name);
+    // o texto de regras do Forge vem sempre em inglês: num feitiço, com as
+    // cartas noutra língua, mostra-se o texto impresso da própria carta
+    final spell = spot.kind == 'cast' ? _card(spot.cardId, spot.name) : null;
+    final effect = spell?.printed != null && spell!.displayTextOf().isNotEmpty
+        ? spell.displayTextOf()
+        : raw == null
+            ? null
+            : lookup.localize(raw);
+    final targets = spot.targets == null ? null : lookup.localize(forgeStrip(spot.targets!).replaceAll(RegExp(r'[\[\]]'), ''));
     final caption = Container(
       constraints: BoxConstraints(maxWidth: wide ? 340 : size.width * 0.86),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -76,14 +85,14 @@ class BotSpotlight extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white)),
         ],
-        if (spot.targets != null) ...[
+        if (targets != null && targets.isNotEmpty) ...[
           const SizedBox(height: 6),
           Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.gps_fixed, color: GameColors.target, size: 16),
             const SizedBox(width: 6),
             Flexible(
               // o Forge escreve "[Marwyn, the Nurturer (201)]": sem parênteses retos nem ids
-              child: Text(spot.targets!.replaceAll(RegExp(r' \(\d+\)'), '').replaceAll(RegExp(r'[\[\]]'), ''),
+              child: Text(targets,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(color: GameColors.target)),
@@ -124,7 +133,7 @@ class BotSpotlight extends StatelessWidget {
   static String? _effect(String? text, String? name) {
     if (text == null) return null;
     // sem os ids "(123)" e sem a causa do gatilho que o Forge junta no fim ("[Cambio di zona: ...]")
-    var t = text.replaceAll(RegExp(r'\s*\(\d+\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]\s*$'), '').trim();
+    var t = forgeStrip(text).replaceAll(RegExp(r'\s*\[[^\]]*\]\s*$'), '').trim();
     if (name != null && t.startsWith(name)) {
       t = t.substring(name.length).replaceFirst(RegExp(r'^\s*[-:]\s*'), '').trim();
     }
@@ -437,9 +446,13 @@ class GameOverPanel extends StatelessWidget {
     required this.onRematch,
     required this.onLog,
     required this.onLeave,
+    this.rounds = 0,
   });
 
   final ForgeTableState state;
+
+  /// Voltas à mesa (a 3 ou mais jogadores; o Forge conta os turnos de todos).
+  final int rounds;
 
   /// Eu (null a ver bot contra bot).
   final int? meId;
@@ -497,7 +510,10 @@ class GameOverPanel extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(tr('{n} turnos', {'n': state.turn}),
+                Text(
+                    rounds > 0 && state.players.length > 2
+                        ? tr('{n} rondas', {'n': rounds})
+                        : tr('{n} turnos', {'n': state.turn}),
                     textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 SizedBox(
