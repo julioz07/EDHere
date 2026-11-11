@@ -272,7 +272,7 @@
   "where": [
    "lib/game/network_game.dart:220",
    "lib/net/host_server.dart:392",
-   "lib/ui/bot/bot_setup_screen.dart:168",
+   "lib/ui/bot/bot_setup_screen.dart:192",
    "lib/ui/play/play_tab.dart:58",
    "lib/ui/tutorial/tutorial_screen.dart:114"
   ]
@@ -635,81 +635,87 @@
   ]
  },
  {
+  "key": "{v} fica suspensa com {n} marcadores de tempo.",
+  "where": [
+   "lib/ui/bot/bot_dialogs.dart:50"
+  ]
+ },
+ {
   "key": "Escolhe",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:139"
+   "lib/ui/bot/bot_dialogs.dart:154"
   ]
  },
  {
   "key": "Escolhe {n}.",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:147"
+   "lib/ui/bot/bot_dialogs.dart:162"
   ]
  },
  {
   "key": "Escolhe de {a} a {b}.",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:148"
+   "lib/ui/bot/bot_dialogs.dart:163"
   ]
  },
  {
   "key": "OK",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:172"
+   "lib/ui/bot/bot_dialogs.dart:187"
   ]
  },
  {
   "key": "Nenhuma",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:174",
+   "lib/ui/bot/bot_dialogs.dart:189",
    "lib/ui/decks/deck_editor_screen.dart:981"
   ]
  },
  {
   "key": "Confirmar",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:178",
-   "lib/ui/bot/bot_dialogs.dart:262",
-   "lib/ui/bot/bot_dialogs.dart:301",
-   "lib/ui/bot/bot_dialogs.dart:365"
+   "lib/ui/bot/bot_dialogs.dart:193",
+   "lib/ui/bot/bot_dialogs.dart:277",
+   "lib/ui/bot/bot_dialogs.dart:316",
+   "lib/ui/bot/bot_dialogs.dart:380"
   ]
  },
  {
   "key": "Sim",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:199"
+   "lib/ui/bot/bot_dialogs.dart:214"
   ]
  },
  {
   "key": "Não",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:200",
+   "lib/ui/bot/bot_dialogs.dart:215",
    "lib/ui/cards/card_detail_screen.dart:295"
   ]
  },
  {
   "key": "Ordenar",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:235",
+   "lib/ui/bot/bot_dialogs.dart:250",
    "lib/ui/cards/card_search.dart:292"
   ]
  },
  {
   "key": "Arrasta para mudar a ordem. O primeiro fica em cima.",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:241"
+   "lib/ui/bot/bot_dialogs.dart:256"
   ]
  },
  {
   "key": "Dividir",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:337"
+   "lib/ui/bot/bot_dialogs.dart:352"
   ]
  },
  {
   "key": "Por dividir: {n}",
   "where": [
-   "lib/ui/bot/bot_dialogs.dart:341"
+   "lib/ui/bot/bot_dialogs.dart:356"
   ]
  },
  {
@@ -727,7 +733,8 @@
  {
   "key": "Habilidade de {v}",
   "where": [
-   "lib/ui/bot/bot_effects.dart:39"
+   "lib/ui/bot/bot_effects.dart:39",
+   "lib/ui/bot/bot_table_screen.dart:2319"
   ]
  },
  {
@@ -751,14 +758,14 @@
  {
   "key": "Início",
   "where": [
-   "lib/ui/bot/bot_effects.dart:257",
+   "lib/ui/bot/bot_effects.dart:258",
    "lib/ui/bot/bot_table_screen.dart:723"
   ]
  },
  {
   "key": "Principal 1",
   "where": [
-   "lib/ui/bot/bot_effects.dart:258",
+   "lib/ui/bot/bot_effects.dart:259",
    "lib/ui/bot/bot_table_screen.dart:723",
    "lib/ui/table/table_screen.dart:27"
   ]
@@ -766,8 +773,8 @@
  {
   "key": "Combate",
   "where": [
-   "lib/ui/bot/bot_effects.dart:259",
-   "lib/ui/bot/bot_effects.dart:322",
+   "lib/ui/bot/bot_effects.dart:260",
+   "lib/ui/bot/bot_effects.dart:323",
    "lib/ui/bot/bot_table_screen.dart:723",
    "lib/ui/table/table_screen.dart:28"
   ]
@@ -775,7 +782,7 @@
  {
   "key": "Principal 2",
   "where": [
-   "lib/ui/bot/bot_effects.dart:260",
+   "lib/ui/bot/bot_effects.dart:261",
    "lib/ui/bot/bot_table_screen.dart:723",
    "lib/ui/table/table_screen.dart:29"
   ]
@@ -783,58 +790,58 @@
  {
   "key": "Fim",
   "where": [
-   "lib/ui/bot/bot_effects.dart:261",
+   "lib/ui/bot/bot_effects.dart:262",
    "lib/ui/bot/bot_table_screen.dart:723"
   ]
  },
  {
   "key": "Atacantes",
   "where": [
-   "lib/ui/bot/bot_effects.dart:318"
+   "lib/ui/bot/bot_effects.dart:319"
   ]
  },
  {
   "key": "Bloqueadores",
   "where": [
-   "lib/ui/bot/bot_effects.dart:319"
+   "lib/ui/bot/bot_effects.dart:320"
   ]
  },
  {
   "key": "Dano",
   "where": [
-   "lib/ui/bot/bot_effects.dart:320"
+   "lib/ui/bot/bot_effects.dart:321"
   ]
  },
  {
   "key": "Fim do combate",
   "where": [
-   "lib/ui/bot/bot_effects.dart:321",
-   "lib/ui/bot/bot_table_screen.dart:2469"
+   "lib/ui/bot/bot_effects.dart:322",
+   "lib/ui/bot/bot_table_screen.dart:2520"
   ]
  },
  {
   "key": "Empate",
   "where": [
-   "lib/ui/bot/bot_effects.dart:471"
+   "lib/ui/bot/bot_effects.dart:472"
   ]
  },
  {
   "key": "Ganhaste!",
   "where": [
-   "lib/ui/bot/bot_effects.dart:473",
+   "lib/ui/bot/bot_effects.dart:474",
    "lib/ui/table/table_screen.dart:567"
   ]
  },
  {
   "key": "O bot ganhou",
   "where": [
-   "lib/ui/bot/bot_effects.dart:475"
+   "lib/ui/bot/bot_effects.dart:476"
   ]
  },
  {
   "key": "{v} ganhou",
   "where": [
-   "lib/ui/bot/bot_effects.dart:476",
+   "lib/ui/bot/bot_effects.dart:477",
    "lib/ui/table/table_screen.dart:242",
    "lib/ui/table/table_screen.dart:568",
    "lib/ui/table/tablet_table_screen.dart:121"
@@ -843,25 +850,25 @@
  {
   "key": "{n} rondas",
   "where": [
-   "lib/ui/bot/bot_effects.dart:515"
+   "lib/ui/bot/bot_effects.dart:516"
   ]
  },
  {
   "key": "{n} turnos",
   "where": [
-   "lib/ui/bot/bot_effects.dart:516"
+   "lib/ui/bot/bot_effects.dart:517"
   ]
  },
  {
   "key": "Revanche",
   "where": [
-   "lib/ui/bot/bot_effects.dart:539"
+   "lib/ui/bot/bot_effects.dart:540"
   ]
  },
  {
   "key": "Registo",
   "where": [
-   "lib/ui/bot/bot_effects.dart:546",
+   "lib/ui/bot/bot_effects.dart:547",
    "lib/ui/bot/bot_table_screen.dart:596",
    "lib/ui/table/table_screen.dart:903",
    "lib/ui/table/table_screen.dart:2135",
@@ -872,7 +879,7 @@
  {
   "key": "Sair",
   "where": [
-   "lib/ui/bot/bot_effects.dart:553",
+   "lib/ui/bot/bot_effects.dart:554",
    "lib/ui/limited/limited_builder.dart:274",
    "lib/ui/lobby_screen.dart:159",
    "lib/ui/lobby_screen.dart:164",
@@ -890,13 +897,13 @@
  {
   "key": "Ganhaste o lançamento da moeda!",
   "where": [
-   "lib/ui/bot/bot_effects.dart:659"
+   "lib/ui/bot/bot_effects.dart:660"
   ]
  },
  {
   "key": "O bot ganhou o lançamento da moeda",
   "where": [
-   "lib/ui/bot/bot_effects.dart:659"
+   "lib/ui/bot/bot_effects.dart:660"
   ]
  },
  {
@@ -908,79 +915,79 @@
  {
   "key": "Com vários bots, todos os decks têm de ser de Commander. Nos outros formatos joga-se 1 contra 1.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:139"
+   "lib/ui/bot/bot_setup_screen.dart:163"
   ]
  },
  {
   "key": "Em Commander, todos os decks precisam de um comandante.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:143"
+   "lib/ui/bot/bot_setup_screen.dart:167"
   ]
  },
  {
   "key": "Partida sem comandante",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:152"
+   "lib/ui/bot/bot_setup_screen.dart:176"
   ]
  },
  {
   "key": "Nem todos os decks são de Commander, por isso a partida é normal: 20 vidas e sem zona de comando. Para jogar Commander, escolhe só decks de Commander.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:154"
+   "lib/ui/bot/bot_setup_screen.dart:178"
   ]
  },
  {
   "key": "Jogar assim",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:156"
+   "lib/ui/bot/bot_setup_screen.dart:180"
   ]
  },
  {
   "key": "Mudar os decks",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:157"
+   "lib/ui/bot/bot_setup_screen.dart:181"
   ]
  },
  {
   "key": "Bot 1",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:167"
+   "lib/ui/bot/bot_setup_screen.dart:191"
   ]
  },
  {
   "key": "Bot ({v})",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:172"
+   "lib/ui/bot/bot_setup_screen.dart:196"
   ]
  },
  {
   "key": "Bot {n}",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:172"
+   "lib/ui/bot/bot_setup_screen.dart:196"
   ]
  },
  {
   "key": "Não foi possível arrancar o bot: {v}",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:189"
+   "lib/ui/bot/bot_setup_screen.dart:213"
   ]
  },
  {
   "key": "Cartas que o bot ainda não conhece",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:199"
+   "lib/ui/bot/bot_setup_screen.dart:223"
   ]
  },
  {
   "key": "O motor do bot ainda não sabe jogar estas cartas, por isso ficam de fora da partida:",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:202"
+   "lib/ui/bot/bot_setup_screen.dart:226"
   ]
  },
  {
   "key": "Cancelar",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:207",
+   "lib/ui/bot/bot_setup_screen.dart:231",
    "lib/ui/cards/cards_tab.dart:128",
    "lib/ui/data/data_tab.dart:119",
    "lib/ui/data/data_tab.dart:315",
@@ -1007,35 +1014,35 @@
  {
   "key": "Jogar sem elas",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:208"
+   "lib/ui/bot/bot_setup_screen.dart:232"
   ]
  },
  {
   "key": "Deck aleatório",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:250",
-   "lib/ui/bot/bot_setup_screen.dart:282",
-   "lib/ui/bot/bot_setup_screen.dart:308"
+   "lib/ui/bot/bot_setup_screen.dart:277",
+   "lib/ui/bot/bot_setup_screen.dart:309",
+   "lib/ui/bot/bot_setup_screen.dart:335"
   ]
  },
  {
   "key": "Só se sabe qual na mesa",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:251"
+   "lib/ui/bot/bot_setup_screen.dart:278"
   ]
  },
  {
   "key": "Escolher deck",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:282",
-   "lib/ui/bot/bot_setup_screen.dart:308",
+   "lib/ui/bot/bot_setup_screen.dart:309",
+   "lib/ui/bot/bot_setup_screen.dart:335",
    "lib/ui/lobby_screen.dart:651"
   ]
  },
  {
   "key": "Jogar contra o bot",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:337",
+   "lib/ui/bot/bot_setup_screen.dart:364",
    "lib/ui/play/play_tab.dart:132",
    "lib/ui/play/play_with_deck.dart:58"
   ]
@@ -1043,85 +1050,91 @@
  {
   "key": "Uma partida 1 contra 1 com as regras completas: o bot é o motor do Forge, que aplica as regras e joga sozinho. Funciona sem internet.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:345"
+   "lib/ui/bot/bot_setup_screen.dart:372"
   ]
  },
  {
   "key": "Commander a {n}: tu contra {b} bots, com as regras completas. Cada bot pensa na sua vez, por isso a partida é mais longa, como numa mesa a sério.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:347"
+   "lib/ui/bot/bot_setup_screen.dart:374"
+  ]
+ },
+ {
+  "key": "Tipo de jogo",
+  "where": [
+   "lib/ui/bot/bot_setup_screen.dart:380"
   ]
  },
  {
   "key": "Adversários",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:352"
+   "lib/ui/bot/bot_setup_screen.dart:392"
   ]
  },
  {
   "key": "Em {v} joga-se 1 contra 1. Mais bots só em Commander.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:370"
+   "lib/ui/bot/bot_setup_screen.dart:410"
   ]
  },
  {
   "key": "Este aparelho tem pouca memória para {n} bots: a partida pode ficar lenta. Com 1 ou 2 corre melhor.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:384"
+   "lib/ui/bot/bot_setup_screen.dart:424"
   ]
  },
  {
   "key": "A mesa",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:391"
+   "lib/ui/bot/bot_setup_screen.dart:431"
   ]
  },
  {
   "key": "O teu deck",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:393"
+   "lib/ui/bot/bot_setup_screen.dart:433"
   ]
  },
  {
   "key": "O deck do bot",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:397"
+   "lib/ui/bot/bot_setup_screen.dart:437"
   ]
  },
  {
   "key": "O deck do bot {n}",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:397"
+   "lib/ui/bot/bot_setup_screen.dart:437"
   ]
  },
  {
   "key": "Dificuldade",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:405"
+   "lib/ui/bot/bot_setup_screen.dart:445"
   ]
  },
  {
   "key": "Comete erros de propósito: às vezes não joga o que podia, ataca com menos criaturas ou esquece-se de bloquear.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:418"
+   "lib/ui/bot/bot_setup_screen.dart:458"
   ]
  },
  {
   "key": "O bot do Forge tal como é: joga bem, sem batota.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:419"
+   "lib/ui/bot/bot_setup_screen.dart:459"
   ]
  },
  {
   "key": "Pensa mais em cada jogada e tem baralhamentos que lhe dão melhor mana.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:420"
+   "lib/ui/bot/bot_setup_screen.dart:460"
   ]
  },
  {
   "key": "Cria primeiro um deck.",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:426",
+   "lib/ui/bot/bot_setup_screen.dart:466",
    "lib/ui/play/play_tab.dart:193",
    "lib/ui/playtest/playtest_setup_screen.dart:181"
   ]
@@ -1129,31 +1142,31 @@
  {
   "key": "A preparar o motor do bot…",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:437"
+   "lib/ui/bot/bot_setup_screen.dart:477"
   ]
  },
  {
   "key": "A preparar o motor do bot… {n}%",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:438"
+   "lib/ui/bot/bot_setup_screen.dart:478"
   ]
  },
  {
   "key": "Ver o bot a jogar",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:447"
+   "lib/ui/bot/bot_setup_screen.dart:487"
   ]
  },
  {
   "key": "A preparar o bot…",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:454"
+   "lib/ui/bot/bot_setup_screen.dart:494"
   ]
  },
  {
   "key": "Jogar",
   "where": [
-   "lib/ui/bot/bot_setup_screen.dart:454",
+   "lib/ui/bot/bot_setup_screen.dart:494",
    "lib/ui/shell.dart:121",
    "lib/ui/shell.dart:143",
    "lib/ui/tutorial/tutorial_screen.dart:294"
@@ -1332,50 +1345,57 @@
  {
   "key": "Mesa de {v}",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1304"
+   "lib/ui/bot/bot_table_screen.dart:1306"
   ]
  },
  {
   "key": "{v} resolveu",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1430"
+   "lib/ui/bot/bot_table_screen.dart:1432",
+   "lib/ui/bot/bot_table_screen.dart:1438"
+  ]
+ },
+ {
+  "key": "{p} fez mill de {v}",
+  "where": [
+   "lib/ui/bot/bot_table_screen.dart:1443"
   ]
  },
  {
   "key": "{p}: vida {a} → {b}",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1434"
+   "lib/ui/bot/bot_table_screen.dart:1447"
   ]
  },
  {
   "key": "Escolhe um jogador:",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1501"
+   "lib/ui/bot/bot_table_screen.dart:1514"
   ]
  },
  {
   "key": "Escolher {v} como alvo",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1508"
+   "lib/ui/bot/bot_table_screen.dart:1521"
   ]
  },
  {
   "key": "Tu",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1522"
+   "lib/ui/bot/bot_table_screen.dart:1535"
   ]
  },
  {
   "key": "Outras cartas",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1547"
+   "lib/ui/bot/bot_table_screen.dart:1560"
   ]
  },
  {
   "key": "Cemitério",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1553",
-   "lib/ui/bot/bot_table_screen.dart:1931",
+   "lib/ui/bot/bot_table_screen.dart:1566",
+   "lib/ui/bot/bot_table_screen.dart:1968",
    "lib/ui/table/table_screen.dart:1650",
    "lib/ui/table/table_sheets.dart:944",
    "glossary"
@@ -1384,8 +1404,8 @@
  {
   "key": "Exílio",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1554",
-   "lib/ui/bot/bot_table_screen.dart:1936",
+   "lib/ui/bot/bot_table_screen.dart:1567",
+   "lib/ui/bot/bot_table_screen.dart:1973",
    "lib/ui/table/table_screen.dart:1662",
    "glossary"
   ]
@@ -1393,142 +1413,160 @@
  {
   "key": "{v}: essa carta não serve. Escolhe uma das cartas assinaladas.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1599"
+   "lib/ui/bot/bot_table_screen.dart:1619"
   ]
  },
  {
   "key": "Terminar o turno",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1604"
+   "lib/ui/bot/bot_table_screen.dart:1624"
   ]
  },
  {
   "key": "{v} está na pilha. Deixa resolver ou junta outra resposta.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1617"
+   "lib/ui/bot/bot_table_screen.dart:1638"
   ]
  },
  {
   "key": "{v} está na pilha. Respondes ou deixas resolver?",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1618"
+   "lib/ui/bot/bot_table_screen.dart:1639"
   ]
  },
  {
   "key": "Resolver",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1619"
+   "lib/ui/bot/bot_table_screen.dart:1640"
   ]
  },
  {
   "key": "A tua fase principal: joga uma carta ou passa.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1625"
+   "lib/ui/bot/bot_table_screen.dart:1646"
   ]
  },
  {
   "key": "{v}: podes jogar instantâneos ou passar.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1627"
+   "lib/ui/bot/bot_table_screen.dart:1648"
   ]
  },
  {
   "key": "Turno do adversário ({v}): podes responder ou passar.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1628"
+   "lib/ui/bot/bot_table_screen.dart:1649"
   ]
  },
  {
   "key": "Passar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1629",
+   "lib/ui/bot/bot_table_screen.dart:1650",
    "lib/ui/table/tablet_table_screen.dart:343"
   ]
  },
  {
   "key": "Ficas com esta mão?",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1633"
+   "lib/ui/bot/bot_table_screen.dart:1654"
   ]
  },
  {
   "key": "Este mulligan é grátis: não pões nenhuma carta no fundo. Toca em OK.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1641"
+   "lib/ui/bot/bot_table_screen.dart:1662"
   ]
  },
  {
   "key": "Pronto. Toca em OK, ou na carta escolhida para mudar.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1642"
+   "lib/ui/bot/bot_table_screen.dart:1663"
   ]
  },
  {
   "key": "Escolhe 1 carta da mão para pôr no fundo do grimório.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1644"
+   "lib/ui/bot/bot_table_screen.dart:1665"
   ]
  },
  {
   "key": "Escolhe {n} cartas da mão para pôr no fundo do grimório.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1645"
+   "lib/ui/bot/bot_table_screen.dart:1666"
   ]
  },
  {
   "key": "Escolhe quem ataca: toca nas tuas criaturas ou arrasta-as para o adversário.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1654"
+   "lib/ui/bot/bot_table_screen.dart:1675"
   ]
  },
  {
   "key": "Não atacar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1655"
+   "lib/ui/bot/bot_table_screen.dart:1676"
   ]
  },
  {
   "key": "Atacar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1655",
+   "lib/ui/bot/bot_table_screen.dart:1676",
    "tutorial:mtg-combat"
   ]
  },
  {
   "key": "Escolhe quem bloqueia: arrasta uma criatura tua para cima de um atacante.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1661"
+   "lib/ui/bot/bot_table_screen.dart:1682"
   ]
  },
  {
   "key": "Não bloquear",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1662"
+   "lib/ui/bot/bot_table_screen.dart:1683"
   ]
  },
  {
   "key": "Bloquear",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1662",
+   "lib/ui/bot/bot_table_screen.dart:1683",
    "glossary"
+  ]
+ },
+ {
+  "key": "Escolhe o alvo: toca numa das opções assinaladas.",
+  "where": [
+   "lib/ui/bot/bot_table_screen.dart:1695"
+  ]
+ },
+ {
+  "key": "{v}: escolhe o alvo, toca numa das opções assinaladas.",
+  "where": [
+   "lib/ui/bot/bot_table_screen.dart:1696"
+  ]
+ },
+ {
+  "key": "Ainda podes escolher {n}.",
+  "where": [
+   "lib/ui/bot/bot_table_screen.dart:1698"
   ]
  },
  {
   "key": "Nada para jogar agora · a passar…",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1689"
+   "lib/ui/bot/bot_table_screen.dart:1726"
   ]
  },
  {
   "key": "O bot está a pensar…",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1690"
+   "lib/ui/bot/bot_table_screen.dart:1727"
   ]
  },
  {
   "key": "Desfazer",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1709",
+   "lib/ui/bot/bot_table_screen.dart:1746",
    "lib/ui/decks/deck_editor_screen.dart:95",
    "lib/ui/table/table_screen.dart:898",
    "lib/ui/table/tablet_table_screen.dart:233"
@@ -1537,19 +1575,19 @@
  {
   "key": "Se não conseguires fazer isto, podes saltar este passo.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1749"
+   "lib/ui/bot/bot_table_screen.dart:1786"
   ]
  },
  {
   "key": "Não há nada válido para escolher aqui.",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1750"
+   "lib/ui/bot/bot_table_screen.dart:1787"
   ]
  },
  {
   "key": "Saltar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1758",
+   "lib/ui/bot/bot_table_screen.dart:1795",
    "lib/ui/onboarding_screen.dart:164",
    "lib/ui/table/table_tour.dart:98"
   ]
@@ -1557,89 +1595,95 @@
  {
   "key": "perdeu",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1874",
+   "lib/ui/bot/bot_table_screen.dart:1911",
    "lib/ui/table/table_screen.dart:534"
   ]
  },
  {
   "key": "Dano de comandante: {n} de 21",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:1902"
+   "lib/ui/bot/bot_table_screen.dart:1939"
+  ]
+ },
+ {
+  "key": "Gatilho de {v}",
+  "where": [
+   "lib/ui/bot/bot_table_screen.dart:2318"
   ]
  },
  {
   "key": "Desvirar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2460",
+   "lib/ui/bot/bot_table_screen.dart:2511",
    "lib/ui/table/table_sheets.dart:215"
   ]
  },
  {
   "key": "Manutenção",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2461",
+   "lib/ui/bot/bot_table_screen.dart:2512",
    "lib/ui/table/table_screen.dart:25"
   ]
  },
  {
   "key": "Comprar",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2462",
+   "lib/ui/bot/bot_table_screen.dart:2513",
    "lib/ui/table/table_sheets.dart:833"
   ]
  },
  {
   "key": "Fase principal 1",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2463"
+   "lib/ui/bot/bot_table_screen.dart:2514"
   ]
  },
  {
   "key": "Início do combate",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2464"
+   "lib/ui/bot/bot_table_screen.dart:2515"
   ]
  },
  {
   "key": "Declarar atacantes",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2465"
+   "lib/ui/bot/bot_table_screen.dart:2516"
   ]
  },
  {
   "key": "Declarar bloqueadores",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2466"
+   "lib/ui/bot/bot_table_screen.dart:2517"
   ]
  },
  {
   "key": "Dano de iniciativa",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2467"
+   "lib/ui/bot/bot_table_screen.dart:2518"
   ]
  },
  {
   "key": "Dano de combate",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2468"
+   "lib/ui/bot/bot_table_screen.dart:2519"
   ]
  },
  {
   "key": "Fase principal 2",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2470"
+   "lib/ui/bot/bot_table_screen.dart:2521"
   ]
  },
  {
   "key": "Fim do turno",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2471"
+   "lib/ui/bot/bot_table_screen.dart:2522"
   ]
  },
  {
   "key": "Limpeza",
   "where": [
-   "lib/ui/bot/bot_table_screen.dart:2472"
+   "lib/ui/bot/bot_table_screen.dart:2523"
   ]
  },
  {

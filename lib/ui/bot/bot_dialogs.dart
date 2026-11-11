@@ -21,6 +21,7 @@ Future<Object?> showForgeAsk(BuildContext context, ForgeAsk ask, ForgeCardLookup
     return o.cardName == null ? null : lookup.byName(o.cardName!);
   }
 
+  _names = lookup;
   final source = ask.cardId == null ? null : state?.card(ask.cardId!)?.card;
   final Widget dialog = switch (ask.kind) {
     'confirm' => _ConfirmDialog(ask: ask, source: source),
@@ -37,10 +38,24 @@ Future<Object?> showForgeAsk(BuildContext context, ForgeAsk ask, ForgeCardLookup
   );
 }
 
+/// Os nomes das cartas na língua da app, para os títulos (o Forge escreve-os em inglês).
+ForgeCardLookup? _names;
+
+/// O título ou a mensagem de uma pergunta do Forge, limpos e na língua da app.
+String _askText(String t) {
+  t = forgeStrip(t);
+  // escrita em inglês no próprio código do Forge
+  final suspended = RegExp(r'^(.+?) is suspended with (\d+) time counters in [\s\S]*$').firstMatch(t);
+  if (suspended != null) {
+    t = tr('{v} fica suspensa com {n} marcadores de tempo.', {'v': suspended[1]!, 'n': suspended[2]!});
+  }
+  return _names?.localize(t) ?? t;
+}
+
 String _title(ForgeAsk ask, String fallback) {
-  final t = ask.title?.trim() ?? '';
+  final t = _askText(ask.title?.trim() ?? '');
   if (t.isNotEmpty) return t;
-  final m = ask.message?.trim() ?? '';
+  final m = _askText(ask.message?.trim() ?? '');
   return m.isNotEmpty ? m : fallback;
 }
 
@@ -56,7 +71,7 @@ Widget? _subtitle(BuildContext context, ForgeAsk ask) {
   final t = ask.title?.trim() ?? '';
   final m = ask.message?.trim() ?? '';
   if (t.isEmpty || m.isEmpty) return null;
-  return Padding(padding: const EdgeInsets.only(bottom: 8), child: OracleText(m, style: Theme.of(context).textTheme.bodyMedium));
+  return Padding(padding: const EdgeInsets.only(bottom: 8), child: OracleText(_askText(m), style: Theme.of(context).textTheme.bodyMedium));
 }
 
 class _OptionTile extends StatelessWidget {
@@ -199,11 +214,11 @@ class _ConfirmDialog extends StatelessWidget {
     final yes = ask.labels.isNotEmpty ? ask.labels[0] : tr('Sim');
     final no = ask.labels.length > 1 ? ask.labels[1] : tr('Não');
     return AlertDialog(
-      title: ask.title == null ? null : _titleBox(context, ask.title!),
+      title: ask.title == null ? null : _titleBox(context, _askText(ask.title!)),
       content: SingleChildScrollView(
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (source != null) ...[SizedBox(width: 70, child: CardImage(source!)), const SizedBox(width: 12)],
-          Expanded(child: OracleText(ask.message ?? '')),
+          Expanded(child: OracleText(_askText(ask.message ?? ''))),
         ]),
       ),
       actions: [

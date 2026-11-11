@@ -64,8 +64,9 @@ class BotSpotlight extends StatelessWidget {
     // o texto da pilha do Forge traz o nome da carta e um id entre parênteses: fica só o efeito
     final raw = spot.kind == 'land' || attack ? null : _effect(spot.text, spot.name);
     // o texto de regras do Forge vem sempre em inglês: num feitiço, com as
-    // cartas noutra língua, mostra-se o texto impresso da própria carta
-    final spell = spot.kind == 'cast' ? _card(spot.cardId, spot.name) : null;
+    // cartas noutra língua, mostra-se o texto impresso da própria carta (também nas
+    // habilidades e gatilhos: o título já diz que é uma habilidade)
+    final spell = raw == null ? null : _card(spot.cardId, spot.name);
     final effect = spell?.printed != null && spell!.displayTextOf().isNotEmpty
         ? spell.displayTextOf()
         : raw == null

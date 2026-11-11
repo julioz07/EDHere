@@ -23,6 +23,7 @@ import argparse
 import hashlib
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -166,7 +167,18 @@ def patch_language(lang, text):
                 line = line.replace(a, b)
         out.append(line)
     out += [f'{k}={v}' for k, v in fixes.items()]
-    return '\n'.join(out) + '\n'
+    return '\n'.join(quote_apostrophes(line) for line in out) + '\n'
+
+
+def quote_apostrophes(line):
+    """O Localizer do Forge passa todas as frases pelo MessageFormat do Java, onde um
+    apóstrofo sozinho abre uma citação: "l'effetto di {0}" saía "leffetto di {0}",
+    sem o apóstrofo e sem o nome da carta. Escrito duas vezes ('') fica um apóstrofo."""
+    if line.startswith('#') or '=' not in line:
+        return line
+    key, value = line.split('=', 1)
+    value = re.sub(r"(?<!')'(?!')", "''", value.replace("\\'", "'"))
+    return f'{key}={value}'
 
 
 # Guiões de cartas com dicas para a IA (tool/forge/overrides/cards/<letra>/<carta>.txt),
@@ -191,6 +203,7 @@ def res_version():
     """O commit do Forge mais uma marca das correções: a app só volta a extrair
     os dados quando isto muda, por isso uma correção nova tem de o mudar."""
     h = hashlib.sha1(repr(PT_RULES).encode())
+    h.update(b'apostrophes')  # quote_apostrophes
     for lang in LANGUAGES:
         h.update(repr(sorted(overrides(lang).items())).encode())
     h.update(repr(sorted(card_overrides().items())).encode())

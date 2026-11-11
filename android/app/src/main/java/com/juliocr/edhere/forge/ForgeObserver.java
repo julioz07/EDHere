@@ -323,6 +323,7 @@ final class ForgeObserver implements ForgeBots.Thinker {
                 s.put("n", src.getName());
             }
             s.put("text", si.getStackDescription());
+            s.put("k", si.isTrigger() ? "trigger" : si.isAbility() ? "ability" : "cast");
             if (si.getActivatingPlayer() != null) s.put("ctrl", si.getActivatingPlayer().getId());
             stack.add(s);
         }
@@ -334,6 +335,14 @@ final class ForgeObserver implements ForgeBots.Thinker {
             // o placar do encontro ("Bot 1: 1 Bot 2: 0") ficava na mesa no fim
             if (e.type() == forge.game.GameLogEntryType.MATCH_RESULTS) continue;
             if (EdhereGui.isManaPick(e.message())) continue;
+            // o que resolveu vem com a descrição do guião da carta, sempre em inglês:
+            // vai com o nome da carta à frente ("\u0001Carta\u0001texto") para a mesa
+            // poder escrever "Carta resolveu" na língua da app
+            if (e.type() == forge.game.GameLogEntryType.STACK_RESOLVE && e.sourceCard() != null
+                    && !e.message().equals(forge.util.Localizer.getInstance().getMessage("lblLogCardAbilityFizzles", e.sourceCard().getName()))) {
+                log.add("\u0001" + e.sourceCard().getName() + "\u0001" + e.message());
+                continue;
+            }
             log.add(e.message());
         }
         m.put("log", log);

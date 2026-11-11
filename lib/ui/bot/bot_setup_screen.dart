@@ -30,6 +30,9 @@ class BotSetupScreen extends ConsumerStatefulWidget {
 class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
   int? _myDeck;
 
+  /// O tipo de jogo: só aparecem (e só se escolhem) decks deste formato.
+  String? _format;
+
   /// O deck de cada bot (o tamanho é o número de adversários).
   List<int?> _botDecks = [null];
   BotLevel _level = BotLevel.normal;
@@ -46,14 +49,15 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
   @override
   void initState() {
     super.initState();
-    final playable = ref.read(decksProvider).decks.where((d) => d.playableCount > 0).toList();
-    final ids = [for (final d in playable) d.id!];
-    if (ids.isNotEmpty) {
-      // sem deck escolhido, um de Commander (o bot é sobretudo para Commander;
-      // com os decks base, os de Modern vinham primeiro)
-      final commander = playable.where((d) => d.format == 'commander').firstOrNull?.id;
-      _myDeck = ids.contains(widget.deckId) ? widget.deckId : commander ?? ids.first;
-      // o do bot: outro do mesmo formato, como ao mudar o número de adversários
+    final playable = _playable;
+    if (playable.isNotEmpty) {
+      // o formato do deck escolhido; sem deck, Commander (o bot é sobretudo para
+      // Commander; com os decks base, os de Modern vinham primeiro)
+      final given = playable.where((d) => d.id == widget.deckId).firstOrNull;
+      final formats = _formatsOf(playable);
+      _format = given?.format ?? (formats.contains('commander') ? 'commander' : formats.first);
+      _myDeck = given?.id ?? _decksOf(_format).first.id;
+      // o do bot: outro do mesmo formato
       _botDecks = [];
       _setBots(1);
     }
@@ -78,13 +82,39 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
     super.dispose();
   }
 
-  /// Muda o número de adversários: os novos ficam com os decks seguintes (outros que não o meu, se houver).
+  List<Deck> get _playable => ref.read(decksProvider).decks.where((d) => d.playableCount > 0).toList();
+
+  /// Os formatos com decks jogáveis, pela ordem de [GameFormat.all].
+  static List<String> _formatsOf(List<Deck> decks) {
+    final have = {for (final d in decks) d.format};
+    return [
+      for (final f in GameFormat.all)
+        if (have.remove(f.id)) f.id,
+      ...have,
+    ];
+  }
+
+  List<Deck> _decksOf(String? format) => _playable.where((d) => d.format == format).toList();
+
+  /// Muda o tipo de jogo: o meu deck e os dos bots passam a ser desse formato;
+  /// fora do Commander joga-se 1 contra 1.
+  void _setFormat(String f) {
+    if (f == _format) return;
+    final decks = _decksOf(f);
+    if (decks.isEmpty) return;
+    final n = f == 'commander' ? _botDecks.length : 1;
+    setState(() {
+      _format = f;
+      _myDeck = decks.first.id;
+      _botDecks = [];
+    });
+    _setBots(n);
+  }
+
+  /// Muda o número de adversários: os novos ficam com os decks seguintes do
+  /// mesmo formato (outros que não o meu, se houver).
   void _setBots(int n) {
-    final decks = ref.read(decksProvider).decks.where((d) => d.playableCount > 0).toList();
-    // primeiro os do mesmo formato que o meu: misturar formatos tira o Commander à partida
-    final format = decks.where((d) => d.id == _myDeck).firstOrNull?.format;
-    final same = decks.where((d) => d.format == format).toList();
-    final ids = [for (final d in same.length > 1 ? same : decks) d.id!];
+    final ids = [for (final d in _decksOf(_format)) d.id!];
     final others = ids.where((id) => id != _myDeck).toList();
     final pool = others.isEmpty ? ids : others;
     setState(() {
@@ -98,23 +128,17 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
 
   /// O formato do meu deck. Só o Commander é multijogador: nos outros
   /// (Modern, limitado…) joga-se 1 contra 1, como nas salas.
-  String? get _myFormat => ref.read(decksProvider).decks.where((d) => d.id == _myDeck).firstOrNull?.format;
-  bool get _multi => _myFormat == null || _myFormat == 'commander';
+  bool get _multi => _format == null || _format == 'commander';
 
-  void _pickMyDeck(int? v) {
-    setState(() => _myDeck = v);
-    if (!_multi && _botDecks.length > 1) _setBots(1);
-  }
+  void _pickMyDeck(int? v) => setState(() => _myDeck = v);
 
   /// No deck de um bot: um ao calhas, só se sabe qual na mesa.
   static const _random = -1;
 
-  /// O deck ao calhas: um do meu formato que não seja o meu (se houver).
+  /// O deck ao calhas: um do formato escolhido que não seja o meu (se houver).
   int _randomDeck(Random rng) {
-    final decks = ref.read(decksProvider).decks.where((d) => d.playableCount > 0).toList();
-    final format = decks.where((d) => d.id == _myDeck).firstOrNull?.format;
+    final decks = _decksOf(_format);
     for (final pool in [
-      decks.where((d) => d.format == format && d.id != _myDeck),
       decks.where((d) => d.id != _myDeck),
       decks,
     ]) {
@@ -219,7 +243,10 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final decks = ref.watch(decksProvider).decks.where((d) => d.playableCount > 0).toList();
+    final playable = ref.watch(decksProvider).decks.where((d) => d.playableCount > 0).toList();
+    final formats = _formatsOf(playable);
+    // só os decks do tipo de jogo escolhido
+    final decks = playable.where((d) => d.format == _format).toList();
     final bots = _botDecks.length;
     final theme = Theme.of(context);
     final repo = ref.watch(cardRepoProvider);
@@ -348,6 +375,19 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
                         {'n': bots + 1, 'b': bots}),
                 style: theme.textTheme.bodyMedium,
               ),
+              if (formats.length > 1) ...[
+                const SizedBox(height: 16),
+                Text(tr('Tipo de jogo'), style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final f in formats)
+                    ChoiceChip(
+                      label: Text(GameFormat.byId(f).label),
+                      selected: f == _format,
+                      onSelected: (_) => _setFormat(f),
+                    ),
+                ]),
+              ],
               const SizedBox(height: 16),
               Text(tr('Adversários'), style: theme.textTheme.titleSmall),
               const SizedBox(height: 8),
@@ -368,7 +408,7 @@ class _BotSetupScreenState extends ConsumerState<BotSetupScreen> {
                     Expanded(
                       child: Text(
                           tr('Em {v} joga-se 1 contra 1. Mais bots só em Commander.',
-                              {'v': GameFormat.byId(_myFormat!).label}),
+                              {'v': GameFormat.byId(_format!).label}),
                           style: theme.textTheme.bodySmall),
                     ),
                   ]),

@@ -1,0 +1,7 @@
+[["=Tipo de jogo", "Game type", "Tipo de partida", "Tipo di partita"],
+["=Gatilho de {v}", "{v}'s trigger", "Disparo de {v}", "Innesco di {v}"],
+["=Escolhe o alvo: toca numa das opções assinaladas.", "Choose the target: tap one of the highlighted options.", "Elige el objetivo: toca una de las opciones resaltadas.", "Scegli il bersaglio: tocca una delle opzioni evidenziate."],
+["={v}: escolhe o alvo, toca numa das opções assinaladas.", "{v}: choose the target, tap one of the highlighted options.", "{v}: elige el objetivo, toca una de las opciones resaltadas.", "{v}: scegli il bersaglio, tocca una delle opzioni evidenziate."],
+["=Ainda podes escolher {n}.", "You can still choose {n}.", "Aún puedes elegir {n}.", "Puoi sceglierne ancora {n}."],
+["={p} fez mill de {v}", "{p} milled {v}", "{p} molió {v}", "{p} ha macinato {v}"],
+["={v} fica suspensa com {n} marcadores de tempo.", "{v} is suspended with {n} time counters.", "{v} queda suspendida con {n} contadores de tiempo.", "{v} è sospesa con {n} segnalini tempo."]]

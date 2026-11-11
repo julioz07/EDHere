@@ -59,7 +59,14 @@ class ForgePrompt {
 
   /// Pode precisar da saída de emergência: pergunta à pessoa, sem botões, e não é o
   /// mulligan (aí os botões voltam ao escolher as cartas, que estão sempre à vista).
-  bool get canSkip => noButtons && input != 'wait' && input != 'mulligan' && input != 'bottom';
+  /// Escolher só entre jogadores (quem começa, um alvo jogador) é sempre possível, e o
+  /// Forge não aceita sair daí sem escolha: quem começa sem jogador rebentava o jogo.
+  bool get canSkip =>
+      noButtons &&
+      input != 'wait' &&
+      input != 'mulligan' &&
+      input != 'bottom' &&
+      !(selectablePlayers.isNotEmpty && selectableCards.isEmpty && playable.isEmpty && unseen.isEmpty);
 
   final String message;
   final int? cardId;
@@ -180,12 +187,18 @@ class ForgeStackItem {
         sourceId = m['src'] as int?,
         name = m['n'] as String?,
         text = m['text'] as String? ?? '',
+        kind = m['k'] as String? ?? 'cast',
         controller = m['ctrl'] as int?;
 
   final int? id;
   final int? sourceId;
   final String? name;
+
+  /// A descrição do Forge, sempre em inglês.
   final String text;
+
+  /// 'cast' (feitiço), 'ability' ou 'trigger'.
+  final String kind;
   final int? controller;
 }
 
@@ -286,8 +299,14 @@ class ForgeTableState {
 
 /// Texto do Forge sem os ids internos ("Lightning Bolt (2)") nem a causa que o
 /// Forge junta aos gatilhos ("[Cambia de zona: X]", "[Player: Ana, Lost Amount: 2]").
-String forgeStrip(String t) =>
-    t.replaceAll(RegExp(r'\s*\(\d+\)'), '').replaceAll(RegExp(r'\s*\[[^\[\]\n]*:[^\[\]\n]*\]'), '').trim();
+/// Também tira os filtros internos das descrições ("Creature.YouCtrl", "Instant.YouCtrl+cmcLE3").
+String forgeStrip(String t) => t
+    .replaceAll(RegExp(r'\s*\(\d+\)'), '')
+    .replaceAll(RegExp(r'\s*\[[^\[\]\n]*:[^\[\]\n]*\]'), '')
+    .replaceAllMapped(
+        RegExp(r'\b([A-Z][A-Za-z]+)(?:\.(?:YouCtrl|YouOwn|YouDontCtrl|OppCtrl|OppOwn|Other|nonToken|token|Permanent)\b|[.+](?:cmc|powerLE|powerGE|toughnessLE)[A-Z]{2}\d+)+'),
+        (m) => m[1]!)
+    .trim();
 
 /// Procura as cartas do Forge na base da app (pelo nome Oracle), com cache.
 class ForgeCardLookup {

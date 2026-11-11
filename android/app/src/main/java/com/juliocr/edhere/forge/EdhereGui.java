@@ -175,6 +175,8 @@ final class EdhereGui extends AbstractGuiGame {
         if (n.equals("InputAttack")) return "attack";
         if (n.equals("InputBlock")) return "block";
         if (n.startsWith("InputPayMana")) return "pay";
+        // os alvos: o Forge escreve-os com o texto do guião da carta, sempre em inglês
+        if (n.equals("InputSelectTargets")) return "target";
         if (n.startsWith("InputSelect")) return "select";
         return "other";
     }

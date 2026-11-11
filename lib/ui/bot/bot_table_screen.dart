@@ -1425,13 +1425,24 @@ Color seatColor(ForgeTableState s, int playerId) {
 /// Uma linha do registo do Forge sem os ids internos ("Lightning Bolt (2)"). As
 /// mudanças de vida vêm sempre em inglês ("Life: Bot 40 > 38"): essas são nossas.
 String logLine(String t, [ForgeCardLookup? names]) {
-  t = forgeStrip(t);
   String local(String s) => names == null ? s : names.localize(s);
+  // "\u0001Carta\u0001descrição": o que resolveu, com a descrição do Forge em inglês
+  final resolvedBy = RegExp('^\u0001([^\u0001]*)\u0001([\\s\\S]*)\$').firstMatch(t);
+  if (resolvedBy != null) {
+    if (L10n.lang != AppLang.en) return tr('{v} resolveu', {'v': local(resolvedBy[1]!)});
+    t = resolvedBy[2]!;
+  }
+  t = forgeStrip(t);
   // o Forge regista a carta que resolveu como "Goblin Lackey - Criatura 1 / 1"
   final resolved = RegExp(r'^(.+?) - [^-\n]+ \d+ / \d+$').firstMatch(t);
   if (resolved != null) return tr('{v} resolveu', {'v': local(resolved[1]!)});
   t = forgeText(t);
-  final life = RegExp(r'^Life: (.+) (-?\d+) > (-?\d+)$').firstMatch(t.trim());
+  // o Forge escreve esta linha em inglês no próprio código ("Ana milled A, B and C")
+  final milled = RegExp(r'^(.+?) milled (.+)$').firstMatch(t.trim());
+  if (milled != null) {
+    return tr('{p} fez mill de {v}', {'p': milled[1]!, 'v': local(milled[2]!.replaceAll(' and ', ', '))});
+  }
+  final life =RegExp(r'^Life: (.+) (-?\d+) > (-?\d+)$').firstMatch(t.trim());
   if (life == null) return local(t);
   return tr('{p}: vida {a} → {b}', {'p': life[1]!, 'a': life[2]!, 'b': life[3]!});
 }
@@ -1593,6 +1604,13 @@ class _PromptBar extends StatelessWidget {
   ({String message, String ok, String cancel}) _texts(ForgePrompt p) {
     // sem linhas em branco nem os ids internos do Forge ("Lightning Bolt (2)")
     var forge = forgeText(forgeStrip(p.message.replaceAll(RegExp(r'\n\s*\n'), '\n')));
+    // o Forge junta ao nome da carta a descrição da habilidade, que vem do guião da
+    // carta e está sempre em inglês ("Vita dall'Argilla - Return up to three…"):
+    // noutras línguas fica só o nome, e as linhas seguintes (essas traduzidas)
+    if (L10n.lang != AppLang.en && !forge.contains('The selected card is not')) {
+      forge = forge.replaceFirstMapped(
+          RegExp(r'^(.+?) - [^\n]*'), (m) => lookup?.byName(m[1]!) != null ? m[1]! : m[0]!);
+    }
     if (lookup case final names?) forge = names.localize(forge);
     // tocou numa carta que não serve: o Forge escreve as regras internas do alvo
     // ("The selected card is not an Instant.YouCtrl+cmcLE3...")
@@ -1612,7 +1630,8 @@ class _PromptBar extends StatelessWidget {
         final main = state.phase == 'MAIN1' || state.phase == 'MAIN2';
         if (state.stack.isNotEmpty) {
           final top = state.stack.first;
-          final name = (top.name ?? top.text).replaceAll(RegExp(r' \(\d+\)'), '');
+          final raw = (top.name ?? top.text).replaceAll(RegExp(r' \(\d+\)'), '');
+          final name = lookup?.localize(raw) ?? raw;
           final byMe = top.controller == meId;
           return (
             message: byMe
@@ -1662,6 +1681,22 @@ class _PromptBar extends StatelessWidget {
         return (
           message: tr('Escolhe quem bloqueia: arrasta uma criatura tua para cima de um atacante.'),
           ok: n == 0 ? tr('Não bloquear') : '${tr('Bloquear')} ($n)',
+          cancel: p.cancel.label,
+        );
+      // o Forge escreve os alvos com o texto do guião da carta, sempre em inglês
+      // ("Return up to three target land cards… Choose target land card in your
+      // graveyard (3 more can be targeted)"): fora do inglês, a mensagem é nossa
+      case 'target' when notValid == null && L10n.lang != AppLang.en:
+        // a primeira linha é a carta (sem a descrição em inglês, ver acima)
+        final first = forge.split('\n').first.trim();
+        final source = first.isEmpty || first.contains(' - ') ? null : first;
+        final more = int.tryParse(RegExp(r'\((\d+) more can be targeted\)').firstMatch(p.message)?[1] ?? '');
+        final pick = source == null
+            ? tr('Escolhe o alvo: toca numa das opções assinaladas.')
+            : tr('{v}: escolhe o alvo, toca numa das opções assinaladas.', {'v': source});
+        return (
+          message: more != null && more > 1 ? '$pick ${tr('Ainda podes escolher {n}.', {'n': more})}' : pick,
+          ok: p.ok.label,
           cancel: p.cancel.label,
         );
       default:
@@ -2272,6 +2307,20 @@ class _CenterStrip extends StatelessWidget {
 
   String _clean(String t) => logLine(t, lookup);
 
+  /// O Forge descreve a pilha sempre em inglês: com as cartas noutra língua, fica o
+  /// texto impresso da carta (nas habilidades, a dizer de quem são).
+  String _describe(ForgeStackItem top) {
+    final card = top.name == null ? null : lookup.byName(top.name!);
+    if (card?.printed == null || card!.displayTextOf().isEmpty) return _clean(top.text);
+    final printed = card.displayTextOf();
+    final name = lookup.localize(top.name!);
+    return switch (top.kind) {
+      'trigger' => '${tr('Gatilho de {v}', {'v': name})} · $printed',
+      'ability' => '${tr('Habilidade de {v}', {'v': name})} · $printed',
+      _ => printed,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -2309,7 +2358,7 @@ class _CenterStrip extends StatelessWidget {
                 ),
               Expanded(
                 child: OracleText(
-                  _clean(stack.first.text),
+                  _describe(stack.first),
                   maxLines: narrow ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall,

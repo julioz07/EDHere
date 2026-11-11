@@ -63,6 +63,9 @@ Só precisa de internet para descarregar as cartas uma vez (cerca de 25 MB) e as
 
 O EDHere é conteúdo de fãs não oficial, permitido pela Fan Content Policy. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Dados e imagens das cartas do Scryfall (o EDHere não é produzido nem apoiado pelo Scryfall). Dados dos boosters do MTGJSON. O bot usa o motor do Forge (GPL-3.0). O código do EDHere é aberto (GPL-3.0).
 
+### Notas da versão (2.2.1)
+Contra o bot, escolhe primeiro o tipo de jogo (Commander, Modern…): só aparecem os decks desse formato e os decks trocam sozinhos. Correções: contra 2 ou mais bots, escolher quem começa já não acaba com o jogo; o teu nome aparece na moeda; a pilha, os alvos e o registo mostram as cartas e os textos na tua língua em vez de texto interno em inglês; em italiano, as frases do jogo voltam a ter apóstrofos e nomes.
+
 ### Notas da versão (2.2.0)
 Contra 2 a 4 bots, a mesa ficou mais clara: a opção «Um campo de cada vez» mostra um campo de cada vez, com um botão para trocar, e o título conta as rondas. A mão já não salta quando jogas uma carta e as filas que deslizam têm setas. Correções: cartas de duas faces voltam aos decks importados, a vidência só mostra as cartas de cima, a revanche já não fica presa e a escolha de cor mostra os símbolos. O registo vem limpo e na tua língua.
 
@@ -132,6 +135,9 @@ Goldfish to test a deck, or 1 vs 1 on the same phone or tablet.
 You only need the internet to download the cards once (about 25 MB) and their images. After that, it works in airplane mode.
 
 EDHere is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC. Card data and images from Scryfall (EDHere is not produced by or endorsed by Scryfall). Booster data from MTGJSON. The bot uses the Forge engine (GPL-3.0). EDHere is open source (GPL-3.0).
+
+### Release notes (2.2.1)
+Against the bot, pick the game type first (Commander, Modern…): only decks of that format show up and the decks switch on their own. Fixes: against 2 or more bots, choosing who goes first no longer ends the game; your name shows on the coin toss; the stack, targets and log show cards and text in your language instead of internal English text; in Italian, game messages get their apostrophes and names back.
 
 ### Release notes (2.2.0)
 Against 2 to 4 bots, the table is clearer: the "One board at a time" option shows one board at a time, with a button to switch, and the title counts rounds. Your hand no longer jumps when you play a card, and scrolling rows show arrows. Fixes: double-faced cards are back in imported decks, scry only shows the top cards, rematch no longer hangs, and the color choice shows mana symbols. The log is clean and in your language.
@@ -203,6 +209,9 @@ Solo necesita internet para descargar las cartas una vez (unos 25 MB) y sus imá
 
 EDHere es contenido de fans no oficial permitido por la Fan Content Policy. No está aprobado ni respaldado por Wizards. Partes de los materiales usados son propiedad de Wizards of the Coast. ©Wizards of the Coast LLC. Datos e imágenes de las cartas de Scryfall (EDHere no está producido ni respaldado por Scryfall). Datos de los sobres de MTGJSON. El bot usa el motor de Forge (GPL-3.0). El código de EDHere es abierto (GPL-3.0).
 
+### Notas de la versión (2.2.1)
+Contra el bot, elige primero el tipo de partida (Commander, Modern…): solo aparecen los mazos de ese formato y los mazos cambian solos. Correcciones: contra 2 o más bots, elegir quién empieza ya no termina la partida; tu nombre aparece en la moneda; la pila, los objetivos y el registro muestran las cartas y los textos en tu idioma en vez de texto interno en inglés.
+
 ### Notas de la versión (2.2.0)
 Contra 2 a 4 bots, la mesa es más clara: la opción «Un campo cada vez» muestra un solo campo, con un botón para cambiar, y el título cuenta las rondas. La mano ya no salta al jugar una carta y las filas que se deslizan tienen flechas. Correcciones: las cartas de dos caras vuelven a los mazos importados, la adivinación solo muestra las cartas de arriba, la revancha ya no se queda colgada y la elección de color muestra los símbolos. El registro sale limpio y en tu idioma.
 
@@ -272,6 +281,9 @@ Goldfish per provare un mazzo, oppure 1 contro 1 sullo stesso telefono o tablet.
 Serve internet solo per scaricare le carte una volta (circa 25 MB) e le loro immagini. Dopo funziona in modalità aereo.
 
 EDHere è contenuto non ufficiale creato dai fan e consentito dalla Fan Content Policy. Non approvato né sostenuto da Wizards. Parti dei materiali utilizzati sono di proprietà di Wizards of the Coast. ©Wizards of the Coast LLC. Dati e immagini delle carte da Scryfall (EDHere non è prodotto né sostenuto da Scryfall). Dati delle buste da MTGJSON. Il bot usa il motore di Forge (GPL-3.0). Il codice di EDHere è aperto (GPL-3.0).
+
+### Note sulla versione (2.2.1)
+Contro il bot, scegli prima il tipo di partita (Commander, Modern…): compaiono solo i mazzi di quel formato e i mazzi cambiano da soli. Correzioni: contro 2 o più bot, scegliere chi inizia non chiude più la partita; il tuo nome compare nel lancio della moneta; pila, bersagli e registro mostrano carte e testi nella tua lingua invece di testo interno in inglese; i messaggi del gioco hanno di nuovo apostrofi e nomi; «Attacca con tutto» tradotto.
 
 ### Note sulla versione (2.2.0)
 Contro 2-4 bot il tavolo è più chiaro: l'opzione «Un campo alla volta» mostra un campo per volta, con un pulsante per cambiare, e il titolo conta i giri. La mano non salta più quando giochi una carta e le file scorrevoli hanno le frecce. Correzioni: le carte bifronte tornano nei mazzi importati, profetizzare mostra solo le carte in cima, la rivincita non si blocca più e la scelta del colore mostra i simboli. Il registro è pulito e nella tua lingua.
