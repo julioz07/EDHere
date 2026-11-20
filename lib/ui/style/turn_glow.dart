@@ -58,13 +58,24 @@ class _TurnGlowState extends State<TurnGlow> with SingleTickerProviderStateMixin
       child: widget.child,
       builder: (context, child) {
         final t = Curves.easeInOut.transform(_c.value);
+        // O brilho fica por fora (passa o anel das molduras do kit) e o fio
+        // por cima do filho, para não ser tapado por ele.
+        final r = BorderRadius.circular(widget.radius);
         return DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.radius),
-            border: Border.all(color: Color.lerp(c.gold, c.goldPale, t)!, width: 1.5),
-            boxShadow: [BoxShadow(color: c.goldLight.withOpacity(.35 + .35 * t), blurRadius: 14 + 10 * t)],
+            borderRadius: r,
+            boxShadow: [
+              BoxShadow(color: c.goldLight.withOpacity(.35 + .35 * t), blurRadius: 14 + 10 * t, spreadRadius: 5),
+            ],
           ),
-          child: child,
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              borderRadius: r,
+              border: Border.all(color: Color.lerp(c.gold, c.goldPale, t)!, width: 2),
+            ),
+            child: child,
+          ),
         );
       },
     );

@@ -1,4 +1,4 @@
-import 'ui_style_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,8 +12,10 @@ import '../onboarding_screen.dart';
 import '../shell.dart';
 import '../data/data_tab.dart';
 import '../stats/stats_screen.dart';
+import '../style/style_gallery_screen.dart';
 import '../widgets/responsive.dart';
 import 'backup_actions.dart';
+import 'ui_style_selector.dart';
 import '../../l10n/l10n.dart';
 
 /// Definições: aparência, mesa, dados offline e sobre.
@@ -85,6 +87,13 @@ class SettingsTab extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: UiStyleSelector(),
         ),
+        if (kDebugMode)
+          ListTile(
+            leading: const Icon(Icons.palette),
+            title: const Text('Galeria de estilos (debug)'),
+            onTap: () =>
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StyleGalleryScreen())),
+          ),
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

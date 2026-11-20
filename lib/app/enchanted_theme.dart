@@ -160,8 +160,10 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     tabBarTheme: TabBarTheme(
       labelColor: c.goldText,
       unselectedLabelColor: c.textMuted,
-      labelStyle: k(EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
-      unselectedLabelStyle: k(EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
+      // Inter e não Cinzel: a Cinzel é larga e "Estatísticas" já não cabia em 3
+      // separadores a 360 dp. O dourado e o indicador ficam.
+      labelStyle: k(EdhText.label.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+      unselectedLabelStyle: k(EdhText.label.copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
       indicator: GoldTabIndicator(color: c.goldLight, gem: c.goldPale),
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: c.gold.withOpacity(.3),
