@@ -22,6 +22,7 @@ import 'limited/draft_screen.dart';
 import 'room_screen.dart';
 import 'table/sideboard_sheet.dart';
 import 'table/table_screen.dart';
+import 'style/style.dart';
 import 'widgets/card_art.dart';
 import 'widgets/mana.dart';
 import 'widgets/responsive.dart';
@@ -691,7 +692,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     _TournamentCard(game: g, tournament: t),
                     const SizedBox(height: 8),
                   ],
-                  Card(
+                  StyleFrame(
+                    padding: EdgeInsets.zero,
+                    classic: (child) => Card(child: child),
                     child: ListTile(
                       leading: Icon(Icons.rule, color: theme.colorScheme.primary),
                       title: Text(tr('{v} · vida {startingLife}', {'v': format.label, 'startingLife': g.startingLife})),
@@ -708,7 +711,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(tr('Jogadores'), style: theme.textTheme.titleMedium),
+                  SectionDivider(tr('Jogadores'), classic: Text(tr('Jogadores'), style: theme.textTheme.titleMedium)),
                   const SizedBox(height: 8),
                   // quem começa: só no Commander (nos encontros cada mesa sorteia)
                   if (g.isHost && !g.oneVsOne && g.tournament == null && g.players.length > 1)
@@ -839,8 +842,9 @@ class _TournamentCard extends StatelessWidget {
     final t = tournament;
     final standings = t.standings();
     final byes = t.byes(t.round);
-    return Card(
-      color: theme.colorScheme.secondaryContainer,
+    return StyleFrame(
+      padding: EdgeInsets.zero,
+      classic: (child) => Card(color: theme.colorScheme.secondaryContainer, child: child),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -923,7 +927,7 @@ class _SeatCard extends StatelessWidget {
     final status = !p.connected
         ? (tr('Sem ligação'), EdhColors.bad)
         : p.ready
-            ? (tr('Pronto'), EdhColors.ok)
+            ? (tr('Pronto'), context.edhStyle.isEnchanted ? context.edhStyle.success : EdhColors.ok)
             : (tr('A escolher'), muted);
     final deckLine = p.deckName == null
         ? ''
@@ -934,6 +938,9 @@ class _SeatCard extends StatelessWidget {
             if (!p.deckLegal) tr('com avisos'),
           ].join(' · ');
     final name = me ? tr('{v} (tu)', {'v': p.name}) : p.name;
+    // Encantado: fio de ouro à volta (mais forte no teu lugar) e aro dourado no número.
+    final st = context.edhStyle;
+    final ench = st.isEnchanted;
     return Semantics(
       button: onTap != null,
       label: [name, p.deckName ?? tr('Ainda sem deck'), status.$1, if (first) tr('Começa')].join(', '),
@@ -946,7 +953,10 @@ class _SeatCard extends StatelessWidget {
           height: dense ? 92 : 108,
           foregroundDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: first ? GameColors.gold : Colors.transparent, width: 2),
+            border: ench
+                ? Border.all(
+                    color: first ? st.goldPale : st.gold.withOpacity(me ? .95 : .55), width: first || me ? 2 : 1.2)
+                : Border.all(color: first ? GameColors.gold : Colors.transparent, width: 2),
           ),
           child: ArtBanner(
             art: p.cover,
@@ -968,7 +978,12 @@ class _SeatCard extends StatelessWidget {
                           width: 30,
                           height: 30,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: ench ? Border.all(color: st.goldLight, width: 1.5) : null,
+                            boxShadow: ench ? [BoxShadow(color: color.withOpacity(.6), blurRadius: 8)] : null,
+                          ),
                           child: p.isHost
                               ? const Icon(Icons.star_rounded, size: 18, color: Colors.white)
                               : Text('${index + 1}',

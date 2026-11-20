@@ -99,7 +99,8 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
         width: s.contains(WidgetState.pressed) ? 1.5 : 1.2,
       ));
 
-  final buttonText = k(EdhText.button.copyWith(fontSize: 16));
+  // 15 e espaçamento curto: a Cinzel é larga e há rótulos longos ("Começar (só com quem está pronto)").
+  final buttonText = k(EdhText.button.copyWith(fontSize: 15, letterSpacing: .2));
 
   return base.copyWith(
     scaffoldBackgroundColor: c.background,
