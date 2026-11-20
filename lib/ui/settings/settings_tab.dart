@@ -1,3 +1,4 @@
+import 'ui_style_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -73,6 +74,16 @@ class SettingsTab extends ConsumerWidget {
             selected: {s.themeMode},
             onSelectionChanged: (v) => s.themeMode = v.first,
           ),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(tr('Estilo'), style: theme.textTheme.titleSmall),
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: UiStyleSelector(),
         ),
         const SizedBox(height: 20),
         Padding(

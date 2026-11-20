@@ -533,14 +533,14 @@
   "where": [
    "lib/ui/about_screen.dart:25",
    "lib/ui/data/data_tab.dart:56",
-   "lib/ui/settings/settings_tab.dart:218"
+   "lib/ui/settings/settings_tab.dart:229"
   ]
  },
  {
   "key": "Versão {appVersion}",
   "where": [
    "lib/ui/about_screen.dart:33",
-   "lib/ui/settings/settings_tab.dart:229"
+   "lib/ui/settings/settings_tab.dart:240"
   ]
  },
  {
@@ -3112,7 +3112,7 @@
    "lib/ui/decks/deck_editor_screen.dart:966",
    "lib/ui/limited/limited_builder.dart:339",
    "lib/ui/limited/limited_builder.dart:469",
-   "lib/ui/settings/settings_tab.dart:96",
+   "lib/ui/settings/settings_tab.dart:107",
    "lib/ui/table/life_screen.dart:82",
    "glossary"
   ]
@@ -5376,7 +5376,7 @@
   "key": "Língua",
   "where": [
    "lib/ui/onboarding_screen.dart:137",
-   "lib/ui/settings/settings_tab.dart:41"
+   "lib/ui/settings/settings_tab.dart:42"
   ]
  },
  {
@@ -5531,7 +5531,7 @@
   "key": "Histórico e estatísticas",
   "where": [
    "lib/ui/play/play_tab.dart:188",
-   "lib/ui/settings/settings_tab.dart:202",
+   "lib/ui/settings/settings_tab.dart:213",
    "lib/ui/stats/stats_screen.dart:64"
   ]
  },
@@ -5998,7 +5998,7 @@
   "key": "Exportar backup",
   "where": [
    "lib/ui/settings/backup_actions.dart:30",
-   "lib/ui/settings/settings_tab.dart:208"
+   "lib/ui/settings/settings_tab.dart:219"
   ]
  },
  {
@@ -6102,7 +6102,7 @@
   "key": "Importar backup",
   "where": [
    "lib/ui/settings/backup_actions.dart:148",
-   "lib/ui/settings/settings_tab.dart:214"
+   "lib/ui/settings/settings_tab.dart:225"
   ]
  },
  {
@@ -6186,7 +6186,7 @@
  {
   "key": "Definições",
   "where": [
-   "lib/ui/settings/settings_tab.dart:38",
+   "lib/ui/settings/settings_tab.dart:39",
    "lib/ui/shell.dart:122",
    "lib/ui/shell.dart:144"
   ]
@@ -6194,206 +6194,224 @@
  {
   "key": "Língua da app",
   "where": [
-   "lib/ui/settings/settings_tab.dart:43"
+   "lib/ui/settings/settings_tab.dart:44"
   ]
  },
  {
   "key": "Por defeito, a do telemóvel",
   "where": [
-   "lib/ui/settings/settings_tab.dart:44"
+   "lib/ui/settings/settings_tab.dart:45"
   ]
  },
  {
   "key": "Aparência",
   "where": [
-   "lib/ui/settings/settings_tab.dart:60"
+   "lib/ui/settings/settings_tab.dart:61"
   ]
  },
  {
   "key": "Sistema",
   "where": [
-   "lib/ui/settings/settings_tab.dart:69"
+   "lib/ui/settings/settings_tab.dart:70"
   ]
  },
  {
   "key": "Escuro",
   "where": [
-   "lib/ui/settings/settings_tab.dart:70"
+   "lib/ui/settings/settings_tab.dart:71"
   ]
  },
  {
   "key": "Claro",
   "where": [
-   "lib/ui/settings/settings_tab.dart:71"
+   "lib/ui/settings/settings_tab.dart:72"
+  ]
+ },
+ {
+  "key": "Estilo",
+  "where": [
+   "lib/ui/settings/settings_tab.dart:81"
   ]
  },
  {
   "key": "Fundo da área de jogo",
   "where": [
-   "lib/ui/settings/settings_tab.dart:80"
+   "lib/ui/settings/settings_tab.dart:91"
   ]
  },
  {
   "key": "Nenhum",
   "where": [
-   "lib/ui/settings/settings_tab.dart:90"
+   "lib/ui/settings/settings_tab.dart:101"
   ]
  },
  {
   "key": "Da galeria",
   "where": [
-   "lib/ui/settings/settings_tab.dart:118"
+   "lib/ui/settings/settings_tab.dart:129"
   ]
  },
  {
   "key": "Escurecer o fundo ({v}%)",
   "where": [
-   "lib/ui/settings/settings_tab.dart:137"
+   "lib/ui/settings/settings_tab.dart:148"
   ]
  },
  {
   "key": "Mesa",
   "where": [
-   "lib/ui/settings/settings_tab.dart:146"
+   "lib/ui/settings/settings_tab.dart:157"
   ]
  },
  {
   "key": "Tamanho das cartas no campo ({v}%)",
   "where": [
-   "lib/ui/settings/settings_tab.dart:148"
+   "lib/ui/settings/settings_tab.dart:159"
   ]
  },
  {
   "key": "Compra automática no início do turno",
   "where": [
-   "lib/ui/settings/settings_tab.dart:159",
+   "lib/ui/settings/settings_tab.dart:170",
    "lib/ui/table/table_screen.dart:717"
   ]
  },
  {
   "key": "Valor por defeito em cada jogo",
   "where": [
-   "lib/ui/settings/settings_tab.dart:160"
+   "lib/ui/settings/settings_tab.dart:171"
   ]
  },
  {
   "key": "Toque duplo para virar (tap)",
   "where": [
-   "lib/ui/settings/settings_tab.dart:165"
+   "lib/ui/settings/settings_tab.dart:176"
   ]
  },
  {
   "key": "Desligado, um toque abre sempre o menu da carta",
   "where": [
-   "lib/ui/settings/settings_tab.dart:166"
+   "lib/ui/settings/settings_tab.dart:177"
   ]
  },
  {
   "key": "Ordenar a mão",
   "where": [
-   "lib/ui/settings/settings_tab.dart:171"
+   "lib/ui/settings/settings_tab.dart:182"
   ]
  },
  {
   "key": "Feitiços por custo primeiro, terrenos no fim",
   "where": [
-   "lib/ui/settings/settings_tab.dart:172"
+   "lib/ui/settings/settings_tab.dart:183"
   ]
  },
  {
   "key": "Manter o ecrã ligado durante o jogo",
   "where": [
-   "lib/ui/settings/settings_tab.dart:177"
+   "lib/ui/settings/settings_tab.dart:188"
   ]
  },
  {
   "key": "Evita que a rede caia quando o ecrã se apaga",
   "where": [
-   "lib/ui/settings/settings_tab.dart:178"
+   "lib/ui/settings/settings_tab.dart:189"
   ]
  },
  {
   "key": "Confirmar antes de sair da mesa",
   "where": [
-   "lib/ui/settings/settings_tab.dart:183"
+   "lib/ui/settings/settings_tab.dart:194"
   ]
  },
  {
   "key": "Dados",
   "where": [
-   "lib/ui/settings/settings_tab.dart:187"
+   "lib/ui/settings/settings_tab.dart:198"
   ]
  },
  {
   "key": "Base de cartas e imagens offline",
   "where": [
-   "lib/ui/settings/settings_tab.dart:190"
+   "lib/ui/settings/settings_tab.dart:201"
   ]
  },
  {
   "key": "{cardCount} cartas{v}",
   "where": [
-   "lib/ui/settings/settings_tab.dart:192"
+   "lib/ui/settings/settings_tab.dart:203"
   ]
  },
  {
   "key": " · há uma atualização",
   "where": [
-   "lib/ui/settings/settings_tab.dart:193"
+   "lib/ui/settings/settings_tab.dart:204"
   ]
  },
  {
   "key": "Ainda não descarregada",
   "where": [
-   "lib/ui/settings/settings_tab.dart:194"
+   "lib/ui/settings/settings_tab.dart:205"
   ]
  },
  {
   "key": "Decks, as minhas cartas e histórico num ficheiro (Drive, PC…)",
   "where": [
-   "lib/ui/settings/settings_tab.dart:209"
+   "lib/ui/settings/settings_tab.dart:220"
   ]
  },
  {
   "key": "Junta o que está no ficheiro ao que já tens",
   "where": [
-   "lib/ui/settings/settings_tab.dart:215"
+   "lib/ui/settings/settings_tab.dart:226"
   ]
  },
  {
   "key": "Ver a introdução",
   "where": [
-   "lib/ui/settings/settings_tab.dart:221"
+   "lib/ui/settings/settings_tab.dart:232"
   ]
  },
  {
   "key": "O que a app faz e como funciona",
   "where": [
-   "lib/ui/settings/settings_tab.dart:222"
+   "lib/ui/settings/settings_tab.dart:233"
   ]
  },
  {
   "key": "Sobre o EDHere",
   "where": [
-   "lib/ui/settings/settings_tab.dart:228"
+   "lib/ui/settings/settings_tab.dart:239"
   ]
  },
  {
   "key": "Licenças",
   "where": [
-   "lib/ui/settings/settings_tab.dart:235"
+   "lib/ui/settings/settings_tab.dart:246"
   ]
  },
  {
   "key": "EDHere",
   "where": [
-   "lib/ui/settings/settings_tab.dart:239"
+   "lib/ui/settings/settings_tab.dart:250"
   ]
  },
  {
   "key": "Não foi possível usar a imagem: {e}",
   "where": [
-   "lib/ui/settings/settings_tab.dart:259"
+   "lib/ui/settings/settings_tab.dart:270"
+  ]
+ },
+ {
+  "key": "Clássico",
+  "where": [
+   "lib/ui/settings/ui_style_selector.dart:20"
+  ]
+ },
+ {
+  "key": "Encantado",
+  "where": [
+   "lib/ui/settings/ui_style_selector.dart:22"
   ]
  },
  {

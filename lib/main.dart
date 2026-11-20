@@ -2,12 +2,11 @@ import 'package:card_db/card_db.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
-import 'app/theme.dart';
+import 'app/app.dart';
 import 'data/app_paths.dart';
 import 'data/providers.dart';
 import 'data/settings.dart';
@@ -54,29 +53,9 @@ Future<void> main() async {
   ));
 }
 
-class EdhereApp extends ConsumerWidget {
+class EdhereApp extends StatelessWidget {
   const EdhereApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final lang = settings.appLang;
-    return MaterialApp(
-      // Mudar de língua refaz a app toda (os textos são lidos ao construir).
-      key: ValueKey(lang),
-      title: 'EDHere',
-      locale: lang.locale,
-      supportedLocales: [for (final l in AppLang.values) l.locale],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
-      themeMode: settings.themeMode,
-      home: const OnboardingGate(),
-    );
-  }
+  Widget build(BuildContext context) => const EdhereMaterialApp(home: OnboardingGate());
 }

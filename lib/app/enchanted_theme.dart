@@ -35,6 +35,10 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
   );
 
   final base = ThemeData(useMaterial3: true, brightness: brightness, colorScheme: scheme, fontFamily: EdhFonts.body);
+  // Os estilos dos componentes têm de ter inherit: false, como os do Material:
+  // senão a transição Clássico ↔ Encantado não consegue interpolá-los.
+  final solid = Typography.englishLike2021.bodyMedium!.copyWith(fontFamily: EdhFonts.body, color: c.text);
+  TextStyle k(TextStyle s) => solid.merge(s);
   TextStyle? display(TextStyle? s, FontWeight w) =>
       s?.copyWith(fontFamily: EdhFonts.display, fontWeight: w, color: c.text);
   final text = base.textTheme.copyWith(
@@ -95,7 +99,7 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
         width: s.contains(WidgetState.pressed) ? 1.5 : 1.2,
       ));
 
-  final buttonText = EdhText.button.copyWith(fontSize: 16);
+  final buttonText = k(EdhText.button.copyWith(fontSize: 16));
 
   return base.copyWith(
     scaffoldBackgroundColor: c.background,
@@ -106,7 +110,7 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
       foregroundColor: c.text,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
-      titleTextStyle: EdhText.title.copyWith(color: c.text, fontSize: 20),
+      titleTextStyle: k(EdhText.title.copyWith(color: c.text, fontSize: 20)),
       shape: Border(bottom: BorderSide(color: c.gold.withOpacity(.35))),
     ),
     cardTheme: CardTheme(color: c.surface, elevation: 0, margin: EdgeInsets.zero, shape: frame),
@@ -144,10 +148,10 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: c.field,
-      labelStyle: EdhText.section.copyWith(color: c.goldText, fontSize: 12),
-      floatingLabelStyle: EdhText.section.copyWith(color: c.goldText, fontSize: 12),
-      hintStyle: EdhText.body.copyWith(color: c.textMuted),
-      helperStyle: EdhText.label.copyWith(color: c.textMuted),
+      labelStyle: k(EdhText.section.copyWith(color: c.goldText, fontSize: 12)),
+      floatingLabelStyle: k(EdhText.section.copyWith(color: c.goldText, fontSize: 12)),
+      hintStyle: k(EdhText.body.copyWith(color: c.textMuted)),
+      helperStyle: k(EdhText.label.copyWith(color: c.textMuted)),
       prefixIconColor: c.gold,
       border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: c.gold.withOpacity(.45))),
       enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: c.gold.withOpacity(.45))),
@@ -156,8 +160,8 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     tabBarTheme: TabBarTheme(
       labelColor: c.goldText,
       unselectedLabelColor: c.textMuted,
-      labelStyle: EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
-      unselectedLabelStyle: EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+      labelStyle: k(EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+      unselectedLabelStyle: k(EdhText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
       indicator: GoldTabIndicator(color: c.goldLight, gem: c.goldPale),
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: c.gold.withOpacity(.3),
@@ -169,31 +173,31 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
       indicatorShape: StadiumBorder(side: BorderSide(color: c.gold, width: 1.5)),
       iconTheme: WidgetStateProperty.resolveWith(
           (s) => IconThemeData(color: s.contains(WidgetState.selected) ? Colors.white : c.textMuted)),
-      labelTextStyle: WidgetStateProperty.resolveWith((s) => EdhText.label.copyWith(
+      labelTextStyle: WidgetStateProperty.resolveWith((s) => k(EdhText.label.copyWith(
             color: s.contains(WidgetState.selected) ? c.goldText : c.textMuted,
             fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-          )),
+          ))),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         side: WidgetStatePropertyAll(BorderSide(color: c.gold.withOpacity(.6))),
         backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.goldLight : c.field),
         foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.textOnGold : c.text),
-        textStyle: WidgetStatePropertyAll(EdhText.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
+        textStyle: WidgetStatePropertyAll(k(EdhText.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600))),
       ),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: c.field,
       selectedColor: c.goldLight,
       side: BorderSide(color: c.gold.withOpacity(.5)),
-      labelStyle: EdhText.label.copyWith(fontSize: 13, color: c.text),
-      secondaryLabelStyle: EdhText.label.copyWith(fontSize: 13, color: c.textOnGold),
+      labelStyle: k(EdhText.label.copyWith(fontSize: 13, color: c.text)),
+      secondaryLabelStyle: k(EdhText.label.copyWith(fontSize: 13, color: c.textOnGold)),
     ),
     dialogTheme: DialogTheme(
       backgroundColor: c.surface,
       surfaceTintColor: Colors.transparent,
       shape: GoldFrameBorder(gold: c.gold, radius: EdhSize.radiusL),
-      titleTextStyle: EdhText.title.copyWith(color: c.text, fontSize: 20),
+      titleTextStyle: k(EdhText.title.copyWith(color: c.text, fontSize: 20)),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: c.surfaceHigh,
@@ -207,7 +211,7 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: c.surfaceHigh,
-      contentTextStyle: EdhText.body.copyWith(color: c.text),
+      contentTextStyle: k(EdhText.body.copyWith(color: c.text)),
       actionTextColor: c.goldText,
       shape: RoundedRectangleBorder(borderRadius: radius, side: BorderSide(color: c.gold.withOpacity(.6))),
     ),
