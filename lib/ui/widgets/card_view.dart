@@ -1,3 +1,4 @@
+import '../../app/style_tokens.dart';
 import 'package:card_db/card_db.dart' hide Card;
 import 'package:card_db/card_db.dart' as db;
 import 'package:flutter/material.dart';
@@ -238,7 +239,8 @@ class CardTile extends StatelessWidget {
                   Row(children: [
                     Flexible(
                       child: Text(card.displayName,
-                          maxLines: 1,
+                          // Encantado (kit): o nome pode ir a 2 linhas em vez de "..."
+                          maxLines: context.edhStyle.isEnchanted ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
                     ),

@@ -16,6 +16,7 @@ import '../cards/card_detail_screen.dart';
 import '../cards/card_search.dart';
 import '../cards/versions.dart';
 import '../play/play_with_deck.dart';
+import '../style/style.dart';
 import '../widgets/card_art.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
@@ -797,6 +798,18 @@ class _CardListState extends State<_CardList> {
         trailing: flagged(e) ? const Icon(Icons.warning_amber_rounded, color: EdhColors.warn, size: 22) : null,
       );
 
+  /// Encantado: o comandante numa moldura destacada, com a coroa. Clássico: a linha de sempre.
+  Widget _commanderTile(DeckEntry e, db.Card c) => StyleFrame(
+        highlighted: true,
+        padding: EdgeInsets.zero,
+        margin: const EdgeInsets.fromLTRB(6, 10, 6, 8),
+        classic: (child) => child,
+        child: Stack(clipBehavior: Clip.none, children: [
+          _tile(e, c),
+          const Positioned(top: -9, left: 18, child: LegendCrown(width: 28)),
+        ]),
+      );
+
   bool flagged(DeckEntry e) => issues.any((i) => i.oracleId == e.oracleId);
 
   String? _ownedNote(DeckEntry e) {
@@ -968,9 +981,12 @@ class _CardListState extends State<_CardList> {
               padding: EdgeInsets.fromLTRB(16, selecting ? 8 : 16, 8, selecting ? 0 : 4),
               child: Row(children: [
                 Expanded(
-                  child: Text(
+                  child: SectionDivider(
                     '$title (${entries.fold(0, (n, e) => n + e.qty)})',
-                    style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                    classic: Text(
+                      '$title (${entries.fold(0, (n, e) => n + e.qty)})',
+                      style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                    ),
                   ),
                 ),
                 // Em modo de seleção: escolher a secção inteira.
@@ -1025,7 +1041,8 @@ class _CardListState extends State<_CardList> {
               )
             else
               for (final e in entries)
-                if (cards[e.oracleId] case final c?) _tile(e, c),
+                if (cards[e.oracleId] case final c?)
+                  title == tr('Comandante') ? _commanderTile(e, c) : _tile(e, c),
           ],
       ],
     );
