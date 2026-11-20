@@ -222,7 +222,13 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: c.arcane,
       foregroundColor: Colors.white,
-      shape: CircleBorder(side: BorderSide(color: c.gold, width: 1.5)),
+      // Não CircleBorder: o tema serve também o largo ("+ Deck"), que ficava
+      // deformado num círculo.
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: c.gold, width: 1.5),
+      ),
+      extendedTextStyle: k(EdhText.button.copyWith(fontSize: 15)),
     ),
   );
 }

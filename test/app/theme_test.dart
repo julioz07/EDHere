@@ -40,6 +40,23 @@ void main() {
     });
   }
 
+  testWidgets('o botão flutuante largo (+ Deck) não fica num círculo', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: buildTheme(Brightness.dark, UiStyle.enchanted),
+      home: Scaffold(
+        floatingActionButton:
+            FloatingActionButton.extended(onPressed: () {}, icon: const Icon(Icons.add), label: const Text('Deck')),
+      ),
+    ));
+    final size = tester.getSize(find.byType(FloatingActionButton));
+    expect(size.width, greaterThan(size.height));
+    final shape = tester.widget<RawMaterialButton>(find.byType(RawMaterialButton)).shape;
+    expect(shape, isNot(isA<CircleBorder>()));
+    final label = tester.getRect(find.text('Deck'));
+    final fab = tester.getRect(find.byType(FloatingActionButton));
+    expect(fab.contains(label.topLeft) && fab.contains(label.bottomRight), isTrue);
+  });
+
   testWidgets('os botões e cartões do Encantado desenham-se sem erros', (tester) async {
     for (final b in Brightness.values) {
       await tester.pumpWidget(MaterialApp(
