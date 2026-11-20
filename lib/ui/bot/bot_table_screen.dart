@@ -17,6 +17,7 @@ import '../../data/settings.dart';
 import '../../l10n/l10n.dart';
 import '../cards/card_detail_screen.dart';
 import '../table/table_card.dart';
+import '../style/style.dart';
 import '../widgets/card_view.dart';
 import '../widgets/mana.dart';
 import '../widgets/responsive.dart';
@@ -1885,7 +1886,12 @@ class _PlayerBar extends StatelessWidget {
     // cada jogador tem a sua cor: uma faixa à esquerda e, no turno dele, o fundo nesse tom
     final color = seatColor(state, player.id);
     final surface = theme.colorScheme.surface;
-    final bar = Container(
+    final st = context.edhStyle;
+    // Encantado: quem tem a vez "respira" a ouro (não quando é alvo: aí manda o contorno de alvo).
+    final bar = TurnGlow(
+      active: active && !pickable && !chosen,
+      radius: 4,
+      child: Container(
       // com separadores, o destino das setas é o separador (ver _OpponentTabs)
       key: anchored ? act.geo.key('player:${player.id}') : null,
       decoration: BoxDecoration(
@@ -1924,10 +1930,14 @@ class _PlayerBar extends StatelessWidget {
                         child: Icon(Icons.visibility, size: 18, color: act.thinkColor)),
                 ]),
               ),
-              AnimatedLife(
-                  life: player.life,
-                  style: (narrow ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)
-                      ?.copyWith(fontWeight: FontWeight.w800)),
+              GoldPlateFrame(
+                height: narrow ? 30 : 34,
+                child: AnimatedLife(
+                    life: player.life,
+                    style: (narrow ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: st.isEnchanted && player.life > 0 ? st.textOnGold : null)),
+              ),
             ]),
           ),
         ),
@@ -1972,6 +1982,7 @@ class _PlayerBar extends StatelessWidget {
               pick: exile.any((c) => act.selectable(c.instance.id)),
               onTap: () => _zoneSheet(context, tr('Exílio'), exile, act)),
       ]),
+      ),
     );
     if (!act.attacking || act.onAttack == null || player.id == act.meId) return bar;
     return DragTarget<int>(

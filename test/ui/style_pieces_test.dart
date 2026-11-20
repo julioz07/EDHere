@@ -123,6 +123,16 @@ void main() {
     expect((text.dx - row.dx).abs(), lessThan(1));
   });
 
+  testWidgets('GoldPlateFrame: no Clássico só o filho, no Encantado com a plaqueta e texto escuro', (tester) async {
+    const child = Text('37', key: Key('life'));
+    await _pump(tester, UiStyle.classic, const GoldPlateFrame(child: child));
+    expect(find.descendant(of: find.byType(GoldPlateFrame), matching: find.byType(DecoratedBox)), findsNothing);
+    await _pump(tester, UiStyle.enchanted, const GoldPlateFrame(child: child));
+    await tester.pumpAndSettle();
+    final style = DefaultTextStyle.of(tester.element(find.byKey(const Key('life')))).style;
+    expect(style.color, EdhStyle.enchantedDark.textOnGold);
+  });
+
   testWidgets('GoldPlate de 3 dígitos cabe em 60 px com letra a 1,3×', (tester) async {
     await _pump(tester, UiStyle.enchanted, const GoldPlate('140', classic: SizedBox()), width: 60, textScale: 1.3);
     expect(tester.takeException(), isNull);

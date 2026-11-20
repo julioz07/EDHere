@@ -10,6 +10,7 @@ import '../../game/game_controller.dart';
 import 'table_screen.dart';
 import 'table_sheets.dart';
 import 'table_turns.dart';
+import '../style/style.dart';
 import '../widgets/life_delta.dart';
 import '../../l10n/l10n.dart';
 
@@ -282,8 +283,11 @@ class _SeatArea extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
+        // Encantado: o fio é dourado, mais forte na vez (a cor do lugar fica no nome)
         border: Border.all(
-          color: active ? color : color.withOpacity(0.45),
+          color: context.edhStyle.isEnchanted
+              ? (active ? context.edhStyle.goldLight : context.edhStyle.gold.withOpacity(.45))
+              : (active ? color : color.withOpacity(0.45)),
           width: active ? 3 : 1.5,
         ),
         borderRadius: BorderRadius.circular(10),
@@ -294,6 +298,7 @@ class _SeatArea extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               child: Row(children: [
+                if (context.edhStyle.isEnchanted) ...[ManaOrb(color: color, size: 12), const SizedBox(width: 6)],
                 Flexible(
                   child: Text(p.name, style: theme.textTheme.titleSmall, overflow: TextOverflow.ellipsis),
                 ),
@@ -307,9 +312,14 @@ class _SeatArea extends StatelessWidget {
                     ctrl.actAs(seat);
                     showPlayerSheet(context, ctrl, seat);
                   },
-                  child: Text('${p.life}',
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800, color: p.life <= 0 ? EdhColors.bad : null)),
+                  child: GoldPlateFrame(
+                    child: Text('${p.life}',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: p.life <= 0
+                                ? EdhColors.bad
+                                : (context.edhStyle.isEnchanted ? context.edhStyle.textOnGold : null))),
+                  ),
                 ),
                 LifeStepButton(
                   up: true,

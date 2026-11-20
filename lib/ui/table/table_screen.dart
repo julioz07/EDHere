@@ -8,6 +8,7 @@ import '../../data/providers.dart';
 import 'package:card_db/card_db.dart' show ImageRef;
 import '../../data/settings.dart';
 import '../../game/game_controller.dart';
+import '../style/style.dart';
 import '../widgets/card_art.dart';
 import '../widgets/card_view.dart';
 import '../widgets/life_delta.dart';
@@ -1130,9 +1131,10 @@ class _PlayersStrip extends StatelessWidget {
           // a mesma linguagem da mesa do bot: uma cor por lugar, numa faixa em
           // cima; o ativo com o contorno nessa cor, o que está em vista tingido
           final color = GameColors.player(seats.indexOf(seat));
-          final bg = viewing
-              ? Color.alphaBlend(color.withOpacity(0.22), theme.colorScheme.surface)
-              : theme.colorScheme.surface;
+          final st = context.edhStyle;
+          final ench = st.isEnchanted;
+          final base = ench ? st.surface : theme.colorScheme.surface;
+          final bg = viewing ? Color.alphaBlend(color.withOpacity(0.22), base) : base;
           return Padding(
             padding: const EdgeInsets.only(right: 6),
             child: GestureDetector(
@@ -1142,7 +1144,10 @@ class _PlayersStrip extends StatelessWidget {
                 if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
               },
               onLongPress: () => showPlayerSheet(context, ctrl, seat),
-              child: AnimatedContainer(
+              // Encantado: quem tem a vez "respira" a ouro; o fio é dourado.
+              child: TurnGlow(
+                active: isActive && !targeted,
+                child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 padding: split ? const EdgeInsets.fromLTRB(7, 6, 5, 2) : const EdgeInsets.fromLTRB(10, 7, 10, 3),
                 decoration: BoxDecoration(
@@ -1159,8 +1164,8 @@ class _PlayersStrip extends StatelessWidget {
                     color: targeted
                         ? targetGlow
                         : isActive
-                            ? color
-                            : theme.colorScheme.outline,
+                            ? (ench ? st.goldLight : color)
+                            : (ench ? st.gold.withOpacity(.55) : theme.colorScheme.outline),
                     width: isActive || targeted ? 2.5 : 1,
                   ),
                   boxShadow: targeted
@@ -1216,10 +1221,13 @@ class _PlayersStrip extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(width: 10),
-                          Text('${p.life}',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: p.life <= 0 || p.defeated ? EdhColors.bad : null)),
+                          _lifePlate(
+                              p.life,
+                              p.defeated,
+                              Text('${p.life}',
+                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: p.life <= 0 || p.defeated ? EdhColors.bad : null))),
                           LifeDelta(life: p.life, fontSize: 12),
                           if (poison > 0 || maxCmd > 0) ...[
                             const SizedBox(width: 6),
@@ -1234,6 +1242,7 @@ class _PlayersStrip extends StatelessWidget {
                           ],
                         ]),
                       ),
+              ),
               ),
             ),
           );
@@ -1309,11 +1318,17 @@ class _SplitChip extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text('$life',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            height: 1,
-                            color: life <= 0 || defeated ? EdhColors.bad : null)),
+                    _lifePlate(
+                        life,
+                        defeated,
+                        Text('$life',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                height: 1,
+                                color: life <= 0 || defeated ? EdhColors.bad : null)),
+                        fontSize: 17,
+                        height: 26,
+                        minWidth: 32),
                     const SizedBox(width: 4),
                     if (cmd > 0)
                       Text('★$cmd ',
@@ -1609,13 +1624,17 @@ class TableZonesRow extends StatelessWidget {
             showCardActions(context, ctrl, c);
           },
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TableCardView(
-                instance: c,
-                card: ctrl.card(c.oracleId, printId: c.printId),
-                width: w,
-                tax: p?.commanderTax(c.id),
-                highlighted: ctrl.coachFocus.contains(c.oracleId),
-                showTapped: false),
+            // Encantado: a coroa por cima do comandante (no Clássico não ocupa nada)
+            Stack(clipBehavior: Clip.none, alignment: Alignment.topCenter, children: [
+              TableCardView(
+                  instance: c,
+                  card: ctrl.card(c.oracleId, printId: c.printId),
+                  width: w,
+                  tax: p?.commanderTax(c.id),
+                  highlighted: ctrl.coachFocus.contains(c.oracleId),
+                  showTapped: false),
+              if (c.isCommander) Positioned(top: -7, child: LegendCrown(width: w * .45)),
+            ]),
             Text(tr('Comando'), style: const TextStyle(fontSize: 10)),
           ]),
         ),
@@ -1933,7 +1952,10 @@ class _BottomBar extends StatelessWidget {
               child: Text(lastLog,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  // Encantado: o registo em itálico, como o texto de ambiente das cartas
+                  style: context.edhStyle.isEnchanted
+                      ? EdhText.flavor.copyWith(fontSize: 15, color: theme.colorScheme.onSurfaceVariant)
+                      : theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ),
           ),
           const SizedBox(width: 8),
@@ -2001,6 +2023,8 @@ class _BigPlayerChip extends StatelessWidget {
     final card = cmd == null ? null : ctrl.card(cmd.oracleId, printId: cmd.printId);
     const shadow = [Shadow(blurRadius: 4)];
     const dim = TextStyle(color: Colors.white70, fontSize: 12, shadows: shadow);
+    final st = context.edhStyle;
+    final ench = st.isEnchanted;
     return Semantics(
       button: true,
       label: tr('{v}: {life} de vida', {'v': p.name, 'life': p.life}),
@@ -2011,7 +2035,9 @@ class _BigPlayerChip extends StatelessWidget {
           if (viewing || ctrl.scripted) showPlayerSheet(context, ctrl, seat);
         },
         onLongPress: () => showPlayerSheet(context, ctrl, seat),
-        child: AnimatedContainer(
+        child: TurnGlow(
+          active: isActive && !targeted,
+          child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -2019,10 +2045,10 @@ class _BigPlayerChip extends StatelessWidget {
               color: targeted
                   ? targetGlow
                   : isActive
-                      ? color
+                      ? (ench ? st.goldLight : color)
                       : viewing
                           ? Colors.white70
-                          : theme.colorScheme.outline,
+                          : (ench ? st.gold.withOpacity(.55) : theme.colorScheme.outline),
               width: isActive || targeted ? 3 : (viewing ? 2 : 1),
             ),
             boxShadow:
@@ -2056,6 +2082,7 @@ class _BigPlayerChip extends StatelessWidget {
                                   child: const Icon(Icons.wifi_off, size: 15, color: EdhColors.bad)),
                             if (viewing) const Icon(Icons.visibility_outlined, size: 15, color: Colors.white70),
                             const SizedBox(width: 3),
+                            if (ench && card != null) ...[const LegendCrown(width: 18), const SizedBox(width: 4)],
                             Flexible(
                               child: Text(p.name,
                                   maxLines: 1,
@@ -2096,17 +2123,24 @@ class _BigPlayerChip extends StatelessWidget {
                       ]),
                       const SizedBox(width: 8),
                     ],
-                    Text('${p.life}',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            shadows: shadow,
-                            color: p.life <= 0 || p.defeated ? EdhColors.bad : Colors.white)),
+                    _lifePlate(
+                        p.life,
+                        p.defeated,
+                        Text('${p.life}',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                shadows: shadow,
+                                color: p.life <= 0 || p.defeated ? EdhColors.bad : Colors.white)),
+                        fontSize: 24,
+                        height: 40,
+                        minWidth: 50),
                     LifeDelta(life: p.life, fontSize: 12),
                   ]),
                 ),
               ]),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -2168,3 +2202,11 @@ class _LogPanel extends StatelessWidget {
     );
   }
 }
+
+/// A vida: no Encantado numa plaqueta dourada; a 0 ou derrotado fica o número
+/// vermelho de sempre (o aviso não muda de significado).
+Widget _lifePlate(int life, bool defeated, Widget classic,
+        {double fontSize = 20, double height = 32, double minWidth = 40}) =>
+    life <= 0 || defeated
+        ? classic
+        : GoldPlate('$life', classic: classic, fontSize: fontSize, height: height, minWidth: minWidth);

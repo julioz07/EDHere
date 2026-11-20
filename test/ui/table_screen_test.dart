@@ -6,6 +6,9 @@ import 'package:card_db/card_db.dart';
 import 'package:edhoff/data/app_paths.dart';
 import 'package:edhoff/data/providers.dart';
 import 'package:edhoff/game/game_controller.dart';
+import 'package:edhoff/app/theme.dart';
+import 'package:edhoff/data/settings.dart';
+import 'package:edhoff/ui/style/style.dart';
 import 'package:edhoff/ui/table/table_screen.dart';
 import 'package:edhoff/ui/table/table_sheets.dart';
 import 'package:edhoff/ui/table/table_tour.dart';
@@ -67,7 +70,10 @@ void main() {
   }
 
   Future<GameController> pump(WidgetTester tester, Size size,
-      {bool tour = false, void Function(GameController ctrl)? before}) async {
+      {bool tour = false,
+      void Function(GameController ctrl)? before,
+      UiStyle? style,
+      double textScale = 1}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -92,7 +98,14 @@ void main() {
         prefsProvider.overrideWithValue(prefs),
         pathsProvider.overrideWithValue(AppPaths.forTest(dir.path)),
       ],
-      child: MaterialApp(home: TableScreen(ctrl: ctrl)),
+      child: MaterialApp(
+        theme: style == null ? null : buildTheme(Brightness.dark, style),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: TableScreen(ctrl: ctrl),
+      ),
     ));
     await tester.pump();
     return ctrl;
@@ -123,6 +136,15 @@ void main() {
       await tester.pump();
       expect(find.textContaining('Só resta Maria'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (name, size) in const [('Small Phone', Size(360, 640)), ('Pixel Tablet deitado', Size(1280, 800))]) {
+    testWidgets('Encantado, 4 jogadores no $name com letra a 1,3×: cabe tudo, vida em plaqueta', (tester) async {
+      await pump(tester, size, style: UiStyle.enchanted, textScale: 1.3);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(GoldPlate), findsWidgets);
+      expect(find.byType(TurnGlow), findsWidgets);
     });
   }
 
