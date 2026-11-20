@@ -39,6 +39,10 @@ abstract final class Brand {
 }
 
 /// Preferências do utilizador, guardadas no dispositivo.
+/// O estilo visual da app: o de sempre ou o "Encantado" (fantasia, dourado).
+/// É independente do modo Claro/Escuro.
+enum UiStyle { classic, enchanted }
+
 class Settings extends ChangeNotifier {
   Settings(this._prefs, this._paths);
 
@@ -46,6 +50,7 @@ class Settings extends ChangeNotifier {
   final AppPaths _paths;
 
   static const _kTheme = 'theme_mode';
+  static const _kStyle = 'ui_style';
   static const _kBg = 'table_background';
   static const _kDim = 'table_background_dim';
   static const _kCardScale = 'table_card_scale';
@@ -72,6 +77,9 @@ class Settings extends ChangeNotifier {
         _ => ThemeMode.system,
       };
   set themeMode(ThemeMode m) => _set(_kTheme, m.name);
+
+  UiStyle get uiStyle => _prefs.getString(_kStyle) == UiStyle.enchanted.name ? UiStyle.enchanted : UiStyle.classic;
+  set uiStyle(UiStyle v) => _set(_kStyle, v.name);
 
   /// `none`, `asset:<id>`, `file` (imagem escolhida da galeria) ou
   /// `commander` (a ilustração do comandante de quem está em vista).
