@@ -133,8 +133,42 @@ void main() {
     expect(style.color, EdhStyle.enchantedDark.textOnGold);
   });
 
+  testWidgets('GoldPlateFrame com plate: false (vida a 0) devolve só o filho no Encantado', (tester) async {
+    await _pump(tester, UiStyle.enchanted, const GoldPlateFrame(plate: false, child: Text('0', key: Key('life'))));
+    expect(find.descendant(of: find.byType(GoldPlateFrame), matching: find.byType(Container)), findsNothing);
+  });
+
+  testWidgets('TurnGlow: o filho mantém o estado quando a vez muda', (tester) async {
+    Widget glow(bool active) => TurnGlow(active: active, child: const _Counter());
+    await _pump(tester, UiStyle.enchanted, glow(false));
+    await tester.tap(find.text('+'));
+    await tester.pump();
+    expect(find.text('n=1'), findsOneWidget);
+    await _pump(tester, UiStyle.enchanted, glow(true));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('n=1'), findsOneWidget);
+    await _pump(tester, UiStyle.enchanted, glow(false));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('n=1'), findsOneWidget);
+    // sem a vez o brilho para: o pumpAndSettle acaba (com o brilho a correr não acabava)
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('GoldPlate de 3 dígitos cabe em 60 px com letra a 1,3×', (tester) async {
     await _pump(tester, UiStyle.enchanted, const GoldPlate('140', classic: SizedBox()), width: 60, textScale: 1.3);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _Counter extends StatefulWidget {
+  const _Counter();
+  @override
+  State<_Counter> createState() => _CounterState();
+}
+
+class _CounterState extends State<_Counter> {
+  int n = 0;
+  @override
+  Widget build(BuildContext context) =>
+      TextButton(onPressed: () => setState(() => n++), child: Text(n == 0 ? '+' : 'n=$n'));
 }

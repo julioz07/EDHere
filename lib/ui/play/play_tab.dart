@@ -17,6 +17,7 @@ import '../playtest/playtest_setup_screen.dart';
 import '../resume_game.dart';
 import '../stats/stats_screen.dart';
 import '../tutorial/tutorial_home.dart';
+import '../../app/enchanted_theme.dart' show gemTextShadow;
 import '../../app/gold_frame_border.dart';
 import '../style/style.dart';
 import '../widgets/responsive.dart';
@@ -307,12 +308,15 @@ class _ModeCard extends StatelessWidget {
                               color: fg,
                               fontWeight: ench ? FontWeight.w700 : FontWeight.w600,
                               fontFamily: ench ? EdhFonts.display : null,
+                              shadows: ench && hero ? gemTextShadow : null,
                               // a Cinzel é larga: o principal num tamanho abaixo, para caber numa linha
                               fontSize: ench && hero ? 19 : null)),
                   const SizedBox(height: 2),
                   Text(subtitle,
                       style: theme.textTheme.bodySmall
-                          ?.copyWith(color: hero ? fg.withOpacity(0.85) : scheme.onSurfaceVariant)),
+                          ?.copyWith(
+                              color: hero ? fg.withOpacity(0.85) : scheme.onSurfaceVariant,
+                              shadows: ench && hero ? gemTextShadow : null)),
                 ]),
               ),
               Icon(Icons.chevron_right, color: hero ? fg : (ench ? st.gold : scheme.onSurfaceVariant)),

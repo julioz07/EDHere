@@ -24,6 +24,9 @@ class _CounterState extends State<_Counter> {
         body: Column(children: [
           Text('n=$n ${context.edhStyle.isEnchanted ? 'encantado' : 'classico'}'),
           TextButton(onPressed: () => setState(() => n++), child: const Text('+')),
+          // os botões do tema também passam pela transição (o lerp dos estilos de texto)
+          FilledButton(onPressed: () {}, child: const Text('cheio')),
+          OutlinedButton(onPressed: () {}, child: const Text('contorno')),
           const UiStyleSelector(),
         ]),
       );
@@ -57,7 +60,12 @@ void main() {
 
     container.read(settingsProvider).uiStyle = UiStyle.enchanted;
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
     expect(find.text('n=1 encantado'), findsOneWidget);
+    container.read(settingsProvider).uiStyle = UiStyle.classic;
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('n=1 classico'), findsOneWidget);
   });
 
   testWidgets('o seletor grava a escolha', (tester) async {

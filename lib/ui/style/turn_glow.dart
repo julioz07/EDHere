@@ -52,27 +52,29 @@ class _TurnGlowState extends State<TurnGlow> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     final c = context.edhStyle;
     if (!c.isEnchanted) return widget.classic?.call(widget.child) ?? widget.child;
-    if (!widget.active) return widget.child;
+    // A mesma árvore com e sem a vez: senão o filho (vida animada, contadores)
+    // perdia o estado sempre que a vez passava.
     return AnimatedBuilder(
       animation: _c,
       child: widget.child,
       builder: (context, child) {
         final t = Curves.easeInOut.transform(_c.value);
+        final on = widget.active;
         // O brilho fica por fora (passa o anel das molduras do kit) e o fio
         // por cima do filho, para não ser tapado por ele.
         final r = BorderRadius.circular(widget.radius);
         return DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: r,
-            boxShadow: [
-              BoxShadow(color: c.goldLight.withOpacity(.35 + .35 * t), blurRadius: 14 + 10 * t, spreadRadius: 5),
-            ],
+            boxShadow: on
+                ? [BoxShadow(color: c.goldLight.withOpacity(.35 + .35 * t), blurRadius: 14 + 10 * t, spreadRadius: 5)]
+                : null,
           ),
           child: DecoratedBox(
             position: DecorationPosition.foreground,
             decoration: BoxDecoration(
               borderRadius: r,
-              border: Border.all(color: Color.lerp(c.gold, c.goldPale, t)!, width: 2),
+              border: on ? Border.all(color: Color.lerp(c.gold, c.goldPale, t)!, width: 2) : null,
             ),
             child: child,
           ),

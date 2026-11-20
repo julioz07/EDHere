@@ -38,11 +38,11 @@ abstract final class Brand {
   static const cardBack = 'assets/Verso de carta/edhere-verso/edhere-verso-carta-488.webp';
 }
 
-/// Preferências do utilizador, guardadas no dispositivo.
 /// O estilo visual da app: o de sempre ou o "Encantado" (fantasia, dourado).
 /// É independente do modo Claro/Escuro.
 enum UiStyle { classic, enchanted }
 
+/// Preferências do utilizador, guardadas no dispositivo.
 class Settings extends ChangeNotifier {
   Settings(this._prefs, this._paths);
 

@@ -100,7 +100,8 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
       ));
 
   // 15 e espaçamento curto: a Cinzel é larga e há rótulos longos ("Começar (só com quem está pronto)").
-  final buttonText = k(EdhText.button.copyWith(fontSize: 15, letterSpacing: .2));
+  // inherit: true, como o do Clássico: senão a transição entre estilos não interpola.
+  final buttonText = EdhText.button.copyWith(fontSize: 15, letterSpacing: .2);
 
   return base.copyWith(
     scaffoldBackgroundColor: c.background,
@@ -124,7 +125,8 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
         foregroundColor: WidgetStateProperty.resolveWith(
             (s) => s.contains(WidgetState.disabled) ? c.textMuted : Colors.white),
         overlayColor: WidgetStatePropertyAll(Colors.white.withOpacity(.08)),
-        textStyle: WidgetStatePropertyAll(buttonText),
+        // sombra escura: o topo da gema é azul-claro e o texto é branco
+        textStyle: WidgetStatePropertyAll(buttonText.copyWith(shadows: _gemTextShadow)),
         backgroundBuilder: gem,
       ),
     ),
@@ -143,7 +145,8 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: c.goldText,
-        textStyle: buttonText.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+        // o TextButton do Clássico usa o estilo do Material (inherit: false): igual aqui
+        textStyle: k(buttonText.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -234,3 +237,9 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
     ),
   );
 }
+
+/// Sombra do texto branco sobre a gema azul (o topo é claro).
+const _gemTextShadow = [Shadow(color: Color(0xB3001450), blurRadius: 3, offset: Offset(0, 1))];
+
+/// Para quem desenha texto branco sobre o gradiente da gema fora dos botões.
+const gemTextShadow = _gemTextShadow;

@@ -52,15 +52,18 @@ class GoldPlate extends StatelessWidget {
 /// do bot). No Clássico devolve só o [child]; no Encantado o texto lá dentro
 /// passa a escuro, sobre o ouro.
 class GoldPlateFrame extends StatelessWidget {
-  const GoldPlateFrame({super.key, required this.child, this.height = 32, this.minWidth = 40});
+  const GoldPlateFrame({super.key, required this.child, this.plate = true, this.height = 32, this.minWidth = 40});
 
   final Widget child;
+
+  /// false (ex.: vida a 0, derrotado): sem plaqueta, fica o número vermelho de sempre.
+  final bool plate;
   final double height, minWidth;
 
   @override
   Widget build(BuildContext context) {
     final c = context.edhStyle;
-    if (!c.isEnchanted) return child;
+    if (!c.isEnchanted || !plate) return child;
     return Container(
       constraints: BoxConstraints(minWidth: minWidth, minHeight: height),
       padding: const EdgeInsets.symmetric(horizontal: 6),

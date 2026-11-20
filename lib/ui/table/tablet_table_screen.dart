@@ -313,6 +313,7 @@ class _SeatArea extends StatelessWidget {
                     showPlayerSheet(context, ctrl, seat);
                   },
                   child: GoldPlateFrame(
+                    plate: p.life > 0 && !p.defeated,
                     child: Text('${p.life}',
                         style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w800,

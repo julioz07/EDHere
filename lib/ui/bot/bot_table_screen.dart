@@ -1931,12 +1931,13 @@ class _PlayerBar extends StatelessWidget {
                 ]),
               ),
               GoldPlateFrame(
+                plate: player.life > 0 && !player.lost,
                 height: narrow ? 30 : 34,
                 child: AnimatedLife(
                     life: player.life,
                     style: (narrow ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: st.isEnchanted && player.life > 0 ? st.textOnGold : null)),
+                        color: st.isEnchanted && player.life > 0 && !player.lost ? st.textOnGold : null)),
               ),
             ]),
           ),
