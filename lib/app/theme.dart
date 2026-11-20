@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/settings.dart';
+import 'enchanted_theme.dart';
+import 'style_tokens.dart';
+
 /// Paleta do EDHere (ver "Nome e identidade visual" no plano).
 abstract final class EdhColors {
   static const seed = Color(0xFF2F6FEB);
@@ -88,7 +92,9 @@ abstract final class EdhSize {
   static const buttonCompact = 40.0;
 }
 
-ThemeData buildTheme(Brightness brightness) {
+/// O tema da app: o Clássico (o de sempre) ou o Encantado, em claro ou escuro.
+ThemeData buildTheme(Brightness brightness, [UiStyle style = UiStyle.classic]) {
+  if (style == UiStyle.enchanted) return buildEnchantedTheme(brightness);
   final dark = brightness == Brightness.dark;
   final scheme = ColorScheme.fromSeed(
     seedColor: EdhColors.seed,
@@ -159,5 +165,6 @@ ThemeData buildTheme(Brightness brightness) {
       showDragHandle: true,
     ),
     dividerTheme: DividerThemeData(color: scheme.outline, space: 1),
+    extensions: [dark ? EdhStyle.classicDark : EdhStyle.classicLight],
   );
 }
