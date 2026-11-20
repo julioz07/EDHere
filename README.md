@@ -7,7 +7,7 @@ Uma mesa de Magic: The Gathering totalmente offline, para construir decks, test�
 
 ---
 
-**Versão atual: 2.2.1** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
+**Versão atual: 2.2.2** (Android). Os APKs são por arquitetura: `arm64` para quase todos os telemóveis atuais, `armv7` para os mais antigos, `universal` se tiveres dúvidas.
 
 ## O que é
 
@@ -113,6 +113,7 @@ O número segue `MAIOR.MENOR.CORREÇÃO` (em `pubspec.yaml`, com o número de bu
 
 | Versão | O que trouxe |
 | --- | --- |
+| 2.2.2 | Wi-Fi opcional no manifest (o Play Console avisava que `android.hardware.wifi` excluía Chromebooks, Play Games no PC e Android XR); criar o hotspot num aparelho sem Wi-Fi mostra uma mensagem em vez de rebentar. |
 | 2.2.1 | Contra o bot: seletor de tipo de jogo (só aparecem decks desse formato). Correções: escolher quem começa contra 2+ bots já não termina o jogo; nome na moeda; pilha, alvos e registo com o texto da carta na língua da app em vez de texto interno do Forge em inglês; apóstrofos e nomes nas frases do Forge em italiano; «Atacar com tudo» traduzido. |
 | 2.2.0 | Mesa com 3+ jogadores: «Um campo de cada vez» (oferecida quando a mesa enche), título em rondas, mão que não salta, setas nas filas que deslizam, sem erros de layout a 4. Correções da ronda com decks do Archidekt: cartas de duas faces, vidência só com as cartas de cima, revanche presa, escolha de cor com símbolos, texto do Forge limpo e com nomes traduzidos. |
 | 2.1.1 | Contra o bot, sem decisões sem saída: alvos no cemitério, cartas da biblioteca ou da mão do adversário escolhem-se numa lista, botão Saltar como rede de segurança, a tecla de voltar não responde às perguntas e a língua do motor segue a da app. QA com jogador ao acaso (`--dart-define=EDH_QA_MONKEY=true`). |

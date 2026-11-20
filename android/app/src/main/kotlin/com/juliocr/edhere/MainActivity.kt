@@ -99,7 +99,12 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        val wifi = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        // Wi-Fi é opcional no manifest: em aparelhos sem Wi-Fi não há WifiManager.
+        val wifi = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        if (wifi == null) {
+            result.error("no_wifi", "This device has no Wi-Fi", null)
+            return
+        }
         var replied = false
         try {
             wifi.startLocalOnlyHotspot(object : WifiManager.LocalOnlyHotspotCallback() {

@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <!-- As permissões de Wi-Fi implicam android.hardware.wifi obrigatório, o que
+         exclui ChromeOS, Google Play Games no PC e Android XR. A app funciona sem
+         Wi-Fi (bot, contador, deckbuilder), por isso é opcional. -->
+    <uses-feature android:name="android.hardware.wifi" android:required="false"/>
     <!-- Hotspot local: Android 13+ -->
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation"/>

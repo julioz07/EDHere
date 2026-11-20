@@ -542,6 +542,7 @@ const stringsEs = <String, String>{
   'Estatísticas': 'Estadísticas',
   'Este QR code não é de uma sala EDHere.': 'Este código QR no es de una sala de EDHere.',
   'Este QR não é de um deck do EDHere.': 'Este QR no es de un mazo de EDHere.',
+  'Este aparelho não tem Wi-Fi, por isso não pode criar o hotspot.': 'Este dispositivo no tiene Wi-Fi, así que no puede crear el hotspot.',
   'Este aparelho tem pouca memória para {n} bots: a partida pode ficar lenta. Com 1 ou 2 corre melhor.': 'Este dispositivo tiene poca memoria para {n} bots: la partida puede ir lenta. Con 1 o 2 va mejor.',
   'Este ficheiro não tem decks, cartas nem partidas.': 'Este archivo no tiene mazos, cartas ni partidas.',
   'Este ficheiro não é um backup do EDHere.': 'Este archivo no es una copia de seguridad de EDHere.',

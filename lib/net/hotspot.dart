@@ -71,6 +71,7 @@ class Hotspot {
             'O hotspot normal do telemóvel está ligado. Desliga-o e tenta outra vez, ou usa-o diretamente: os outros ligam-se a ele.'),
         'no_channel' => tr('Sem canal Wi-Fi livre para o hotspot.'),
         'tethering_disallowed' => tr('O sistema não permite criar hotspots.'),
+        'no_wifi' => tr('Este aparelho não tem Wi-Fi, por isso não pode criar o hotspot.'),
         'location_off' => tr('Liga a Localização do telemóvel para criar o hotspot.'),
         'unsupported' => tr('Precisa de Android 8 ou mais recente.'),
         _ => e.message ?? tr('Não foi possível criar o hotspot ({code}).', {'code': e.code}),

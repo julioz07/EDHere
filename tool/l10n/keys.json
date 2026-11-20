@@ -347,21 +347,27 @@
   ]
  },
  {
-  "key": "Liga a Localização do telemóvel para criar o hotspot.",
+  "key": "Este aparelho não tem Wi-Fi, por isso não pode criar o hotspot.",
   "where": [
    "lib/net/hotspot.dart:74"
   ]
  },
  {
-  "key": "Precisa de Android 8 ou mais recente.",
+  "key": "Liga a Localização do telemóvel para criar o hotspot.",
   "where": [
    "lib/net/hotspot.dart:75"
   ]
  },
  {
-  "key": "Não foi possível criar o hotspot ({code}).",
+  "key": "Precisa de Android 8 ou mais recente.",
   "where": [
    "lib/net/hotspot.dart:76"
+  ]
+ },
+ {
+  "key": "Não foi possível criar o hotspot ({code}).",
+  "where": [
+   "lib/net/hotspot.dart:77"
   ]
  },
  {
