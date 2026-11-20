@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Jogar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=Crimson+Pro:ital,wght@1,500&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E8CB80}a:hover{color:#F6E2A8}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.frame{position:relative;border-radius:14px;background:linear-gradient(180deg,#1C2442 0%,#121831 100%);box-shadow:0 0 0 1px rgba(216,184,104,.6),0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.2),inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px rgba(0,0,0,.55)}
+.frame::before{content:'';position:absolute;left:50%;top:-5px;width:8px;height:8px;margin-left:-4px;transform:rotate(45deg);background:linear-gradient(135deg,#FBEBB8,#B8913F);box-shadow:0 0 8px rgba(246,226,168,.7)}
+.gem{position:relative;overflow:hidden;border:none;border-radius:12px;cursor:pointer;color:#FFFFFF;font-family:Cinzel,Georgia,serif;font-weight:800;letter-spacing:.04em;background:linear-gradient(180deg,#86B6FF 0%,#4682F2 42%,#2149B8 100%);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.35),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -5px 10px rgba(10,20,80,.45),0 0 24px rgba(70,130,255,.5);text-shadow:0 1px 2px rgba(0,20,80,.7)}
+.gem::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));transform:skewX(-20deg);animation:sheen 3.8s ease-in-out infinite}
+.obs{border:none;border-radius:12px;cursor:pointer;color:#F0D99A;font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.04em;background:linear-gradient(180deg,#242C4A,#151B33);box-shadow:0 0 0 1px rgba(216,184,104,.65),inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.45)}
+.sect{display:flex;align-items:center;gap:10px;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#D8B868}
+.sect::before,.sect::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,184,104,0),rgba(216,184,104,.6))}
+.sect::after{background:linear-gradient(90deg,rgba(216,184,104,.6),rgba(216,184,104,0))}
+@keyframes sheen{0%{left:-40%}55%,100%{left:130%}}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.tw{animation:twinkle 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(90% 38% at 50% 0%, rgba(70,120,255,.28), rgba(10,13,24,0)), radial-gradient(70% 30% at 100% 100%, rgba(216,184,104,.1), rgba(10,13,24,0)), #0A0D18; font-family: Inter, system-ui, sans-serif; color: #F2ECDD; display: flex; flex-direction: column">
+
+  <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 20px; padding: 26px 22px 16px">
+
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="width: 52px; height: 52px; position: relative; flex: none">
+        <div style="position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(closest-side, rgba(90,150,255,.55), rgba(90,150,255,0))"></div>
+        <svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true" style="position: relative"><defs><linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86B6FF"></stop><stop offset="1" stop-color="#1E3FA8"></stop></linearGradient></defs><path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" fill="url(#sh)" stroke="#E8CB80" stroke-width=".9"></path><path d="M12 4.2 18.2 6.6v4.6c0 3.9-2.6 6.7-6.2 8.8" fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".6"></path><circle cx="12" cy="10.5" r="2.6" fill="#FFFFFF"></circle></svg>
+        <span class="tw" style="position: absolute; right: -2px; top: 2px; width: 6px; height: 6px; transform: rotate(45deg); background: #FBEBB8; box-shadow: 0 0 6px #FBEBB8"></span>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-family: Cinzel, Georgia, serif; font-weight: 800; font-size: 30px; line-height: 1; background: linear-gradient(180deg, #FFF6DA 0%, #E8CB80 55%, #B8913F 100%); -webkit-background-clip: text; background-clip: text; color: transparent">EDHere</span>
+        <span style="font-family: 'Crimson Pro', Georgia, serif; font-style: italic; font-weight: 500; font-size: 17px; color: #A9B0C8">Joga com quem está aqui</span>
+      </div>
+    </div>
+
+    <div class="frame" style="padding: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px">
+      <div style="width: 56px; height: 78px; flex: none; box-sizing: border-box; border-radius: 5px; padding: 3px; background: linear-gradient(180deg, #D0603F, #8E2E1C); box-shadow: 0 0 0 1.5px #E8CB80, 0 0 14px rgba(232,203,128,.45); display: flex; flex-direction: column; gap: 2px; position: relative">
+        <svg aria-hidden="true" width="26" height="9" viewBox="0 0 26 9" style="position: absolute; left: 15px; top: -8px"><path d="M1 8 4 2l4 4 5-5 5 5 4-4 3 6z" fill="#E8CB80"></path></svg>
+        <span style="height: 7px; border-radius: 2px; background: rgba(255,240,220,.85)"></span>
+        <span style="flex: 1; border-radius: 2px; position: relative; overflow: hidden; background: linear-gradient(180deg,#F6B26B 0%,#D9663A 55%,#8E2E1C 100%)"><span style="position: absolute; inset: 0; background: #4A160E; clip-path: polygon(0 100%,0 62%,22% 40%,38% 58%,60% 28%,80% 52%,100% 38%,100% 100%)"></span></span>
+        <span style="height: 14px; border-radius: 2px; background: rgba(255,240,220,.85)"></span>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #D8B868">Jogo gravado</span>
+        <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; line-height: 1.15">Krenko Goblins</span>
+        <span style="font-size: 13px; color: #A9B0C8">Goldfish · turno 1 · 19/10 9:41</span>
+      </div>
+      <div style="width: 100%; display: flex; align-items: center; gap: 10px">
+        <button aria-label="Apagar jogo gravado" style="height: 44px; padding: 0 12px; border: none; background: none; color: #A9B0C8; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>Apagar</button>
+        <button class="gem" style="flex: 1; height: 46px; font-size: 15px">Continuar</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <label for="nome" style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #D8B868">O teu nome</label>
+      <div style="height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 12px; background: #0E1326; box-shadow: inset 0 2px 6px rgba(0,0,0,.6), 0 0 0 1px rgba(216,184,104,.45)">
+        <svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true" style="color: #D8B868"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1-4 4-6 8-6s7 2 8 6"></path></svg>
+        <input id="nome" value="Ana" style="flex: 1; border: none; background: none; color: #F2ECDD; font-family: Inter, sans-serif; font-size: 16px; font-weight: 500; outline: none">
+      </div>
+      <span style="font-size: 12px; color: #A9B0C8">É o nome que os outros veem na mesa</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span class="sect">Com outros</span>
+      <button class="gem" style="height: 54px; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true" style="stroke-width: 2.4"><path d="M12 5v14M5 12h14"></path></svg>Criar sala</button>
+      <button class="obs" style="height: 52px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 12h10"></path></svg>Entrar numa sala</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span class="sect">Abrir boosters</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{packs}}" as="p" hint-placeholder-count="2">
+          <button class="obs" style="height: 66px; display: flex; align-items: center; gap: 12px; padding: 0 12px; font-size: 15px; text-align: left">
+            <span style="{{p.pack}}"><span style="position: absolute; left: 0; right: 0; top: 0; height: 5px; background: repeating-linear-gradient(90deg, rgba(0,0,0,.3) 0 2px, rgba(255,255,255,.2) 2px 4px)"></span><span style="position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.55) 45%, rgba(255,255,255,0) 60%)"></span></span>
+            <span>{{p.name}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span class="sect">Testar e ensinar</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <button class="obs" style="height: 52px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1zM12 6v14"></path></svg>Aprender</button>
+        <button class="obs" style="height: 52px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M3 12c3-5 9-6 13-3l5-3v12l-5-3c-4 3-10 2-13-3z"></path></svg>Goldfish</button>
+      </div>
+    </div>
+  </div>
+
+  <nav style="height: 78px; flex: none; position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; background: linear-gradient(180deg, #121831, #0A0D18)">
+    <span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(216,184,104,0), #D8B868 50%, rgba(216,184,104,0))"></span>
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+      <a href="#" style="{{t.style}}"><span style="{{t.medal}}"><svg width="22" height="22" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="{{t.d}}"></path></svg></span><span>{{t.label}}</span></a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const packs = [{ name: 'Sealed', a: '#7FB2FF', b: '#1E3FA8' }, { name: 'JumpStart', a: '#FF9A6B', b: '#8E2E1C' }].map((p, i) => ({
+      name: p.name,
+      pack: 'display:block;width:30px;height:44px;flex:none;position:relative;overflow:hidden;border-radius:3px;transform:rotate(' + (i ? 6 : -6) + 'deg);background:linear-gradient(160deg,' + p.a + ',' + p.b + ');box-shadow:0 0 0 1px #E8CB80,0 0 12px ' + p.a + '88,0 4px 8px rgba(0,0,0,.5)',
+    }));
+    const tabs = [
+      { label: 'Cartas', d: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5' },
+      { label: 'Decks', d: 'M7 3h10v18H7zM4 6v12M20 6v12' },
+      { label: 'Jogar', d: 'M7 4l12 8-12 8z', on: true },
+      { label: 'Definições', d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3' },
+    ].map((t) => ({
+      label: t.label, d: t.d,
+      style: 'display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;font-size:12px;font-weight:' + (t.on ? 700 : 500) + ';color:' + (t.on ? '#E8CB80' : '#8C93AD'),
+      medal: 'width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;' +
+        (t.on ? 'color:#FFFFFF;background:radial-gradient(circle at 40% 30%,#86B6FF,#2149B8 70%);box-shadow:0 0 0 1.5px #D8B868,0 0 16px rgba(70,130,255,.6),inset 0 1px 0 rgba(255,255,255,.5)' : ''),
+    }));
+    return { packs: packs, tabs: tabs };
+  }
+}
+</script>
+</body>
+</html>

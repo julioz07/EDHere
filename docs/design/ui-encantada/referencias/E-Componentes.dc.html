@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Kit encantado</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=Crimson+Pro:ital,wght@1,500&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E8CB80}a:hover{color:#F6E2A8}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.frame{position:relative;border-radius:14px;background:linear-gradient(180deg,#1C2442 0%,#121831 100%);box-shadow:0 0 0 1px rgba(216,184,104,.6),0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.2),inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px rgba(0,0,0,.55)}
+.frame::before{content:'';position:absolute;left:50%;top:-5px;width:8px;height:8px;margin-left:-4px;transform:rotate(45deg);background:linear-gradient(135deg,#FBEBB8,#B8913F);box-shadow:0 0 8px rgba(246,226,168,.7)}
+.gem{position:relative;overflow:hidden;border:none;border-radius:12px;cursor:pointer;color:#FFFFFF;font-family:Cinzel,Georgia,serif;font-weight:800;letter-spacing:.04em;background:linear-gradient(180deg,#86B6FF 0%,#4682F2 42%,#2149B8 100%);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.35),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -5px 10px rgba(10,20,80,.45),0 0 24px rgba(70,130,255,.5);text-shadow:0 1px 2px rgba(0,20,80,.7)}
+.gem::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));transform:skewX(-20deg);animation:sheen 3.8s ease-in-out infinite}
+.gem.down{transform:translateY(2px);background:linear-gradient(180deg,#3F7BEF,#1E40A0);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,inset 0 3px 8px rgba(0,10,60,.6),0 0 30px rgba(70,130,255,.7)}
+.gem.down::after,.gem.off::after{display:none}
+.gem.off{cursor:default;color:rgba(255,255,255,.45);background:linear-gradient(180deg,#2A3354,#1C2440);box-shadow:0 0 0 1px rgba(216,184,104,.3);text-shadow:none}
+.obs{border:none;border-radius:12px;cursor:pointer;color:#F0D99A;font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.04em;background:linear-gradient(180deg,#242C4A,#151B33);box-shadow:0 0 0 1px rgba(216,184,104,.65),inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.45)}
+.sect{display:flex;align-items:center;gap:10px;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#D8B868}
+.sect::before,.sect::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,184,104,0),rgba(216,184,104,.6))}
+.sect::after{background:linear-gradient(90deg,rgba(216,184,104,.6),rgba(216,184,104,0))}
+.lab{font-size:12px;color:#A9B0C8}
+@keyframes sheen{0%{left:-40%}55%,100%{left:130%}}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 1000px; height: 1040px; box-sizing: border-box; padding: 48px 56px; background: radial-gradient(60% 30% at 50% 0%, rgba(70,120,255,.18), rgba(10,13,24,0)), #0A0D18; font-family: Inter, system-ui, sans-serif; color: #F2ECDD; display: flex; flex-direction: column; gap: 36px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="font-family: Cinzel, Georgia, serif; font-weight: 800; font-size: 34px; background: linear-gradient(180deg, #FFF6DA, #E8CB80 60%, #B8913F); -webkit-background-clip: text; background-clip: text; color: transparent">Kit encantado</span>
+    <span style="font-family: 'Crimson Pro', Georgia, serif; font-style: italic; font-weight: 500; font-size: 19px; color: #A9B0C8">Cada peça substitui um componente base do Flutter. O layout das tuas páginas fica igual.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{map}}" as="m" hint-placeholder-count="8">
+      <div style="padding: 12px 14px; border-radius: 12px; background: #10162C; box-shadow: 0 0 0 1px rgba(216,184,104,.25); display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #8C93AD; text-decoration: line-through">{{m.from}}</span>
+        <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 15px; color: #E8CB80">{{m.to}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; gap: 48px">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px">
+      <span class="sect">Botões</span>
+      <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 16px 14px; align-items: center">
+        <span></span><span class="lab">Normal</span><span class="lab">Premido</span><span class="lab">Desativado</span>
+        <span class="lab">Gema</span>
+        <button class="gem" style="height: 48px; font-size: 14px">Começar</button>
+        <button class="gem down" style="height: 48px; font-size: 14px">Começar</button>
+        <button class="gem off" disabled style="height: 48px; font-size: 14px">Começar</button>
+        <span class="lab">Obsidiana</span>
+        <button class="obs" style="height: 48px; font-size: 14px">Entrar</button>
+        <button class="obs" style="height: 48px; font-size: 14px; transform: translateY(2px); background: linear-gradient(180deg, #2C3658, #1C2440); box-shadow: 0 0 0 1.5px #E8CB80, 0 0 14px rgba(232,203,128,.35)">Entrar</button>
+        <button class="obs" disabled style="height: 48px; font-size: 14px; color: rgba(240,217,154,.4); box-shadow: 0 0 0 1px rgba(216,184,104,.25)">Entrar</button>
+      </div>
+    </div>
+    <div style="width: 330px; display: flex; flex-direction: column; gap: 16px">
+      <span class="sect">Moldura</span>
+      <div class="frame" style="padding: 16px; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px">Commander · vida 40</span>
+        <span style="font-size: 13px; color: #A9B0C8">Fio de ouro duplo e uma gema no topo, como o rebordo de uma carta.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 48px">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 16px">
+      <span class="sect">Mana e marcadores</span>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <sc-for list="{{orbs}}" as="o" hint-placeholder-count="6"><span style="{{o.style}}">{{o.t}}</span></sc-for>
+        <span style="width: 24px"></span>
+        <span style="min-width: 44px; height: 38px; padding: 0 6px; box-sizing: border-box; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: Cinzel, Georgia, serif; font-weight: 800; font-size: 21px; color: #1A120C; background: linear-gradient(180deg, #FFF6DA, #E8CB80); box-shadow: 0 0 0 1px #8A6A2E, inset 0 1px 0 #FFFFFF, 0 2px 4px rgba(0,0,0,.5)">40</span>
+        <span style="height: 30px; padding: 0 12px; border-radius: 15px; display: flex; align-items: center; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 12px; color: #0A2A14; background: linear-gradient(180deg, #B8F5C8, #4CC074); box-shadow: 0 0 0 1px #2E9E55, 0 0 12px rgba(80,220,130,.45)">Pronto</span>
+        <span style="height: 22px; padding: 0 8px; border-radius: 11px; display: flex; align-items: center; color: #FFFFFF; font-weight: 700; font-size: 12px; background: radial-gradient(circle at 40% 30%, #86B6FF, #2149B8); box-shadow: 0 0 0 1.5px #D8B868, 0 0 10px rgba(70,130,255,.6)">×4</span>
+      </div>
+    </div>
+    <div style="width: 330px; display: flex; flex-direction: column; gap: 16px">
+      <span class="sect">Campo</span>
+      <div style="height: 50px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 12px; background: #0E1326; box-shadow: inset 0 2px 6px rgba(0,0,0,.6), 0 0 0 1.5px #E8CB80, 0 0 14px rgba(232,203,128,.25)">
+        <svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true" style="color: #D8B868"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-5-5"></path></svg>
+        <span style="font-size: 15px">Krenko</span><span style="width: 1.5px; height: 18px; background: #E8CB80"></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <span class="sect">Efeitos · poucos e com significado</span>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+      <sc-for list="{{fx}}" as="f" hint-placeholder-count="4">
+        <div style="padding: 14px; border-radius: 12px; background: #10162C; box-shadow: 0 0 0 1px rgba(216,184,104,.25); display: flex; flex-direction: column; gap: 6px">
+          <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 15px; color: #E8CB80">{{f.name}}</span>
+          <span style="font-size: 13px; line-height: 1.4; color: #C9CEDD">{{f.where}}</span>
+          <span style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #8C93AD">{{f.spec}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const map = [
+      ['FilledButton', 'GemButton'], ['OutlinedButton', 'ObsidianButton'], ['Card', 'EnchantedFrame'], ['TabBar', 'GoldTabBar'],
+      ['NavigationBar', 'GemNavBar'], ['TextField', 'ArcaneField'], ['SegmentedButton', 'GoldSegments'], ['Chip / Badge', 'GoldPlate · ManaOrb'],
+    ].map(([f, t]) => ({ from: f, to: t }));
+    const O = {
+      W: 'radial-gradient(circle at 35% 30%,#FFFFFF,#F2E6C2 55%,#A8986A)',
+      U: 'radial-gradient(circle at 35% 30%,#C8E4FF,#3B7BF0 55%,#12307A)',
+      B: 'radial-gradient(circle at 35% 30%,#B9A8C8,#3E2E4E 55%,#120A1A)',
+      R: 'radial-gradient(circle at 35% 30%,#FFC2A8,#E0502A 55%,#7A1E0C)',
+      G: 'radial-gradient(circle at 35% 30%,#C8F2B0,#3FA35A 55%,#14401E)',
+      C: 'radial-gradient(circle at 35% 30%,#F4F1EA,#B8B2A6 60%,#6E685C)',
+    };
+    const orbs = ['W', 'U', 'B', 'R', 'G', 'C'].map((k) => ({ t: k === 'C' ? '2' : '', style: 'width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#1A120C;background:' + O[k] + ';box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px rgba(255,255,255,.15)' }));
+    const fx = [
+      { name: 'Reflexo', where: 'Só no botão principal de cada ecrã.', spec: 'sheen 3,8 s · ease-in-out' },
+      { name: 'Respiração', where: 'A moldura de quem tem a vez.', spec: 'glow 2,4 s · ouro 35→70%' },
+      { name: 'Coroa', where: 'Comandante e cartas lendárias.', spec: 'ornamento + brilho 16 px' },
+      { name: 'Brilho de mana', where: 'Gemas, orbes e estado ativo na cor da identidade.', spec: 'box-shadow 0 0 10–24 px' },
+    ];
+    return { map: map, orbs: orbs, fx: fx };
+  }
+}
+</script>
+</body>
+</html>

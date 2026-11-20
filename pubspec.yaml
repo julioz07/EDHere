@@ -89,9 +89,37 @@ flutter:
     - family: Keyrune
       fonts:
         - asset: assets/fonts/keyrune.ttf
+    # Estilo Encantado (SIL OFL; estáticos tirados das fontes variáveis do
+    # google/fonts e reduzidos ao alfabeto latino).
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cinzel-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cinzel-ExtraBold.ttf
+          weight: 800
+    - family: CrimsonPro
+      fonts:
+        - asset: assets/fonts/CrimsonPro-MediumItalic.ttf
+          weight: 500
+          style: italic
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
   assets:
     - assets/licenses/mana_OFL.txt
+    - assets/licenses/cinzel_OFL.txt
+    - assets/licenses/crimsonpro_OFL.txt
+    - assets/licenses/inter_OFL.txt
     - assets/licenses/gpl-3.0.txt
     - assets/licenses/keyrune_LICENSE.md
     - assets/boosters/

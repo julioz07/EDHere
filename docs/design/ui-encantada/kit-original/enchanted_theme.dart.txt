@@ -1,0 +1,225 @@
+// EDHere — UI encantada: tokens e tema.
+// Fonte de verdade visual: referencias/E-Componentes.dc.html
+// Requer Flutter >= 3.27 (Color.withValues).
+
+import 'package:flutter/material.dart';
+
+/// Cores do kit encantado, acessíveis com `context.enchanted`.
+@immutable
+class EnchantedColors extends ThemeExtension<EnchantedColors> {
+  const EnchantedColors({
+    required this.background,
+    required this.surface,
+    required this.surfaceHigh,
+    required this.field,
+    required this.gold,
+    required this.goldLight,
+    required this.goldPale,
+    required this.goldDeep,
+    required this.plateLight,
+    required this.arcane,
+    required this.arcaneLight,
+    required this.arcaneDeep,
+    required this.text,
+    required this.textMuted,
+    required this.textOnGold,
+    required this.success,
+  });
+
+  final Color background; // fundo da app
+  final Color surface; // molduras (base do gradiente)
+  final Color surfaceHigh; // molduras (topo do gradiente)
+  final Color field; // campos de texto, ranhuras de zona
+  final Color gold; // fios de ouro, títulos de secção
+  final Color goldLight; // texto dourado, separador ativo
+  final Color goldPale; // gemas pequenas, brilho
+  final Color goldDeep; // contorno das plaquetas
+  final Color plateLight; // topo das plaquetas douradas
+  final Color arcane; // azul EDHere (botão gema)
+  final Color arcaneLight;
+  final Color arcaneDeep;
+  final Color text;
+  final Color textMuted;
+  final Color textOnGold;
+  final Color success;
+
+  static const dark = EnchantedColors(
+    background: Color(0xFF0A0D18),
+    surface: Color(0xFF121831),
+    surfaceHigh: Color(0xFF1C2442),
+    field: Color(0xFF0E1326),
+    gold: Color(0xFFD8B868),
+    goldLight: Color(0xFFE8CB80),
+    goldPale: Color(0xFFFBEBB8),
+    goldDeep: Color(0xFF8A6A2E),
+    plateLight: Color(0xFFFFF6DA),
+    arcane: Color(0xFF4682F2),
+    arcaneLight: Color(0xFF86B6FF),
+    arcaneDeep: Color(0xFF2149B8),
+    text: Color(0xFFF2ECDD),
+    textMuted: Color(0xFFA9B0C8),
+    textOnGold: Color(0xFF1A120C),
+    success: Color(0xFF4CC074),
+  );
+
+  @override
+  EnchantedColors copyWith({
+    Color? background,
+    Color? surface,
+    Color? surfaceHigh,
+    Color? field,
+    Color? gold,
+    Color? goldLight,
+    Color? goldPale,
+    Color? goldDeep,
+    Color? plateLight,
+    Color? arcane,
+    Color? arcaneLight,
+    Color? arcaneDeep,
+    Color? text,
+    Color? textMuted,
+    Color? textOnGold,
+    Color? success,
+  }) {
+    return EnchantedColors(
+      background: background ?? this.background,
+      surface: surface ?? this.surface,
+      surfaceHigh: surfaceHigh ?? this.surfaceHigh,
+      field: field ?? this.field,
+      gold: gold ?? this.gold,
+      goldLight: goldLight ?? this.goldLight,
+      goldPale: goldPale ?? this.goldPale,
+      goldDeep: goldDeep ?? this.goldDeep,
+      plateLight: plateLight ?? this.plateLight,
+      arcane: arcane ?? this.arcane,
+      arcaneLight: arcaneLight ?? this.arcaneLight,
+      arcaneDeep: arcaneDeep ?? this.arcaneDeep,
+      text: text ?? this.text,
+      textMuted: textMuted ?? this.textMuted,
+      textOnGold: textOnGold ?? this.textOnGold,
+      success: success ?? this.success,
+    );
+  }
+
+  @override
+  EnchantedColors lerp(ThemeExtension<EnchantedColors>? other, double t) {
+    if (other is! EnchantedColors) return this;
+    Color l(Color a, Color b) => Color.lerp(a, b, t)!;
+    return EnchantedColors(
+      background: l(background, other.background),
+      surface: l(surface, other.surface),
+      surfaceHigh: l(surfaceHigh, other.surfaceHigh),
+      field: l(field, other.field),
+      gold: l(gold, other.gold),
+      goldLight: l(goldLight, other.goldLight),
+      goldPale: l(goldPale, other.goldPale),
+      goldDeep: l(goldDeep, other.goldDeep),
+      plateLight: l(plateLight, other.plateLight),
+      arcane: l(arcane, other.arcane),
+      arcaneLight: l(arcaneLight, other.arcaneLight),
+      arcaneDeep: l(arcaneDeep, other.arcaneDeep),
+      text: l(text, other.text),
+      textMuted: l(textMuted, other.textMuted),
+      textOnGold: l(textOnGold, other.textOnGold),
+      success: l(success, other.success),
+    );
+  }
+}
+
+/// Cores de identidade (mana). Usadas em gemas de jogador, orbes e brilhos.
+class ManaColors {
+  static const white = Color(0xFFF2E6C2);
+  static const blue = Color(0xFF3B7BF0);
+  static const black = Color(0xFF3E2E4E);
+  static const red = Color(0xFFE0502A);
+  static const green = Color(0xFF3FA35A);
+  static const colorless = Color(0xFFB8B2A6);
+}
+
+/// Famílias (têm de estar no pubspec como assets — a app é offline,
+/// por isso NÃO usar o pacote google_fonts a descarregar em runtime).
+class EnchantedFonts {
+  static const display = 'Cinzel';
+  static const flavor = 'CrimsonPro';
+  static const body = 'Inter';
+}
+
+/// Escala de texto do kit.
+class EnchantedText {
+  static const display = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w800, fontSize: 30, height: 1.0);
+  static const screenTitle = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w800, fontSize: 22);
+  static const title = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w700, fontSize: 17);
+  static const button = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: .6);
+  static const section = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 1.8);
+  static const plate = TextStyle(fontFamily: EnchantedFonts.display, fontWeight: FontWeight.w800, fontSize: 19);
+  static const flavor = TextStyle(fontFamily: EnchantedFonts.flavor, fontStyle: FontStyle.italic, fontWeight: FontWeight.w500, fontSize: 16);
+  static const body = TextStyle(fontFamily: EnchantedFonts.body, fontWeight: FontWeight.w400, fontSize: 15);
+  static const label = TextStyle(fontFamily: EnchantedFonts.body, fontWeight: FontWeight.w500, fontSize: 12);
+}
+
+extension EnchantedContext on BuildContext {
+  EnchantedColors get enchanted => Theme.of(this).extension<EnchantedColors>() ?? EnchantedColors.dark;
+}
+
+/// Tema base. Os componentes Material que sobram herdam estas cores,
+/// mas os ecrãs devem usar os widgets de enchanted_widgets.dart.
+ThemeData buildEnchantedTheme() {
+  const c = EnchantedColors.dark;
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    fontFamily: EnchantedFonts.body,
+    scaffoldBackgroundColor: c.background,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF4682F2),
+      onPrimary: Colors.white,
+      secondary: Color(0xFFD8B868),
+      onSecondary: Color(0xFF1A120C),
+      surface: Color(0xFF121831),
+      onSurface: Color(0xFFF2ECDD),
+      error: Color(0xFFE0502A),
+    ),
+    extensions: const [EnchantedColors.dark],
+  );
+  return base.copyWith(
+    appBarTheme: AppBarTheme(
+      backgroundColor: c.surface,
+      foregroundColor: c.text,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: EnchantedText.title.copyWith(color: c.text),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: c.field,
+      labelStyle: EnchantedText.section.copyWith(color: c.gold, fontSize: 12),
+      hintStyle: EnchantedText.body.copyWith(color: c.textMuted),
+      helperStyle: EnchantedText.label.copyWith(color: c.textMuted),
+      prefixIconColor: c.gold,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: c.gold.withValues(alpha: .45)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: c.goldLight, width: 1.5),
+      ),
+    ),
+    tabBarTheme: TabBarThemeData(
+      labelColor: c.goldLight,
+      unselectedLabelColor: c.textMuted,
+      labelStyle: EnchantedText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+      unselectedLabelStyle: EnchantedText.button.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+      dividerColor: c.gold.withValues(alpha: .3),
+    ),
+    dividerTheme: DividerThemeData(color: c.gold.withValues(alpha: .25), thickness: 1),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: c.surfaceHigh,
+      contentTextStyle: EnchantedText.body.copyWith(color: c.text),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: c.gold.withValues(alpha: .6)),
+      ),
+    ),
+  );
+}

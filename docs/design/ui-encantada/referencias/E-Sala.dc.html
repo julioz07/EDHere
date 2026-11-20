@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Sala</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=Crimson+Pro:ital,wght@1,500&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E8CB80}a:hover{color:#F6E2A8}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.frame{position:relative;border-radius:14px;background:linear-gradient(180deg,#1C2442 0%,#121831 100%);box-shadow:0 0 0 1px rgba(216,184,104,.6),0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.2),inset 0 1px 0 rgba(255,255,255,.07),0 12px 26px rgba(0,0,0,.55)}
+.frame::before{content:'';position:absolute;left:50%;top:-5px;width:8px;height:8px;margin-left:-4px;transform:rotate(45deg);background:linear-gradient(135deg,#FBEBB8,#B8913F);box-shadow:0 0 8px rgba(246,226,168,.7)}
+.gem{position:relative;overflow:hidden;border:none;border-radius:12px;cursor:pointer;color:#FFFFFF;font-family:Cinzel,Georgia,serif;font-weight:800;letter-spacing:.04em;background:linear-gradient(180deg,#86B6FF 0%,#4682F2 42%,#2149B8 100%);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.35),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -5px 10px rgba(10,20,80,.45),0 0 24px rgba(70,130,255,.5);text-shadow:0 1px 2px rgba(0,20,80,.7)}
+.gem::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));transform:skewX(-20deg);animation:sheen 3.8s ease-in-out infinite}
+.obs{border:none;border-radius:12px;cursor:pointer;color:#F0D99A;font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.04em;background:linear-gradient(180deg,#242C4A,#151B33);box-shadow:0 0 0 1px rgba(216,184,104,.65),inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.45)}
+.sect{display:flex;align-items:center;gap:10px;font-family:Cinzel,Georgia,serif;font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#D8B868}
+.sect::before,.sect::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(216,184,104,0),rgba(216,184,104,.6))}
+.sect::after{background:linear-gradient(90deg,rgba(216,184,104,.6),rgba(216,184,104,0))}
+@keyframes sheen{0%{left:-40%}55%,100%{left:130%}}
+@keyframes wait{0%,100%{opacity:.45}50%{opacity:1}}
+.wait{animation:wait 2.2s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(90% 35% at 50% 0%, rgba(70,120,255,.22), rgba(10,13,24,0)), #0A0D18; font-family: Inter, system-ui, sans-serif; color: #F2ECDD; display: flex; flex-direction: column">
+
+  <div style="height: 58px; flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 6px 0">
+    <button aria-label="Voltar" style="width: 44px; height: 44px; border: none; background: none; color: #F2ECDD; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button>
+    <span style="flex: 1; font-family: Cinzel, Georgia, serif; font-weight: 800; font-size: 22px; background: linear-gradient(180deg, #FFF6DA, #E8CB80); -webkit-background-clip: text; background-clip: text; color: transparent">Mesa de Ana</span>
+    <button aria-label="Mostrar código da sala" style="width: 44px; height: 44px; border: none; background: none; color: #E8CB80; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3M21 14v7h-7"></path></svg></button>
+    <button aria-label="Mais opções" style="width: 40px; height: 44px; border: none; background: none; color: #F2ECDD; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" fill="currentColor"></circle><circle cx="12" cy="12" r="1.8" fill="currentColor"></circle><circle cx="12" cy="19" r="1.8" fill="currentColor"></circle></svg></button>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 16px 20px 20px">
+
+    <div class="frame" style="padding: 16px; display: flex; align-items: center; gap: 14px">
+      <span style="width: 46px; height: 46px; flex: none; border-radius: 23px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 40% 30%, #2C3866, #121831); box-shadow: 0 0 0 1px #D8B868; color: #E8CB80"><svg width="22" height="22" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"></path></svg></span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 18px">Commander</span>
+        <span style="font-size: 13px; color: #A9B0C8">Vida 40 · 1 jogador na sala</span>
+      </span>
+      <button aria-label="Editar regras" style="width: 44px; height: 44px; border: none; border-radius: 22px; background: none; color: #E8CB80; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span class="sect">Jogadores</span>
+      <div style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; background: linear-gradient(180deg, #1C2442, #121831); box-shadow: 0 0 0 1px rgba(232,203,128,.7), 0 0 18px rgba(232,203,128,.15)">
+        <div style="width: 46px; height: 64px; flex: none; box-sizing: border-box; border-radius: 4px; padding: 2px; position: relative; background: linear-gradient(180deg,#D0603F,#8E2E1C); box-shadow: 0 0 0 1.5px #E8CB80, 0 0 12px rgba(232,203,128,.5); display: flex; flex-direction: column; gap: 2px">
+          <span aria-hidden="true" style="position: absolute; left: 50%; top: -7px; margin-left: -10px; width: 20px; height: 7px; background: #E8CB80; clip-path: polygon(0 100%,12% 20%,30% 70%,50% 0,70% 70%,88% 20%,100% 100%)"></span>
+          <span style="height: 5px; border-radius: 2px; background: #F3D9C6"></span>
+          <span style="flex: 1; position: relative; overflow: hidden; background: linear-gradient(180deg,#F6B26B 0%,#D9663A 55%,#8E2E1C 100%)"><span style="position: absolute; inset: 0; background: #4A160E; clip-path: polygon(0 100%,0 62%,22% 40%,38% 58%,60% 28%,80% 52%,100% 38%,100% 100%)"></span></span>
+          <span style="height: 12px; border-radius: 1px; background: rgba(245,235,220,.85)"></span>
+        </div>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px">Ana <span style="font-family: Inter, sans-serif; font-weight: 500; font-size: 13px; color: #A9B0C8">(tu)</span></span>
+            <span style="height: 26px; padding: 0 10px; flex: none; border-radius: 13px; display: flex; align-items: center; gap: 5px; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 11px; color: #0A2A14; background: linear-gradient(180deg, #B8F5C8, #4CC074); box-shadow: 0 0 0 1px #2E9E55, 0 0 12px rgba(80,220,130,.45), inset 0 1px 0 rgba(255,255,255,.6)"><svg width="11" height="11" viewBox="0 0 24 24" class="ic" aria-hidden="true" style="stroke-width: 3.5"><path d="M5 12l5 5 9-10"></path></svg>Pronto</span>
+          </span>
+          <span style="font-size: 13px; color: #A9B0C8; line-height: 1.35">Krenko Goblins · 100 cartas · bracket 1–2</span>
+        </span>
+      </div>
+      <div class="wait" style="height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1.5px dashed rgba(216,184,104,.5); color: #C9B88A; font-size: 14px">
+        <svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>À espera de jogadores — mostra o código
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto">
+      <button class="obs" style="height: 50px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7 3h10v18H7zM4 6v12M20 6v12"></path></svg>Trocar deck</button>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <button class="obs" style="height: 50px; font-size: 14px">Não estou pronto</button>
+        <button class="obs" style="height: 50px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7 3h10l1 3-1 15H7L6 6zM6 6h12"></path></svg>Fazer draft</button>
+      </div>
+      <button class="gem" style="height: 60px; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l12 8-12 8z" fill="currentColor"></path></svg>Começar jogo</button>
+      <span style="font-family: 'Crimson Pro', Georgia, serif; font-style: italic; font-weight: 500; font-size: 16px; line-height: 1.35; color: #A9B0C8; text-align: center">Cada um joga com o seu telemóvel. A mão e o grimório de cada jogador nunca saem do telemóvel dele.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

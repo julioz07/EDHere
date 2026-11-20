@@ -1,0 +1,636 @@
+// EDHere — UI encantada: componentes base.
+// Substituem os componentes Material nos ecrãs (ver HANDOFF.md, secção 4).
+// Ponto de partida, não compilado fora do projeto: ajustar ao código existente.
+
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import 'enchanted_theme.dart';
+
+bool _reduceMotion(BuildContext context) => MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+/// Painel com rebordo de ouro duplo e gema no topo (substitui Card).
+class EnchantedFrame extends StatelessWidget {
+  const EnchantedFrame({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(14),
+    this.highlighted = false,
+    this.showGem = true,
+    this.radius = 14,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final bool highlighted;
+  final bool showGem;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    final frame = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [c.surfaceHigh, c.surface],
+        ),
+        border: Border.all(color: (highlighted ? c.goldLight : c.gold).withValues(alpha: highlighted ? .9 : .6)),
+        // A ordem conta: sombra, anel de ouro exterior, intervalo escuro por cima.
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: .55), blurRadius: 26, offset: const Offset(0, 12)),
+          BoxShadow(color: c.gold.withValues(alpha: .2), spreadRadius: 4),
+          BoxShadow(color: c.background, spreadRadius: 3),
+          if (highlighted) BoxShadow(color: c.goldLight.withValues(alpha: .18), blurRadius: 18),
+        ],
+      ),
+      child: child,
+    );
+    if (!showGem) return frame;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        frame,
+        Positioned(top: -5, left: 0, right: 0, child: Center(child: GoldGem(color: c.goldPale))),
+      ],
+    );
+  }
+}
+
+/// Pequeno losango com brilho (ornamento das molduras e do separador ativo).
+class GoldGem extends StatelessWidget {
+  const GoldGem({super.key, required this.color, this.size = 8});
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: math.pi / 4,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [color, const Color(0xFFB8913F)]),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: .7), blurRadius: 8)],
+        ),
+      ),
+    );
+  }
+}
+
+/// Botão principal "gema" (substitui FilledButton). Só um por ecrã.
+class GemButton extends StatefulWidget {
+  const GemButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.height = 54,
+    this.expand = false,
+    this.radius = 12,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final Widget? icon;
+  final double height;
+  final bool expand;
+  final double radius;
+
+  @override
+  State<GemButton> createState() => _GemButtonState();
+}
+
+class _GemButtonState extends State<GemButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _sheen = AnimationController(vsync: this, duration: const Duration(milliseconds: 3800));
+  bool _down = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_reduceMotion(context) || widget.onPressed == null) {
+      _sheen.stop();
+    } else if (!_sheen.isAnimating) {
+      _sheen.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sheen.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    final enabled = widget.onPressed != null;
+    final r = BorderRadius.circular(widget.radius);
+
+    final colors = !enabled
+        ? const [Color(0xFF2A3354), Color(0xFF1C2440)]
+        : _down
+            ? [c.arcane, const Color(0xFF1E40A0)]
+            : [c.arcaneLight, c.arcane, c.arcaneDeep];
+
+    final decoration = BoxDecoration(
+      borderRadius: r,
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: colors,
+        stops: colors.length == 3 ? const [0, .42, 1] : null,
+      ),
+      border: Border.all(color: enabled ? c.gold : c.gold.withValues(alpha: .3), width: 1.5),
+      boxShadow: enabled
+          ? [
+              BoxShadow(color: c.arcane.withValues(alpha: _down ? .7 : .5), blurRadius: _down ? 30 : 24),
+              BoxShadow(color: c.gold.withValues(alpha: .35), spreadRadius: 4),
+              BoxShadow(color: c.background, spreadRadius: 3),
+            ]
+          : null,
+    );
+
+    final label = Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (widget.icon != null) ...[
+          IconTheme(data: IconThemeData(color: enabled ? Colors.white : Colors.white54, size: 20), child: widget.icon!),
+          const SizedBox(width: 10),
+        ],
+        Flexible(
+          child: Text(
+            widget.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: EnchantedText.button.copyWith(
+              color: enabled ? Colors.white : Colors.white54,
+              shadows: enabled ? const [Shadow(color: Color(0xB3001450), blurRadius: 2, offset: Offset(0, 1))] : null,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+        onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+        onTapCancel: enabled ? () => setState(() => _down = false) : null,
+        onTap: widget.onPressed,
+        child: AnimatedSlide(
+          offset: Offset(0, _down ? .04 : 0),
+          duration: const Duration(milliseconds: 80),
+          child: Container(
+            height: widget.height,
+            width: widget.expand ? double.infinity : null,
+            constraints: const BoxConstraints(minWidth: 44),
+            decoration: decoration,
+            child: ClipRRect(
+              borderRadius: r,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Brilho interior de topo (efeito "pedra polida").
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: widget.height * .45,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.white.withValues(alpha: enabled ? .22 : 0), Colors.white.withValues(alpha: 0)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (enabled && !_down) _Sheen(animation: _sheen),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: label),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Reflexo que atravessa o botão: corre nos primeiros 55% do ciclo e descansa no resto.
+class _Sheen extends StatelessWidget {
+  const _Sheen({required this.animation});
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, box) => AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            final t = Curves.easeInOut.transform((animation.value / .55).clamp(0.0, 1.0).toDouble());
+            final w = box.maxWidth;
+            final left = -0.4 * w + t * 1.7 * w;
+            return Stack(children: [
+              Positioned(
+                left: left,
+                top: 0,
+                bottom: 0,
+                width: w * .3,
+                child: Transform(
+                  transform: Matrix4.skewX(-.35),
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [Color(0x00FFFFFF), Color(0x73FFFFFF), Color(0x00FFFFFF)]),
+                    ),
+                  ),
+                ),
+              ),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Botão secundário "obsidiana" (substitui OutlinedButton / TonalButton).
+class ObsidianButton extends StatefulWidget {
+  const ObsidianButton({super.key, required this.label, required this.onPressed, this.icon, this.height = 52, this.expand = false});
+  final String label;
+  final VoidCallback? onPressed;
+  final Widget? icon;
+  final double height;
+  final bool expand;
+
+  @override
+  State<ObsidianButton> createState() => _ObsidianButtonState();
+}
+
+class _ObsidianButtonState extends State<ObsidianButton> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    final enabled = widget.onPressed != null;
+    final fg = enabled ? const Color(0xFFF0D99A) : const Color(0x66F0D99A);
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+        onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+        onTapCancel: enabled ? () => setState(() => _down = false) : null,
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          height: widget.height,
+          width: widget.expand ? double.infinity : null,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: _down ? const [Color(0xFF2C3658), Color(0xFF1C2440)] : const [Color(0xFF242C4A), Color(0xFF151B33)],
+            ),
+            border: Border.all(color: _down ? c.goldLight : c.gold.withValues(alpha: enabled ? .65 : .25), width: _down ? 1.5 : 1),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: .45), blurRadius: 14, offset: const Offset(0, 6)),
+              if (_down) BoxShadow(color: c.goldLight.withValues(alpha: .35), blurRadius: 14),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (widget.icon != null) ...[
+                IconTheme(data: IconThemeData(color: fg, size: 18), child: widget.icon!),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(widget.label,
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: EnchantedText.button.copyWith(color: fg, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Título de secção com linhas douradas a desvanecer: ── COM OUTROS ──
+class SectionDivider extends StatelessWidget {
+  const SectionDivider(this.label, {super.key});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    Widget line(bool toRight) => Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: toRight
+                    ? [c.gold.withValues(alpha: 0), c.gold.withValues(alpha: .6)]
+                    : [c.gold.withValues(alpha: .6), c.gold.withValues(alpha: 0)],
+              ),
+            ),
+          ),
+        );
+    return Row(children: [
+      line(true),
+      const SizedBox(width: 10),
+      Text(label.toUpperCase(), style: EnchantedText.section.copyWith(color: c.gold)),
+      const SizedBox(width: 10),
+      line(false),
+    ]);
+  }
+}
+
+/// Plaqueta dourada biselada: vida, contagens, P/T (substitui Badge/Chip numérico).
+class GoldPlate extends StatelessWidget {
+  const GoldPlate(this.text, {super.key, this.fontSize = 19, this.minWidth = 38, this.height = 34});
+  final String text;
+  final double fontSize;
+  final double minWidth;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    return Container(
+      height: height,
+      constraints: BoxConstraints(minWidth: minWidth),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(height * .22),
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.plateLight, c.goldLight]),
+        border: Border.all(color: c.goldDeep),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .5), blurRadius: 4, offset: const Offset(0, 2))],
+      ),
+      child: Text(text, style: EnchantedText.plate.copyWith(fontSize: fontSize, color: c.textOnGold, height: 1)),
+    );
+  }
+}
+
+/// Orbe de mana com brilho. Na app real usa os símbolos do Scryfall;
+/// o orbe serve para gemas de jogador e indicadores de cor.
+class ManaOrb extends StatelessWidget {
+  const ManaOrb({super.key, required this.color, this.size = 18, this.label});
+  final Color color;
+  final double size;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final hsl = HSLColor.fromColor(color);
+    final light = hsl.withLightness((hsl.lightness + .28).clamp(0.0, 1.0).toDouble()).toColor();
+    final dark = hsl.withLightness((hsl.lightness - .25).clamp(0.0, 1.0).toDouble()).toColor();
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(center: const Alignment(-.3, -.4), colors: [light, color, dark], stops: const [0, .55, 1]),
+        border: Border.all(color: Colors.black.withValues(alpha: .5)),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: .6), blurRadius: size * .35)],
+      ),
+      child: label == null
+          ? null
+          : Text(label!, style: TextStyle(fontFamily: EnchantedFonts.body, fontWeight: FontWeight.w700, fontSize: size * .6, color: const Color(0xFF1A120C))),
+    );
+  }
+}
+
+/// Coroa de lendária para pôr por cima de uma carta (Stack, top: -7).
+class LegendCrown extends StatelessWidget {
+  const LegendCrown({super.key, this.width = 24, this.color = const Color(0xFFE8CB80)});
+  final double width;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(size: Size(width, width / 3), painter: _CrownPainter(color));
+}
+
+class _CrownPainter extends CustomPainter {
+  _CrownPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final p = Path()
+      ..moveTo(0, s.height)
+      ..lineTo(s.width * .12, s.height * .2)
+      ..lineTo(s.width * .30, s.height * .7)
+      ..lineTo(s.width * .50, 0)
+      ..lineTo(s.width * .70, s.height * .7)
+      ..lineTo(s.width * .88, s.height * .2)
+      ..lineTo(s.width, s.height)
+      ..close();
+    canvas.drawPath(p, Paint()..color = color.withValues(alpha: .6)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+    canvas.drawPath(p, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_CrownPainter old) => old.color != color;
+}
+
+/// Moldura que "respira" a ouro: marca o jogador que tem a vez.
+class TurnGlow extends StatefulWidget {
+  const TurnGlow({super.key, required this.child, this.active = true, this.radius = 12});
+  final Widget child;
+  final bool active;
+  final double radius;
+
+  @override
+  State<TurnGlow> createState() => _TurnGlowState();
+}
+
+class _TurnGlowState extends State<TurnGlow> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(TurnGlow old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() {
+    if (widget.active && !_reduceMotion(context)) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.active) return widget.child;
+    final c = context.enchanted;
+    return AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.radius),
+            border: Border.all(color: Color.lerp(c.gold, c.goldPale, t)!, width: 1.5),
+            boxShadow: [BoxShadow(color: c.goldLight.withValues(alpha: .35 + .35 * t), blurRadius: 14 + 10 * t)],
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// Indicador do separador ativo: linha dourada com brilho e losango (TabBar.indicator).
+class GoldTabIndicator extends Decoration {
+  const GoldTabIndicator({this.color = const Color(0xFFE8CB80), this.gem = const Color(0xFFFBEBB8)});
+  final Color color;
+  final Color gem;
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) => _GoldTabPainter(color, gem);
+}
+
+class _GoldTabPainter extends BoxPainter {
+  _GoldTabPainter(this.color, this.gem);
+  final Color color;
+  final Color gem;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
+    final size = cfg.size!;
+    final w = size.width * .56;
+    final left = offset.dx + (size.width - w) / 2;
+    final y = offset.dy + size.height - 2;
+    final bar = Rect.fromLTWH(left, y, w, 2);
+    canvas.drawRect(bar, Paint()..color = color.withValues(alpha: .6)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+    canvas.drawRect(bar, Paint()..color = color);
+    final cx = offset.dx + size.width / 2;
+    final d = Path()
+      ..moveTo(cx, y - 3)
+      ..lineTo(cx + 4, y + 1)
+      ..lineTo(cx, y + 5)
+      ..lineTo(cx - 4, y + 1)
+      ..close();
+    canvas.drawPath(d, Paint()..color = gem);
+  }
+}
+
+/// Barra de navegação inferior com medalhão-gema no destino ativo (substitui NavigationBar).
+class GemNavBar extends StatelessWidget {
+  const GemNavBar({super.key, required this.items, required this.currentIndex, required this.onTap});
+  final List<({IconData icon, String label})> items;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.enchanted;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.surface, c.background]),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [c.gold.withValues(alpha: 0), c.gold, c.gold.withValues(alpha: 0)]),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 78,
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: Semantics(
+                        selected: i == currentIndex,
+                        button: true,
+                        label: items[i].label,
+                        excludeSemantics: true,
+                        child: InkResponse(
+                          onTap: () => onTap(i),
+                          radius: 36,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: i == currentIndex
+                                    ? BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(center: const Alignment(-.2, -.4), colors: [c.arcaneLight, c.arcaneDeep]),
+                                        border: Border.all(color: c.gold, width: 1.5),
+                                        boxShadow: [BoxShadow(color: c.arcane.withValues(alpha: .6), blurRadius: 16)],
+                                      )
+                                    : null,
+                                child: Icon(items[i].icon, size: 22, color: i == currentIndex ? Colors.white : const Color(0xFF8C93AD)),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                items[i].label,
+                                style: EnchantedText.label.copyWith(
+                                  color: i == currentIndex ? c.goldLight : const Color(0xFF8C93AD),
+                                  fontWeight: i == currentIndex ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

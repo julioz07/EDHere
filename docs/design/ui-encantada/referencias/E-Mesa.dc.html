@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Mesa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=Crimson+Pro:ital,wght@1,500&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#E8CB80}a:hover{color:#F6E2A8}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gem{position:relative;overflow:hidden;border:none;border-radius:12px;cursor:pointer;color:#FFFFFF;font-family:Cinzel,Georgia,serif;font-weight:800;letter-spacing:.04em;background:linear-gradient(180deg,#86B6FF 0%,#4682F2 42%,#2149B8 100%);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.35),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -5px 10px rgba(10,20,80,.45),0 0 24px rgba(70,130,255,.5);text-shadow:0 1px 2px rgba(0,20,80,.7)}
+.gem::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.45),rgba(255,255,255,0));transform:skewX(-20deg);animation:sheen 3.8s ease-in-out infinite}
+@keyframes sheen{0%{left:-40%}55%,100%{left:130%}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 1.5px #D8B868,0 0 14px rgba(232,203,128,.35)}50%{box-shadow:0 0 0 1.5px #F6E2A8,0 0 24px rgba(232,203,128,.7)}}
+.myturn{animation:breathe 2.4s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sigil{animation:spin 90s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::after{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0A0D18; font-family: Inter, system-ui, sans-serif; color: #F2ECDD; display: flex; flex-direction: column">
+
+  <div style="height: 54px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 6px; background: linear-gradient(180deg, #161D38, #0F1428); position: relative">
+    <span aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, rgba(216,184,104,0), #D8B868 50%, rgba(216,184,104,0))"></span>
+    <button aria-label="Voltar" style="width: 44px; height: 44px; border: none; background: none; color: #F2ECDD; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg></button>
+    <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; flex: 1">Ronda 4 · Ana</span>
+    <span style="height: 30px; padding: 0 12px; border-radius: 15px; display: flex; align-items: center; gap: 6px; background: #0E1326; box-shadow: 0 0 0 1px rgba(216,184,104,.6); color: #E8CB80; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 12px"><span style="width: 6px; height: 6px; transform: rotate(45deg); background: #FBEBB8; box-shadow: 0 0 6px #FBEBB8"></span>Principal 1</span>
+    <button aria-label="Desfazer" style="width: 44px; height: 44px; border: none; background: none; color: #F2ECDD; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg></button>
+    <button aria-label="Registo" style="width: 40px; height: 44px; border: none; background: none; color: #F2ECDD; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 9h8M8 13h8M8 17h5"></path></svg></button>
+  </div>
+
+  <div style="flex: none; display: flex; gap: 10px; padding: 14px 12px 10px; background: #0F1428">
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="3">
+      <button aria-label="{{p.aria}}" class="{{p.cls}}" style="{{p.btn}}">
+        <span style="display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%">
+          <span style="{{p.gem}}"></span>
+          <span style="font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0">{{p.name}}</span>
+        </span>
+        <span style="display: flex; align-items: center; gap: 8px; width: 100%">
+          <span style="{{p.life}}">{{p.lifeN}}</span>
+          <span style="display: flex; flex-direction: column; gap: 1px; font-size: 12px; font-weight: 600; color: #A9B0C8; line-height: 1.15">
+            <span style="display: flex; align-items: center; gap: 4px"><svg width="12" height="12" viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="4" y="6" width="11" height="15" rx="2"></rect><path d="M9 3h9a2 2 0 0 1 2 2v12"></path></svg>{{p.hand}}</span>
+            <span style="display: flex; align-items: center; gap: 4px"><svg width="12" height="12" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 3 21 8l-9 5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg>{{p.lib}}</span>
+          </span>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="flex: 1; min-height: 0; position: relative; overflow: hidden; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; background: radial-gradient(70% 50% at 50% 50%, #1A2550 0%, #0F1633 55%, #0A0D18 100%)">
+    <svg class="sigil" aria-hidden="true" width="300" height="300" viewBox="0 0 300 300" style="position: absolute; left: 45px; top: 50%; margin-top: -150px; opacity: .22"><circle cx="150" cy="150" r="140" fill="none" stroke="#D8B868" stroke-width="1"></circle><circle cx="150" cy="150" r="128" fill="none" stroke="#D8B868" stroke-width=".6" stroke-dasharray="2 6"></circle><circle cx="150" cy="150" r="70" fill="none" stroke="#86B6FF" stroke-width=".8"></circle><path d="M150 10 L271 220 L29 220 Z M150 290 L29 80 L271 80 Z" fill="none" stroke="#D8B868" stroke-width=".7"></path></svg>
+    <span aria-hidden="true" style="position: absolute; inset: 6px; border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(216,184,104,.25), inset 0 0 40px rgba(70,130,255,.12); pointer-events: none"></span>
+    <div style="display: flex; gap: 8px; align-items: flex-end; position: relative">
+      <sc-for list="{{creatures}}" as="c" hint-placeholder-count="4">
+        <div style="{{c.box}}"><span style="{{c.crown}}"></span><span style="{{c.bar}}"></span><span style="{{c.art}}"><span style="{{c.hill}}"></span></span><span style="{{c.tline}}"></span><span style="{{c.pt}}">{{c.ptT}}</span><sc-if value="{{c.hasCount}}" hint-placeholder-val="{{false}}"><span style="position: absolute; left: -7px; top: 40%; height: 22px; padding: 0 7px; border-radius: 11px; display: flex; align-items: center; background: radial-gradient(circle at 40% 30%, #86B6FF, #2149B8); box-shadow: 0 0 0 1.5px #D8B868, 0 0 10px rgba(70,130,255,.6); color: #FFFFFF; font-weight: 700; font-size: 12px">×4</span></sc-if></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 8px; position: relative">
+      <sc-for list="{{lands}}" as="c" hint-placeholder-count="3">
+        <div style="{{c.box}}"><span style="{{c.bar}}"></span><span style="{{c.art}}"><span style="{{c.hill}}"></span></span><span style="{{c.tline}}"></span><span style="{{c.textbox}}"></span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: none; display: flex; align-items: flex-end; gap: 10px; padding: 12px 12px 8px; background: linear-gradient(180deg, #121831, #0F1428); position: relative">
+    <span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(216,184,104,0), #D8B868 50%, rgba(216,184,104,0))"></span>
+    <sc-for list="{{zones}}" as="z" hint-placeholder-count="4">
+      <button aria-label="{{z.aria}}" style="width: 66px; border: none; padding: 0; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 14px; color: #F2ECDD; font-family: inherit">
+        <span style="{{z.slot}}">
+          <sc-if value="{{z.isLib}}" hint-placeholder-val="{{false}}"><svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true" style="opacity: .9"><path d="M12 2 20 5v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z" fill="none" stroke="#E8CB80" stroke-width="1"></path><circle cx="12" cy="10.5" r="2" fill="#E8CB80"></circle></svg></sc-if>
+          <sc-if value="{{z.isCmd}}" hint-placeholder-val="{{false}}"><span style="position: absolute; inset: 3px; border-radius: 3px; overflow: hidden; background: linear-gradient(180deg,#CDE3A0 0%,#6FA45E 55%,#2C5530 100%)"><span style="position: absolute; inset: 0; background: #16301A; clip-path: polygon(0 100%,0 70%,30% 46%,50% 64%,72% 34%,100% 60%,100% 100%)"></span></span></sc-if>
+          <span style="{{z.count}}">{{z.n}}</span>
+        </span>
+        <span style="font-size: 11px; font-weight: 600; color: #A9B0C8">{{z.label}}</span>
+      </button>
+    </sc-for>
+    <button aria-label="Mais zonas" style="width: 40px; height: 44px; margin-bottom: 20px; border: none; background: none; color: #A9B0C8; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"></circle><circle cx="12" cy="12" r="1.8" fill="currentColor"></circle><circle cx="19" cy="12" r="1.8" fill="currentColor"></circle></svg></button>
+  </div>
+
+  <div style="height: 104px; flex: none; position: relative; background: #0F1428">
+    <sc-for list="{{hand}}" as="c" hint-placeholder-count="4">
+      <div style="{{c.box}}"><span style="{{c.bar}}"></span><span style="{{c.art}}"><span style="{{c.hill}}"></span></span><span style="{{c.tline}}"></span><span style="{{c.textbox}}"></span></div>
+    </sc-for>
+  </div>
+
+  <div style="height: 72px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 14px 4px 18px; position: relative; z-index: 2; background: linear-gradient(180deg, #121831, #0A0D18)">
+    <span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(216,184,104,0), #D8B868 50%, rgba(216,184,104,0))"></span>
+    <span style="flex: 1; font-family: 'Crimson Pro', Georgia, serif; font-style: italic; font-weight: 500; font-size: 16px; color: #A9B0C8">Ana comprou 1 carta</span>
+    <button class="gem" style="height: 50px; padding: 0 20px; font-size: 15px; display: flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l11 8-11 8zM18 4h2v16h-2z" fill="currentColor"></path></svg>Passar turno</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const PAL = {
+      R: { frame: 'linear-gradient(180deg,#D0603F,#8E2E1C)', bar: '#F3D9C6', sky: 'linear-gradient(180deg,#F6B26B 0%,#D9663A 55%,#8E2E1C 100%)', hill: '#4A160E', gem: '#E0502A' },
+      G: { frame: 'linear-gradient(180deg,#5E9A5A,#2C5530)', bar: '#DDE8C8', sky: 'linear-gradient(180deg,#CDE3A0 0%,#6FA45E 55%,#2C5530 100%)', hill: '#16301A', gem: '#3FA35A' },
+      U: { frame: 'linear-gradient(180deg,#4A86D0,#1E4A8E)', bar: '#D6E4F2', sky: 'linear-gradient(180deg,#BFE0FA 0%,#5E9AD6 55%,#22477F 100%)', hill: '#10264A', gem: '#3B7BF0' },
+    };
+    const HILLS = [
+      'polygon(0 100%,0 62%,22% 40%,38% 58%,60% 28%,80% 52%,100% 38%,100% 100%)',
+      'polygon(0 100%,0 70%,30% 46%,50% 64%,72% 34%,100% 60%,100% 100%)',
+      'polygon(0 100%,0 54%,18% 66%,44% 30%,66% 56%,86% 44%,100% 66%,100% 100%)',
+      'polygon(0 100%,0 74%,40% 36%,58% 50%,100% 30%,100% 100%)',
+    ];
+    const card = (name, m, pt, i, o) => {
+      o = o || {};
+      const W = o.w || 70, H = Math.round(W * 1.4), p = PAL[m];
+      const pos = o.abs ? 'position:absolute;left:' + o.left + 'px;top:' + o.top + 'px;' : 'position:relative;';
+      return {
+        name: name, ptT: pt || '', hasCount: !!o.count,
+        box: pos + 'width:' + W + 'px;height:' + H + 'px;flex:none;box-sizing:border-box;border-radius:' + Math.round(W / 14) + 'px;padding:3px;background:' + p.frame + ';display:flex;flex-direction:column;gap:2px;' +
+          'box-shadow:' + (o.legend ? '0 0 0 1.5px #E8CB80,0 0 16px rgba(232,203,128,.55),' : '0 0 0 1px rgba(0,0,0,.6),') + '0 6px 12px rgba(0,0,0,.55);transform:rotate(' + (o.rot || 0) + 'deg);transform-origin:50% 130%;',
+        crown: o.legend ? 'position:absolute;left:50%;top:-7px;margin-left:-12px;width:24px;height:8px;background:#E8CB80;clip-path:polygon(0 100%,12% 20%,30% 70%,50% 0,70% 70%,88% 20%,100% 100%)' : 'display:none',
+        bar: 'display:block;flex:none;height:' + Math.round(W / 8) + 'px;background:' + p.bar + ';border-radius:' + Math.round(W / 20) + 'px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.2)',
+        art: 'display:block;flex:' + (o.full ? 1.6 : 1) + ';border-radius:1px;background:' + p.sky + ';position:relative;overflow:hidden',
+        hill: 'position:absolute;inset:0;background:' + p.hill + ';clip-path:' + HILLS[i % 4],
+        tline: 'display:block;height:' + Math.round(W / 11) + 'px;border-radius:' + Math.round(W / 20) + 'px;background:' + p.bar,
+        textbox: 'display:block;flex:.7;border-radius:1px;background:rgba(245,235,220,.85)',
+        pt: pt ? 'position:absolute;right:2px;bottom:2px;padding:0 4px;border-radius:3px;font-size:' + Math.max(8, Math.round(W / 7)) + 'px;font-weight:800;color:#1A120C;background:' + p.bar + ';box-shadow:0 0 0 1px rgba(0,0,0,.4)' : 'display:none',
+      };
+    };
+    const players = [
+      { name: 'Ana', hand: 3, lib: 91, life: 40, m: 'R', me: true },
+      { name: 'Bruno', hand: 5, lib: 88, life: 38, m: 'U' },
+      { name: 'Carla', hand: 3, lib: 90, life: 31, m: 'G' },
+    ].map((p) => ({
+      name: p.name, hand: p.hand, lib: p.lib, lifeN: p.life, aria: p.name + ', ' + p.life + ' de vida', cls: p.me ? 'myturn' : '',
+      btn: 'flex:1 1 0;min-width:0;height:76px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;padding:0 10px;border:none;border-radius:12px;cursor:pointer;font-family:inherit;color:#F2ECDD;text-align:left;background:linear-gradient(180deg,#1C2442,#121831);' +
+        'box-shadow:' + (p.me ? '0 0 0 1.5px #D8B868,0 0 14px rgba(232,203,128,.35)' : '0 0 0 1px rgba(216,184,104,.3)'),
+      gem: 'width:9px;height:9px;flex:none;transform:rotate(45deg);background:' + PAL[p.m].gem + ';box-shadow:0 0 6px ' + PAL[p.m].gem,
+      life: 'min-width:38px;height:34px;padding:0 4px;box-sizing:border-box;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:Cinzel,Georgia,serif;font-weight:800;font-size:19px;color:#1A120C;background:linear-gradient(180deg,#FFF6DA,#E8CB80);box-shadow:0 0 0 1px #8A6A2E,inset 0 1px 0 #FFFFFF,0 2px 4px rgba(0,0,0,.5)',
+    }));
+    const creatures = [['Goblin Lackey', 'R', '1/1'], ['Fellwar Stone', 'R', ''], ['Goblin Warchief', 'R', '2/2'], ['Krenko, Mob Boss', 'R', '3/3', { legend: 1 }]]
+      .map(([n, m, pt, o], i) => card(n, m, pt, i, Object.assign({ w: 78 }, o || {})));
+    const lands = [0, 1].map((k) => card('Mountain', 'R', '', k, { w: 78 }));
+    const zones = [
+      { label: 'Comando', n: 0, cmd: true },
+      { label: 'Grimório', n: 91, lib: true },
+      { label: 'Cemitério', n: 0 },
+      { label: 'Exílio', n: 0 },
+    ].map((z) => ({
+      label: z.label, n: z.n, isLib: !!z.lib, isCmd: !!z.cmd, aria: z.label + ', ' + z.n + ' cartas',
+      slot: 'width:56px;height:76px;position:relative;box-sizing:border-box;border-radius:7px;display:flex;align-items:center;justify-content:center;' +
+        (z.lib ? 'background:radial-gradient(circle at 50% 40%,#2C58A8,#121A3A 75%);box-shadow:0 0 0 1.5px #D8B868,0 0 0 3px #0A0D18,0 0 0 4px rgba(216,184,104,.3),2px 3px 0 #0A0D18,4px 6px 0 rgba(216,184,104,.25)' :
+          z.cmd ? 'background:#0E1326;box-shadow:0 0 0 1.5px #E8CB80,0 0 12px rgba(232,203,128,.45)' : 'background:#0E1326;box-shadow:inset 0 2px 6px rgba(0,0,0,.6),0 0 0 1px rgba(216,184,104,.35)'),
+      count: 'position:absolute;left:50%;bottom:-9px;margin-left:-15px;min-width:30px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:Cinzel,Georgia,serif;font-weight:800;font-size:12px;color:#1A120C;background:linear-gradient(180deg,#FFF6DA,#E8CB80);box-shadow:0 0 0 1px #8A6A2E,0 2px 3px rgba(0,0,0,.5)',
+    }));
+    const hand = [['Mountain', 'R'], ['Lightning Bolt', 'R'], ['Mountain', 'R'], ['Skirk Prospector', 'R']]
+      .map(([n, m], k) => card(n, m, '', k, { w: 74, abs: true, left: 30 + k * 84, top: 14 + Math.abs(k - 1.5) * 5, rot: (k - 1.5) * 4 }));
+    return { players: players, creatures: creatures, lands: lands, zones: zones, hand: hand };
+  }
+}
+</script>
+</body>
+</html>
