@@ -40,7 +40,7 @@ void main() {
   });
 
   test('lerp nos extremos devolve cada lado', () {
-    final a = EdhStyle.enchantedDark, b = EdhStyle.enchantedLight;
+    const a = EdhStyle.enchantedDark, b = EdhStyle.enchantedLight;
     expect(a.lerp(b, 0).gold, a.gold);
     expect(a.lerp(b, 1).gold, b.gold);
     expect(a.lerp(b, 1).style, b.style);
