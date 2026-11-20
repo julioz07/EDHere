@@ -83,6 +83,20 @@ void main() {
     }
   });
 
+  testWidgets('StyleFrame aplica a margem só no Encantado (no Clássico é do classic)', (tester) async {
+    Widget frame() => StyleFrame(
+          margin: const EdgeInsets.only(bottom: 20),
+          classic: (c) => Card(margin: EdgeInsets.zero, child: c),
+          child: const SizedBox(width: 100, height: 40, key: Key('in')),
+        );
+    await _pump(tester, UiStyle.enchanted, Column(mainAxisSize: MainAxisSize.min, children: [frame(), const SizedBox(key: Key('after'))]));
+    final inner = tester.getRect(find.byKey(const Key('in')));
+    expect(tester.getTopLeft(find.byKey(const Key('after'))).dy, greaterThanOrEqualTo(inner.bottom + 20));
+    await _pump(tester, UiStyle.classic, Column(mainAxisSize: MainAxisSize.min, children: [frame(), const SizedBox(key: Key('after'))]));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byKey(const Key('after'))).dy, tester.getRect(find.byKey(const Key('in'))).bottom);
+  });
+
   testWidgets('com "remover animações" o TurnGlow não anima', (tester) async {
     await _pump(tester, UiStyle.enchanted, const TurnGlow(active: true, child: Text('Ana')), reduceMotion: true);
     await tester.pump(const Duration(milliseconds: 100));
@@ -93,6 +107,20 @@ void main() {
     await _pump(tester, UiStyle.enchanted, const TurnGlow(active: true, child: Text('Ana')));
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.hasRunningAnimations, isTrue);
+  });
+
+  testWidgets('um título de secção longo não se parte em muitas linhas', (tester) async {
+    await _pump(tester, UiStyle.enchanted, const SectionDivider('Com outros, cada um com o seu telemóvel', classic: SizedBox()),
+        width: 312);
+    final h = tester.getSize(find.textContaining('COM OUTROS')).height;
+    expect(h, lessThan(3 * 13 * 1.6));
+  });
+
+  testWidgets('um título de secção curto fica ao centro', (tester) async {
+    await _pump(tester, UiStyle.enchanted, const SectionDivider('Abrir boosters', classic: SizedBox()), width: 312);
+    final text = tester.getCenter(find.text('ABRIR BOOSTERS'));
+    final row = tester.getCenter(find.byType(SectionDivider));
+    expect((text.dx - row.dx).abs(), lessThan(1));
   });
 
   testWidgets('GoldPlate de 3 dígitos cabe em 60 px com letra a 1,3×', (tester) async {

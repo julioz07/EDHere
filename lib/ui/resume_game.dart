@@ -1,3 +1,4 @@
+import 'style/style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -107,9 +108,15 @@ class ResumeCard extends ConsumerWidget {
     final info = ref.watch(resumeProvider).current;
     if (info == null) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.primaryContainer,
+    return StyleFrame(
+      highlighted: true,
+      padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: 20),
+      classic: (child) => Card(
+        color: scheme.primaryContainer,
+        margin: const EdgeInsets.only(bottom: 20),
+        child: child,
+      ),
       child: ResumeTile(
         icon: Icons.replay_circle_filled_rounded,
         title: tr('Jogo em curso: {room}', {'room': info.room}),
@@ -163,9 +170,15 @@ class SoloResumeCard extends ConsumerWidget {
     final d = save.savedAt;
     final when = tr('{day}/{month} às {hour}:{v}',
         {'day': d.day, 'month': d.month, 'hour': d.hour, 'v': d.minute.toString().padLeft(2, '0')});
-    return Card(
-      color: scheme.secondaryContainer,
+    return StyleFrame(
+      highlighted: true,
+      padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: 20),
+      classic: (child) => Card(
+        color: scheme.secondaryContainer,
+        margin: const EdgeInsets.only(bottom: 20),
+        child: child,
+      ),
       child: ResumeTile(
         icon: Icons.bookmark_rounded,
         title: shortTitle(save.title),

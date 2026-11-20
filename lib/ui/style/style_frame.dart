@@ -15,6 +15,7 @@ class StyleFrame extends StatelessWidget {
     this.showGem = true,
     this.padding = const EdgeInsets.all(14),
     this.radius = 14,
+    this.margin = EdgeInsets.zero,
   });
 
   final Widget child;
@@ -25,6 +26,9 @@ class StyleFrame extends StatelessWidget {
   final bool showGem;
   final EdgeInsetsGeometry padding;
   final double radius;
+
+  /// Espaço à volta da moldura no Encantado (no Clássico, o [classic] trata do seu).
+  final EdgeInsetsGeometry margin;
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +53,19 @@ class StyleFrame extends StatelessWidget {
           if (highlighted) BoxShadow(color: c.goldLight.withOpacity(.18), blurRadius: 18),
         ],
       ),
-      child: child,
+      // Material transparente: os InkWell lá dentro mostram o toque na moldura.
+      child: Material(type: MaterialType.transparency, child: child),
     );
-    if (!showGem) return frame;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        frame,
-        Positioned(top: -5, left: 0, right: 0, child: Center(child: GoldGem(color: c.goldPale))),
-      ],
-    );
+    final framed = !showGem
+        ? frame
+        : Stack(
+            clipBehavior: Clip.none,
+            children: [
+              frame,
+              Positioned(top: -5, left: 0, right: 0, child: Center(child: GoldGem(color: c.goldPale))),
+            ],
+          );
+    return margin == EdgeInsets.zero ? framed : Padding(padding: margin, child: framed);
   }
 }
 

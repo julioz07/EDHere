@@ -152,6 +152,7 @@ ThemeData buildEnchantedTheme(Brightness brightness) {
       floatingLabelStyle: k(EdhText.section.copyWith(color: c.goldText, fontSize: 12)),
       hintStyle: k(EdhText.body.copyWith(color: c.textMuted)),
       helperStyle: k(EdhText.label.copyWith(color: c.textMuted)),
+      helperMaxLines: 2,
       prefixIconColor: c.gold,
       border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: c.gold.withOpacity(.45))),
       enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: c.gold.withOpacity(.45))),

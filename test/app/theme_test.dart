@@ -36,6 +36,8 @@ void main() {
       expect(t.cardTheme.shape, isA<GoldFrameBorder>());
       expect(_minSize(t.filledButtonTheme.style), const Size.fromHeight(EdhSize.button));
       expect(t.filledButtonTheme.style?.backgroundBuilder, isNotNull);
+      // a Inter é mais larga: a ajuda dos campos pode ir a 2 linhas em vez de "..."
+      expect(t.inputDecorationTheme.helperMaxLines, 2);
       expect(_minSize(t.outlinedButtonTheme.style), const Size.fromHeight(EdhSize.button));
     });
   }

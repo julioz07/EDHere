@@ -29,16 +29,21 @@ class SectionDivider extends StatelessWidget {
       header: true,
       label: label,
       excludeSemantics: true,
-      child: Row(children: [
-        line(true),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(label.toUpperCase(),
-              textAlign: TextAlign.center, style: EdhText.section.copyWith(color: c.goldText)),
-        ),
-        const SizedBox(width: 10),
-        line(false),
-      ]),
+      // O texto fica ao centro e pode ocupar até 80% da largura: um título
+      // longo vai a duas linhas, não a cinco; os fios repartem o resto.
+      child: LayoutBuilder(
+        builder: (context, box) => Row(children: [
+          line(true),
+          const SizedBox(width: 10),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: box.maxWidth * .8),
+            child: Text(label.toUpperCase(),
+                textAlign: TextAlign.center, style: EdhText.section.copyWith(color: c.goldText)),
+          ),
+          const SizedBox(width: 10),
+          line(false),
+        ]),
+      ),
     );
   }
 }

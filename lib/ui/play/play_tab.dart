@@ -17,6 +17,8 @@ import '../playtest/playtest_setup_screen.dart';
 import '../resume_game.dart';
 import '../stats/stats_screen.dart';
 import '../tutorial/tutorial_home.dart';
+import '../../app/gold_frame_border.dart';
+import '../style/style.dart';
 import '../widgets/responsive.dart';
 import '../../app/theme.dart';
 import '../../l10n/l10n.dart';
@@ -102,7 +104,9 @@ class _PlayTabState extends ConsumerState<PlayTab> {
               SvgPicture.asset(Brand.horizontal(theme.brightness), height: short ? 40 : 56),
               const SizedBox(height: 6),
               Text(tr('Joga com quem está aqui'),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  style: context.edhStyle.isEnchanted
+                      ? EdhText.flavor.copyWith(color: scheme.onSurfaceVariant)
+                      : theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
             ]),
             SizedBox(height: short ? 16 : 24),
             const ResumeCard(),
@@ -217,7 +221,7 @@ class _Section extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: EdhSize.xl),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        SectionDivider(title, classic: Text(title, style: Theme.of(context).textTheme.titleSmall)),
         const SizedBox(height: EdhSize.s),
         LayoutBuilder(builder: (context, box) {
           final two = box.maxWidth >= 640;
@@ -246,29 +250,50 @@ class _ModeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final fg = hero ? scheme.onPrimary : scheme.onSurface;
+    final st = context.edhStyle;
+    final ench = st.isEnchanted;
+    // Encantado: o modo principal é uma "gema" azul com fio de ouro; os outros
+    // têm o fundo das molduras e o fio de ouro duplo.
+    final fg = hero ? (ench ? Colors.white : scheme.onPrimary) : scheme.onSurface;
+    final r = BorderRadius.circular(EdhSize.radiusM);
     return Opacity(
       opacity: onTap == null ? 0.5 : 1,
       child: Material(
-        color: hero ? scheme.primary : scheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(EdhSize.radiusM),
-          side: hero ? BorderSide.none : BorderSide(color: scheme.outline),
-        ),
+        color: ench ? Colors.transparent : (hero ? scheme.primary : scheme.surface),
+        shape: ench
+            ? (hero
+                ? RoundedRectangleBorder(borderRadius: r, side: BorderSide(color: st.gold, width: 1.5))
+                : GoldFrameBorder(gold: st.gold, radius: EdhSize.radiusM))
+            : RoundedRectangleBorder(
+                borderRadius: r,
+                side: hero ? BorderSide.none : BorderSide(color: scheme.outline),
+              ),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
+        child: Ink(
+          decoration: !ench
+              ? null
+              : BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: hero ? [st.arcaneLight, st.arcane, st.arcaneDeep] : [st.surfaceHigh, st.surface],
+                    stops: hero ? const [0, .42, 1] : null,
+                  ),
+                ),
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
             padding: EdgeInsets.all(hero ? EdhSize.l : EdhSize.m),
             child: Row(children: [
               Container(
                 width: hero ? 52 : 40,
                 height: hero ? 52 : 40,
                 decoration: BoxDecoration(
-                  color: hero ? scheme.onPrimary.withOpacity(0.18) : scheme.primaryContainer,
+                  color: hero ? fg.withOpacity(0.18) : (ench ? st.field : scheme.primaryContainer),
                   shape: BoxShape.circle,
+                  border: ench ? Border.all(color: st.gold.withOpacity(hero ? .8 : .6)) : null,
                 ),
-                child: Icon(icon, size: hero ? 28 : 22, color: hero ? scheme.onPrimary : scheme.primary),
+                child: Icon(icon, size: hero ? 28 : 22, color: hero ? fg : (ench ? st.goldText : scheme.primary)),
               ),
               const SizedBox(width: EdhSize.m),
               Expanded(
@@ -278,15 +303,21 @@ class _ModeCard extends StatelessWidget {
                       style: (hero && MediaQuery.sizeOf(context).width >= 400
                               ? theme.textTheme.titleLarge
                               : theme.textTheme.titleMedium)
-                          ?.copyWith(color: fg, fontWeight: FontWeight.w600)),
+                          ?.copyWith(
+                              color: fg,
+                              fontWeight: ench ? FontWeight.w700 : FontWeight.w600,
+                              fontFamily: ench ? EdhFonts.display : null,
+                              // a Cinzel é larga: o principal num tamanho abaixo, para caber numa linha
+                              fontSize: ench && hero ? 19 : null)),
                   const SizedBox(height: 2),
                   Text(subtitle,
                       style: theme.textTheme.bodySmall
-                          ?.copyWith(color: hero ? scheme.onPrimary.withOpacity(0.85) : scheme.onSurfaceVariant)),
+                          ?.copyWith(color: hero ? fg.withOpacity(0.85) : scheme.onSurfaceVariant)),
                 ]),
               ),
-              Icon(Icons.chevron_right, color: hero ? scheme.onPrimary : scheme.onSurfaceVariant),
+              Icon(Icons.chevron_right, color: hero ? fg : (ench ? st.gold : scheme.onSurfaceVariant)),
             ]),
+          ),
           ),
         ),
       ),

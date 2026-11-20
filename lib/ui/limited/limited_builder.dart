@@ -1,3 +1,4 @@
+import '../style/style.dart';
 import 'dart:async';
 
 import 'package:card_db/card_db.dart' as db;
@@ -670,9 +671,15 @@ class LimitedBuildsCard extends ConsumerWidget {
     final builds = ref.watch(limitedBuildsProvider).builds;
     if (builds.isEmpty || ref.watch(cardRepoProvider) == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.tertiaryContainer,
+    return StyleFrame(
+      highlighted: true,
+      padding: EdgeInsets.zero,
       margin: const EdgeInsets.only(bottom: 20),
+      classic: (child) => Card(
+        color: theme.colorScheme.tertiaryContainer,
+        margin: const EdgeInsets.only(bottom: 20),
+        child: child,
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
